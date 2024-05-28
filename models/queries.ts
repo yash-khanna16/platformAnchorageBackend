@@ -1,0 +1,1 @@
+export const getAllGuests = "SELECT * FROM guests";
