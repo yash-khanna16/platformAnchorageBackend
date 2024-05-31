@@ -1,7 +1,9 @@
 import bodyParser from "body-parser";
 import express, { Request, Response } from "express";
+const cookieParser = require('cookie-parser');
 import cors from "cors";
-import guestRoutes from "./routes/guestroutes"
+import bcrypt from "bcrypt";
+import guestRoutes from "./routes/guestroutes";
  
 
 const app = express();
@@ -12,9 +14,14 @@ app.use(cors());
 app.use(bodyParser.json());
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`)
+    console.log(`Server is running on port: http://localhost:${port}`)
 })
-
+app.get("/abc",async function(req:Request,res:Response){
+    const {password}=req.body;
+    const hashPassword=await bcrypt.hash(password,10);
+    console.log(hashPassword);
+    res.send("password mil gya :)");
+})
 app.use("/api/admin",  guestRoutes)
 
 // app.get("/test", (req:Request, res:Response)=>{
