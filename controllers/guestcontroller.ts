@@ -37,12 +37,12 @@ export const loginAdmin = (req: Request, res: Response): void => {
   console.log(password);
     try {
         getAdmin(adminId,password).then((token)=> {
-          res.cookie('token', token, { httpOnly: true, secure: true});
+          // res.cookie('token', token, { httpOnly: true, secure: true});
           console.log(token);
-          res.status(200).send(token);
+          res.status(200).send({token:token});
         }) 
         .catch ((error)=> {
-          res.status(500).send("internal server error");
+          res.status(500).send({message:"internal server error"});
         })
     } catch (error) {
       res.status(400).send({message: "There is some error encountered!"});

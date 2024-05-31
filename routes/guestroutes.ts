@@ -4,7 +4,7 @@ const router = Router();
 
 router.get("/getGuests", getAllGuests);
 router.get("/searchAllGuest",searchAllGuests);
-router.get("/getAdmin",loginAdmin);
+router.get("/loginAdmin",loginAdmin);
 router.post("/addGuests",addNewGuests);
 router.get("/getReserv",getReserv);
 router.post("/addBooking",addBooking);
