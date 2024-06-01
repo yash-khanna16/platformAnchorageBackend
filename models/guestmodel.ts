@@ -51,9 +51,9 @@ export async function fetchRoomResv(roomNo:string): Promise<QueryResult<any>> {
   }
 }
 
-export async function addBooking(bookingData:{checkin:Date,checkout:Date,email:string,meal_veg:number,meal_non_veg:number,remarks:string,additional:string,room:string}): Promise<QueryResult<any>> {
+export async function addBooking(bookingData:{booking_id:string,checkin:Date,checkout:Date,email:string,meal_veg:number,meal_non_veg:number,remarks:string,additional:string,room:string,breakfast:number}): Promise<QueryResult<any>> {
   try {
-    const result = await pool.query(addBookingDetails,[bookingData.checkin,bookingData.checkout,bookingData.email,bookingData.meal_veg,bookingData.meal_non_veg,bookingData.remarks,bookingData.additional,bookingData.room]);
+    const result = await pool.query(addBookingDetails,[bookingData.booking_id,bookingData.checkin,bookingData.checkout,bookingData.email,bookingData.meal_veg,bookingData.meal_non_veg,bookingData.remarks,bookingData.additional,bookingData.room,bookingData.breakfast]);
     return result;
   } catch (error) {
     throw error;
