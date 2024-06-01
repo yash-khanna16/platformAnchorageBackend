@@ -196,9 +196,8 @@ export function editBookingData(bookingData: { bookingId: string, checkin: Date,
 }
 
 export async function fetchAvailableRooms(checkData: { checkin: Date, checkout: Date }): Promise<any> {
-    console.log("hello");
-    checkData.checkin=new Date(checkData.checkin);
-    checkData.checkout=new Date(checkData.checkout);
+    // checkData.checkin=new Date(checkData.checkin);
+    // checkData.checkout=new Date(checkData.checkout);
     console.log(checkData.checkin);
     console.log(checkData.checkout);
     try {
