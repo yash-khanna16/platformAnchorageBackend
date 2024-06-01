@@ -21,3 +21,5 @@ export const fetchThisRoom="SELECT room, CASE WHEN COUNT(*) = SUM(CASE WHEN ((ch
 export const fetchGuest="Select * from guests where email=$1"
 
 export const fetchRooms="Select * from rooms"
+
+export const fetchRooms="Select * from rooms"
