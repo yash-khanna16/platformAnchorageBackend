@@ -16,7 +16,7 @@ export const getAllGuests = (req: Request, res: Response): void => {
   };
 
 export const searchAllGuests = (req: Request, res: Response): void => {
-  const guestName=req.headers.guestName as string;
+  const guestName=req.headers.guestname as string;
     try {
         searchGuests(guestName).then((results)=> {
           res.status(200).send(results);
