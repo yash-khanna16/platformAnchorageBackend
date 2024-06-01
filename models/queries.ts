@@ -14,9 +14,70 @@ export const editBookingDetails = "update bookings SET checkout = $2,guest_email
 
 export const serverTime = "SELECT current_timestamp AT TIME ZONE 'Asia/Kolkata' AS server_time";
 
-export const fetchRoom="SELECT room, CASE WHEN COUNT(*) = SUM(CASE WHEN ((checkin < $1 AND checkout > $2) OR (checkin < $1 AND $2 > checkout AND $1 < checkout) OR (checkin > $1 AND checkout < $2) OR (checkin > $1 AND $2 < checkout AND $2 > checkin)) THEN 1 ELSE 0 END) THEN 'false' ELSE 'true' END AS condition_met FROM bookings GROUP BY room";
+// export const fetchRoom = `SELECT 
+// room, 
+// CASE 
+//   WHEN COUNT(*) = SUM(
+//     CASE 
+//       WHEN (
+//         (checkin < $1 AND checkout > $2) 
+//         OR (checkin < $1 AND $2 > checkout AND $1 < checkout) 
+//         OR (checkin > $1 AND checkout < $2) 
+//         OR (checkin > $1 AND $2 < checkout AND $2 > checkin)
+//       ) 
+//       THEN 1 
+//       ELSE 0 
+//     END
+//   ) 
+//   THEN 'false' 
+//   ELSE 'true' 
+// END AS condition_met 
+// FROM bookings 
+// GROUP BY room;`
+// ;
+export const fetchRoom = `SELECT 
+room, 
+CASE 
+  WHEN COUNT(*) = SUM(
+    CASE 
+      WHEN (
+        (checkin <= $1 AND checkout >= $2) 
+        OR (checkin >= $1 AND checkout <= $2) 
+        OR (checkin <= $1 AND checkout >= $1 AND checkout <= $2) 
+        OR (checkin >= $1 AND checkin <= $2 AND checkout >= $2)
+      ) 
+      THEN 1 
+      ELSE 0 
+    END
+  ) 
+  THEN 'false' 
+  ELSE 'true' 
+END AS condition_met 
+FROM bookings 
+GROUP BY room;`
+;
 
-export const fetchThisRoom="SELECT room, CASE WHEN COUNT(*) = SUM(CASE WHEN ((checkin < $1 AND checkout > $2) OR (checkin < $1 AND $2 > checkout AND $1 < checkout) OR (checkin > $1 AND checkout < $2) OR (checkin > $1 AND $2 < checkout AND $2 > checkin)) THEN 1 ELSE 0 END) THEN 'false' ELSE 'true' END AS condition_met FROM bookings where bookings.room=$3";
+export const fetchThisRoom=`SELECT 
+room, 
+CASE 
+  WHEN COUNT(*) = SUM(
+    CASE 
+      WHEN (
+        (checkin <= $1 AND checkout >= $2) 
+        OR (checkin >= $1 AND checkout <= $2) 
+        OR (checkin <= $1 AND checkout >= $1 AND checkout <= $2) 
+        OR (checkin >= $1 AND checkin <= $2 AND checkout >= $2)
+      ) 
+      THEN 1 
+      ELSE 0 
+    END
+  ) 
+  THEN 'false' 
+  ELSE 'true' 
+END AS condition_met 
+FROM bookings 
+where room=$3
+GROUP BY room;`;
 
 export const fetchGuest="Select * from guests where email=$1"
 
