@@ -1,6 +1,6 @@
 import { QueryResult } from "pg";
 import pool from "../db";
-import { getAllGuests,getNamedGuests,getAdmin,addGuestQuery,fetchResv,addBookingDetails,editBookingDetails,serverTime,fetchRoom,fetchThisRoom,fetchGuest } from "./queries";
+import { getAllGuests,getNamedGuests,getAdmin,addGuestQuery,fetchResv,addBookingDetails,editBookingDetails,serverTime,fetchRoom,fetchThisRoom,fetchGuest,fetchRooms } from "./queries";
 
 
 export async function fetchGuests(): Promise<QueryResult<any>> {
@@ -100,6 +100,15 @@ export async function fetchThisRooms(checkData: { checkin: Date, checkout: Date,
 export async function findGuest(email:string): Promise<QueryResult<any>> {
   try {
     const result = await pool.query(fetchGuest,[email]);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function fetchAllRooms(): Promise<QueryResult<any>> {
+  try {
+    const result = await pool.query(fetchRooms);
     return result;
   } catch (error) {
     throw error;
