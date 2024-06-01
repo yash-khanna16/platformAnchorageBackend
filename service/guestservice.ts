@@ -1,4 +1,4 @@
-import { fetchGuests, fetchAllGuests, fetchAdmin, addGuestData, fetchRoomResv, addBooking, editBooking, fetchAvailRooms, fetchThisRooms, findGuest } from "../models/guestmodel";
+import { fetchGuests, fetchAllGuests, fetchAdmin, addGuestData, fetchRoomResv, addBooking, editBooking, fetchAvailRooms, fetchThisRooms, findGuest,fetchAllRooms } from "../models/guestmodel";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken"
@@ -172,13 +172,20 @@ export function editBookingData(bookingData: { bookingId: string, checkout: Date
 
 export async function fetchAvailableRooms(checkData: { checkin: Date, checkout: Date }): Promise<any> {
     try {
+        const allRooms = await fetchAllRooms();
         const result = await fetchAvailRooms(checkData);
-        return result.rows;
+        const conditionMap = new Map(result.rows.map((room: { room: string, condition_met: string }) => [room.room, room.condition_met]));
+        const availableRooms = allRooms.rows.filter((room: { room: string }) => conditionMap.get(room.room) !== 'false');
+        // console.log(allRooms.rows);
+        // console.log(result.rows);
+        // console.log(availableRooms);
+        return availableRooms;
     } catch (error) {
         console.error(error);
         throw new Error("internal server error");
     }
 }
+
 
 export async function getThisRoom(checkData: { checkin: Date, checkout: Date, room: string }): Promise<any> {
     try {

@@ -20,3 +20,5 @@ export const fetchRoom="SELECT room, CASE WHEN COUNT(*) = SUM(CASE WHEN ((checki
 export const fetchThisRoom="SELECT CASE WHEN COUNT(*) = SUM(CASE WHEN ((checkin < $1 AND checkout > $2) OR (checkin < $1 AND $2 > checkout AND $1 < checkout) OR (checkin > $1 AND checkout < $2) OR (checkin > $1 AND $2 < checkout AND $2 > checkin)) THEN 1 ELSE 0 END) THEN 'false' ELSE 'true' END AS condition_met FROM bookings WHERE room = $3";
 
 export const fetchGuest="Select * from guests where email=$1"
+
+export const fetchRooms="Select * from rooms"
