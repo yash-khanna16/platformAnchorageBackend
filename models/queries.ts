@@ -8,7 +8,7 @@ export const addGuestQuery= "INSERT INTO guests (email,name,phone,company,vessel
 
 export const fetchResv = "SELECT * FROM bookings where room=$1";
 
-export const addBookingDetails = "insert into bookings(booking_id,checkin,checkout,guest_email,meal_veg,meal_non_veg,remarks,additional_info,room)values('abc6524',$1,$2,$3,$4,$5,$6,$7,$8)";
+export const addBookingDetails = "insert into bookings(booking_id,checkin,checkout,guest_email,meal_veg,meal_non_veg,remarks,additional_info,room,breakfast)values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)";
 
 export const editBookingDetails = "update bookings SET checkout = $2,guest_email = $3,meal_veg = $4,meal_non_veg = $5,remarks = $6,additional_info = $7 where booking_id=$1";
 

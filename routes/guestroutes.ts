@@ -12,4 +12,6 @@ router.post("/editBooking",editBooking);
 router.post("/getAvailableRooms",getAvailableRooms);
 router.get("/getThisRooms",getThisRooms);
 
+
+
 export default router;
