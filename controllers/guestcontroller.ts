@@ -111,13 +111,14 @@ export const loginAdmin = (req: Request, res: Response): void => {
     };
 
   export const getAvailableRooms = (req: Request, res: Response): void => {
+    console.log(req.body)
     const {checkData}=req.body;
       try {
           fetchAvailableRooms(checkData).then((results)=> {
             res.status(200).send(results);
           }) 
           .catch ((error)=> {
-            res.status(500).send("internal server error");
+            res.status(500).send({message: "internal server error"});
           })
       } catch (error) {
         res.status(400).send({message: "There is some error encountered!"});

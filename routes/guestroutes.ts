@@ -9,7 +9,7 @@ router.post("/addGuests",addNewGuests);
 router.get("/getReserv",getReserv);
 router.post("/addBooking",addBooking);
 router.post("/editBooking",editBooking);
-router.get("/getAvailableRooms",getAvailableRooms);
+router.post("/getAvailableRooms",getAvailableRooms);
 router.get("/getThisRooms",getThisRooms);
 
 export default router;
