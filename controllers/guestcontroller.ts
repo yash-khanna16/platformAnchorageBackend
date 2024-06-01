@@ -81,16 +81,17 @@ export const loginAdmin = (req: Request, res: Response): void => {
     };
 
   export const addBooking = (req: Request, res: Response): void => {
+    // console.log(req.body)
     const {bookingData}=req.body;
       try {
           addBookingData(bookingData).then((results)=> {
-            res.status(200).send(results);
+            res.status(200).send({message: "Booking added successfully!"});
           }) 
           .catch ((error)=> {
-            res.status(500).send("internal server error");
+            res.status(500).send({message: "Internal Server Error"});
           })
       } catch (error) {
-        res.status(400).send({message: "There is some error encountered!"});
+        res.status(400).send({message: "Something Went Wrong, Please try again!"});
         console.log("error: ", error);
       }
     };
