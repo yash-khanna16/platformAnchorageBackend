@@ -2,6 +2,7 @@ import { fetchGuests, fetchAllGuests, fetchAdmin, addGuestData, fetchRoomResv, a
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken"
 const secretkey="chotahathi"
+import { v4 as uuidv4 } from 'uuid';
 
 export function getGuests(): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -94,25 +95,28 @@ export function getRoomResv(roomNo: string): Promise<any> {
     });
 }
 
-export  function addBookingData(bookingData: { checkin: Date, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string, room: string,name:string,phone:number,company:string,vessel:string,rank:string }): Promise<any> {
-    return new Promise(async(resolve, reject) => {
-        const isGuest=await findGuest(bookingData.email);
-        if(isGuest.rows.length===0){
-            const guestData= { guestEmail:bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel,guestRank:bookingData.rank }
-            try{
-            addGuestData(guestData)
-            }
-            catch(error){
-                console.log(error)
+export function addBookingData(bookingData: { checkin: Date, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string, room: string, name: string, phone: number, company: string, vessel: string, rank: string, breakfast:number}): Promise<any> {
+    return new Promise(async (resolve, reject) => {
+        const isGuest = await findGuest(bookingData.email);
+        if (isGuest.rows.length === 0) {
+            const guestData = { guestEmail: bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel, guestRank: bookingData.rank }
+            try {
+                await addGuestData(guestData);
+            } catch (error) {
+                console.log(error);
                 reject("internal server error");
+                return;
             }
         }
-        addBooking(bookingData)
+        const booking_id = uuidv4();
+        const bookingDataWithId = { ...bookingData, booking_id };
+
+        addBooking(bookingDataWithId)
             .then((results) => {
                 resolve(results.rows);
             })
             .catch((error) => {
-                console.log(error)
+                console.log(error);
                 reject("internal server error");
             });
     });
