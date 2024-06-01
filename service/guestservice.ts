@@ -180,14 +180,18 @@ export function editBookingData(bookingData: { bookingId: string, checkout: Date
 }
 
 export async function fetchAvailableRooms(checkData: { checkin: Date, checkout: Date }): Promise<any> {
+    // checkData.checkin=new Date(checkData.checkin);
+    // checkData.checkout=new Date(checkData.checkout);
+    console.log(checkData.checkin);
+    console.log(checkData.checkout);
     try {
         const allRooms = await fetchAllRooms();
         const result = await fetchAvailRooms(checkData);
         const conditionMap = new Map(result.rows.map((room: { room: string, condition_met: string }) => [room.room, room.condition_met]));
         const availableRooms = allRooms.rows.filter((room: { room: string }) => conditionMap.get(room.room) !== 'false');
-        // console.log(allRooms.rows);
-        // console.log(result.rows);
-        // console.log(availableRooms);
+        console.log(allRooms.rows);
+        console.log(result.rows);
+        console.log(availableRooms);
         return availableRooms;
     } catch (error) {
         console.error(error);
