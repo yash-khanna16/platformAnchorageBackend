@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getGuests,searchGuests,getAdmin,addGuests,getRoomResv,addBookingData,editBookingData,fetchAvailableRooms,getThisRoom } from "../service/guestservice";
+import { getGuests,searchGuests,getAdmin,addGuests,getRoomResv,addBookingData,editBookingData,fetchAvailableRooms,getThisRoom, triggerBooking } from "../service/guestservice";
 
 export const getAllGuests = (req: Request, res: Response): void => {
     try {
