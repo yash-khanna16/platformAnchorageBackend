@@ -86,7 +86,7 @@ export const loginAdmin = (req: Request, res: Response): void => {
       try {
           addBookingData(bookingData).then((results)=> {
             if(results!=="room unavailable"){
-            res.status(200).send({message: "Room Booked Successfully!"});}
+            res.status(200).send({message: "Room booked successfully!"});}
             else{
               res.send({message:"Room unavailable"});
             }
