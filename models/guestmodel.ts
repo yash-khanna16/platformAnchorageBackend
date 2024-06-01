@@ -89,6 +89,7 @@ export async function fetchAvailRooms(checkData: { checkin: Date, checkout: Date
 }
 
 export async function fetchThisRooms(checkData: { checkin: Date, checkout: Date,room:string}): Promise<QueryResult<any>> {
+  console.log(checkData);
   try {
     const result = await pool.query(fetchThisRoom,[checkData.checkin,checkData.checkout,checkData.room]);
     return result;

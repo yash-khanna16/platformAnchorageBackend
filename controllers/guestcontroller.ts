@@ -85,7 +85,11 @@ export const loginAdmin = (req: Request, res: Response): void => {
     const {bookingData}=req.body;
       try {
           addBookingData(bookingData).then((results)=> {
-            res.status(200).send({message: "Booking added successfully!"});
+            if(results!=="room unavailable"){
+            res.status(200).send({message: "Room Booked Successfully!"});}
+            else{
+              res.send({message:"Room unavailable"});
+            }
           }) 
           .catch ((error)=> {
             res.status(500).send({message: "Internal Server Error"});

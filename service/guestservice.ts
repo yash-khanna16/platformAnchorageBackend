@@ -130,6 +130,10 @@ export function addBookingData(bookingData: { checkin: Date, checkout:Date, emai
     return new Promise(async (resolve, reject) => {
         bookingData.checkin=new Date(bookingData.checkin);
         bookingData.checkout=new Date(bookingData.checkout);
+        const checkData= { checkin: bookingData.checkin, checkout: bookingData.checkout, room: bookingData.room }
+        const go_on=await fetchThisRooms(checkData);
+        console.log(go_on.rows[0]);
+        if(go_on.rows[0].condition_met==="true"){
         const isGuest = await findGuest(bookingData.email);
         if (isGuest.rows.length === 0) {
             const guestData = { guestEmail: bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel, guestRank: bookingData.rank }
@@ -143,17 +147,22 @@ export function addBookingData(bookingData: { checkin: Date, checkout:Date, emai
         }
         const booking_id = uuidv4();
         const bookingDataWithId = { ...bookingData, booking_id };
-
+        
         addBooking(bookingDataWithId)
             .then((results) => {
                 priorityQueue.enqueue(bookingDataWithId);
-                console.log("booking ho gyi");
+                // console.log("booking ho gyi");
                 resolve(results.rows);
             })
             .catch((error) => {
                 console.log(error);
                 reject("internal server error");
             });
+        }
+        else{
+            reject("room unavailable");
+            return("room unavailable");
+        }
     });
 }
 

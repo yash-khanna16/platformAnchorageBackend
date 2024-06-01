@@ -6,7 +6,7 @@ export const getAdmin= "Select * FROM admin where email=$1";
 
 export const addGuestQuery= "INSERT INTO guests (email,name,phone,company,vessel,rank)values($1,$2,$3,$4,$5,$6)";
 
-export const fetchResv = "SELECT * FROM bookings where room=$1";
+export const fetchResv = "SELECT * FROM bookings JOIN guests ON guests.email=bookings.guest_email where room=$1";
 
 export const addBookingDetails = "insert into bookings(booking_id,checkin,checkout,guest_email,meal_veg,meal_non_veg,remarks,additional_info,room,breakfast)values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)";
 
@@ -14,10 +14,9 @@ export const editBookingDetails = "update bookings SET checkout = $2,guest_email
 
 export const serverTime = "SELECT current_timestamp AT TIME ZONE 'Asia/Kolkata' AS server_time";
 
-export const fetchRoom="SELECT room, CASE WHEN COUNT(*) = SUM(CASE WHEN ((checkin < $1 AND checkout > $2) OR (checkin < $1 AND $2 > checkout AND $1 < checkout) OR (checkin > $1 AND checkout < $2) OR (checkin > $1 AND $2 < checkout AND $2 > checkin)) THEN 1 ELSE 0 END) THEN 'false' ELSE 'true' END AS condition_met FROM bookings GROUP BY room;";
+export const fetchRoom="SELECT room, CASE WHEN COUNT(*) = SUM(CASE WHEN ((checkin < $1 AND checkout > $2) OR (checkin < $1 AND $2 > checkout AND $1 < checkout) OR (checkin > $1 AND checkout < $2) OR (checkin > $1 AND $2 < checkout AND $2 > checkin)) THEN 1 ELSE 0 END) THEN 'false' ELSE 'true' END AS condition_met FROM bookings GROUP BY room";
 
-
-export const fetchThisRoom="SELECT CASE WHEN COUNT(*) = SUM(CASE WHEN ((checkin < $1 AND checkout > $2) OR (checkin < $1 AND $2 > checkout AND $1 < checkout) OR (checkin > $1 AND checkout < $2) OR (checkin > $1 AND $2 < checkout AND $2 > checkin)) THEN 1 ELSE 0 END) THEN 'false' ELSE 'true' END AS condition_met FROM bookings WHERE room = $3";
+export const fetchThisRoom="SELECT room, CASE WHEN COUNT(*) = SUM(CASE WHEN ((checkin < $1 AND checkout > $2) OR (checkin < $1 AND $2 > checkout AND $1 < checkout) OR (checkin > $1 AND checkout < $2) OR (checkin > $1 AND $2 < checkout AND $2 > checkin)) THEN 1 ELSE 0 END) THEN 'false' ELSE 'true' END AS condition_met FROM bookings where bookings.room=$3";
 
 export const fetchGuest="Select * from guests where email=$1"
 
