@@ -54,10 +54,10 @@ export const loginAdmin = (req: Request, res: Response): void => {
     const {guestData}=req.body;
       try {
           addGuests(guestData).then((results)=> {
-            res.status(200).send(results);
+            res.status(200).send({message: "Guest Added Successfully!"});
           }) 
           .catch ((error)=> {
-            res.status(500).send("internal server error");
+            res.status(500).send({message: "internal server error"});
           })
       } catch (error) {
         res.status(400).send({message: "There is some error encountered!"});
@@ -66,13 +66,13 @@ export const loginAdmin = (req: Request, res: Response): void => {
     };
 
   export const getReserv = (req: Request, res: Response): void => {
-    const {roomNo}=req.body;
+    const roomNo =req.headers.roomno as string;
       try {
           getRoomResv(roomNo).then((results)=> {
             res.status(200).send(results);
           }) 
           .catch ((error)=> {
-            res.status(500).send("internal server error");
+            res.status(500).send({message: "internal server error"});
           })
       } catch (error) {
         res.status(400).send({message: "There is some error encountered!"});
