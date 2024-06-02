@@ -10,7 +10,7 @@ export const fetchResv = "SELECT * FROM bookings JOIN guests ON guests.email=boo
 
 export const addBookingDetails = "insert into bookings(booking_id,checkin,checkout,guest_email,meal_veg,meal_non_veg,remarks,additional_info,room,breakfast)values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)";
 
-export const editBookingDetails = "update bookings SET checkout = $2,guest_email = $3,meal_veg = $4,meal_non_veg = $5,remarks = $6,additional_info = $7 where booking_id=$1";
+export const editBookingDetails = "update bookings SET checkout = $2,guest_email = $3,meal_veg = $4,meal_non_veg = $5,remarks = $6,additional_info = $7, breakfast=$8 where booking_id=$1";
 
 export const serverTime = "SELECT current_timestamp AT TIME ZONE 'Asia/Kolkata' AS server_time";
 

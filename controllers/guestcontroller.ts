@@ -103,17 +103,18 @@ export const loginAdmin = (req: Request, res: Response): void => {
   
   export const editBooking = (req: Request, res: Response): void => {
     const {bookingData}=req.body;
+    console.log("body: ",req.body)
       try {
           editBookingData(bookingData).then((results)=> {
             if(results==="room is booked for the given range cant change the checkout date"){
-              res.status(200).send("Room not availabe for the given checkout");
+              res.status(200).send({message: "Room not available for the given checkout"});
             }
             else{
-              res.status(200).send(results);
+              res.status(200).send({message: "Edited Successfully!"});
             }
           }) 
           .catch ((error)=> {
-            res.status(500).send("internal server error");
+            res.status(500).send({message: "internal server error"});
           })
       } catch (error) {
         res.status(400).send({message: "There is some error encountered!"});
@@ -153,13 +154,13 @@ export const loginAdmin = (req: Request, res: Response): void => {
     };
 
   export const deleteBooking = (req: Request, res: Response): void => {
-    const {bookingId}=req.body;
+    const bookingId=req.headers.bookingid as string;
       try {
           deleteThisBooking(bookingId).then((results)=> {
-            res.status(200).send(results);
+            res.status(200).send({message: "Booking deleted successfully!"});
           }) 
           .catch ((error)=> {
-            res.status(500).send("internal server error");
+            res.status(500).send({message: "Internal Server Error"});
           })
       } catch (error) {
         res.status(400).send({message: "There is some error encountered!"});

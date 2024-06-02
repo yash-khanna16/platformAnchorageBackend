@@ -175,7 +175,7 @@ export function editBookingData(bookingData: { bookingId: string, checkin: Date,
         bookingData.checkout = new Date(bookingData.checkout);
         const checkData={ room: bookingData.room, checkin: bookingData.checkin, checkout: bookingData.checkout }
         const conflicts=await findConflict(checkData);
-        console.log(conflicts.rows,conflicts);
+        console.log(conflicts.rows);
         if(conflicts.rows.length==1){
             editBooking(bookingData)
             .then((results) => {
