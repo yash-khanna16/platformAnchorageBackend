@@ -132,9 +132,8 @@ export function addBookingData(bookingData: { checkin: Date, checkout: Date, ema
         bookingData.checkout = new Date(bookingData.checkout);
         const checkData = { checkin: bookingData.checkin, checkout: bookingData.checkout, room: bookingData.room }
         const go_on = await fetchThisRooms(checkData);
-        console.log("go_on: ",go_on.rows);
-
-        if (go_on.rows.length === 0 || (go_on.rows[0].condition_met === 'true')) {
+        console.log(go_on.rows[0]);
+        if (go_on.rows[0].condition_met === "true") {
             const isGuest = await findGuest(bookingData.email);
             if (isGuest.rows.length === 0) {
                 const guestData = { guestEmail: bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel, guestRank: bookingData.rank }
@@ -176,7 +175,7 @@ export function editBookingData(bookingData: { bookingId: string, checkin: Date,
         bookingData.checkout = new Date(bookingData.checkout);
         const checkData={ room: bookingData.room, checkin: bookingData.checkin, checkout: bookingData.checkout }
         const conflicts=await findConflict(checkData);
-        console.log(conflicts.rows);
+        console.log(conflicts.rows,conflicts);
         if(conflicts.rows.length==1){
             editBooking(bookingData)
             .then((results) => {
@@ -196,8 +195,9 @@ export function editBookingData(bookingData: { bookingId: string, checkin: Date,
 }
 
 export async function fetchAvailableRooms(checkData: { checkin: Date, checkout: Date }): Promise<any> {
-    // checkData.checkin=new Date(checkData.checkin);
-    // checkData.checkout=new Date(checkData.checkout);
+    console.log("hello");
+    checkData.checkin=new Date(checkData.checkin);
+    checkData.checkout=new Date(checkData.checkout);
     console.log(checkData.checkin);
     console.log(checkData.checkout);
     try {

@@ -11,7 +11,7 @@ router.post("/addBooking",addBooking);
 router.post("/editBooking",editBooking);
 router.post("/getAvailableRooms",getAvailableRooms);
 router.get("/getThisRooms",getThisRooms);
-router.get('/deleteBooking',deleteBooking);
+router.post('/deleteBooking',deleteBooking);
 router.post('/findConflict',findConflict);
 
 
