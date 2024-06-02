@@ -43,6 +43,17 @@ class PriorityQueue {
     public size(): number {
         return this.queue.length;
     }
+    public removeById(bookingId: string): BookingData | undefined {
+        const index = this.queue.findIndex(booking => booking.booking_id === bookingId);
+        if (index !== -1) {
+            return this.queue.splice(index, 1)[0];
+        }
+        return undefined;
+    }
+    public getAllEntries(): BookingData[] {
+        console.log(this.queue,"this is queue");
+        return this.queue;
+    }
 }
 
 export const priorityQueue = new PriorityQueue();
