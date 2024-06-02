@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getGuests,searchGuests,getAdmin,addGuests,getRoomResv,addBookingData,editBookingData,fetchAvailableRooms,getThisRoom, triggerBooking } from "../service/guestservice";
+import { getGuests,searchGuests,getAdmin,addGuests,getRoomResv,addBookingData,editBookingData,fetchAvailableRooms,getThisRoom, triggerBooking,deleteThisBooking, findConflictEntries } from "../service/guestservice";
 
 export const getAllGuests = (req: Request, res: Response): void => {
     try {
@@ -85,6 +85,7 @@ export const loginAdmin = (req: Request, res: Response): void => {
     const {bookingData}=req.body;
       try {
           addBookingData(bookingData).then((results)=> {
+            console.log(results);
             if(results!=="room unavailable"){
             res.status(200).send({message: "Room booked successfully!"});}
             else{
@@ -104,7 +105,12 @@ export const loginAdmin = (req: Request, res: Response): void => {
     const {bookingData}=req.body;
       try {
           editBookingData(bookingData).then((results)=> {
-            res.status(200).send(results);
+            if(results==="room is booked for the given range cant change the checkout date"){
+              res.status(200).send("Room not availabe for the given checkout");
+            }
+            else{
+              res.status(200).send(results);
+            }
           }) 
           .catch ((error)=> {
             res.status(500).send("internal server error");
@@ -135,6 +141,35 @@ export const loginAdmin = (req: Request, res: Response): void => {
     const {checkData}=req.body;
       try {
           getThisRoom(checkData).then((results)=> {
+            res.status(200).send(results);
+          }) 
+          .catch ((error)=> {
+            res.status(500).send("internal server error");
+          })
+      } catch (error) {
+        res.status(400).send({message: "There is some error encountered!"});
+        console.log("error: ", error);
+      }
+    };
+
+  export const deleteBooking = (req: Request, res: Response): void => {
+    const {bookingId}=req.body;
+      try {
+          deleteThisBooking(bookingId).then((results)=> {
+            res.status(200).send(results);
+          }) 
+          .catch ((error)=> {
+            res.status(500).send("internal server error");
+          })
+      } catch (error) {
+        res.status(400).send({message: "There is some error encountered!"});
+        console.log("error: ", error);
+      }
+    };
+  export const findConflict = (req: Request, res: Response): void => {
+    const {bookingData}=req.body;
+      try {
+          findConflictEntries(bookingData).then((results)=> {
             res.status(200).send(results);
           }) 
           .catch ((error)=> {

@@ -1,4 +1,4 @@
-import { fetchGuests, fetchAllGuests, fetchAdmin, addGuestData, fetchRoomResv, addBooking, editBooking, fetchAvailRooms, fetchThisRooms, findGuest,fetchAllRooms } from "../models/guestmodel";
+import { fetchGuests, fetchAllGuests, fetchAdmin, addGuestData, fetchRoomResv, addBooking, editBooking, fetchAvailRooms, fetchThisRooms, findGuest, fetchAllRooms, removeBooking, findConflict } from "../models/guestmodel";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken"
@@ -126,49 +126,58 @@ export function getRoomResv(roomNo: string): Promise<any> {
     });
 }
 
-export function addBookingData(bookingData: { checkin: Date, checkout:Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string, room: string, name: string, phone: number, company: string, vessel: string, rank: string, breakfast: number }): Promise<any> {
+export function addBookingData(bookingData: { checkin: Date, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string, room: string, name: string, phone: number, company: string, vessel: string, rank: string, breakfast: number }): Promise<any> {
     return new Promise(async (resolve, reject) => {
-        bookingData.checkin=new Date(bookingData.checkin);
-        bookingData.checkout=new Date(bookingData.checkout);
-        const checkData= { checkin: bookingData.checkin, checkout: bookingData.checkout, room: bookingData.room }
-        const go_on=await fetchThisRooms(checkData);
+        bookingData.checkin = new Date(bookingData.checkin);
+        bookingData.checkout = new Date(bookingData.checkout);
+        const checkData = { checkin: bookingData.checkin, checkout: bookingData.checkout, room: bookingData.room }
+        const go_on = await fetchThisRooms(checkData);
         console.log(go_on.rows[0]);
-        if(go_on.rows[0].condition_met==="true"){
-        const isGuest = await findGuest(bookingData.email);
-        if (isGuest.rows.length === 0) {
-            const guestData = { guestEmail: bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel, guestRank: bookingData.rank }
-            try {
-                await addGuestData(guestData);
-            } catch (error) {
-                console.log(error);
-                reject("internal server error");
-                return;
+        if (go_on.rows[0].condition_met === "true") {
+            const isGuest = await findGuest(bookingData.email);
+            if (isGuest.rows.length === 0) {
+                const guestData = { guestEmail: bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel, guestRank: bookingData.rank }
+                try {
+                    await addGuestData(guestData);
+                } catch (error) {
+                    console.log(error);
+                    reject("internal server error");
+                    return;
+                }
             }
+            const booking_id = uuidv4();
+            const bookingDataWithId = { ...bookingData, booking_id };
+
+            addBooking(bookingDataWithId)
+                .then((results) => {
+                    priorityQueue.getAllEntries();
+                    priorityQueue.enqueue(bookingDataWithId);
+                    priorityQueue.getAllEntries();
+                    // console.log("booking ho gyi");
+                    resolve(results.rows);
+                })
+                .catch((error) => {
+                    console.log(error);
+                    reject("internal server error");
+                });
         }
-        const booking_id = uuidv4();
-        const bookingDataWithId = { ...bookingData, booking_id };
-        
-        addBooking(bookingDataWithId)
-            .then((results) => {
-                priorityQueue.enqueue(bookingDataWithId);
-                // console.log("booking ho gyi");
-                resolve(results.rows);
-            })
-            .catch((error) => {
-                console.log(error);
-                reject("internal server error");
-            });
-        }
-        else{
-            reject("room unavailable");
-            return("room unavailable");
+        else {
+            console.log("here");
+            resolve("room unavailable");
+            return ("room unavailable");
         }
     });
 }
 
-export function editBookingData(bookingData: { bookingId: string, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string }): Promise<any> {
-    return new Promise((resolve, reject) => {
-        editBooking(bookingData)
+export function editBookingData(bookingData: { bookingId: string, checkin: Date, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string,room:string,breakfast:number }): Promise<any> {
+    return new Promise(async (resolve, reject) => {
+        bookingData.checkin = new Date(bookingData.checkin);
+        bookingData.checkout = new Date(bookingData.checkout);
+        const checkData={ room: bookingData.room, checkin: bookingData.checkin, checkout: bookingData.checkout }
+        const conflicts=await findConflict(checkData);
+        console.log(conflicts.rows,conflicts);
+        if(conflicts.rows.length==1){
+            editBooking(bookingData)
             .then((results) => {
                 resolve(results.rows);
             })
@@ -176,12 +185,19 @@ export function editBookingData(bookingData: { bookingId: string, checkout: Date
                 console.log(error)
                 reject("internal server error");
             });
+        }
+        else{
+            resolve("room is booked for the given range cant change the checkout date");
+            return;
+        }
+        
     });
 }
 
 export async function fetchAvailableRooms(checkData: { checkin: Date, checkout: Date }): Promise<any> {
-    // checkData.checkin=new Date(checkData.checkin);
-    // checkData.checkout=new Date(checkData.checkout);
+    console.log("hello");
+    checkData.checkin=new Date(checkData.checkin);
+    checkData.checkout=new Date(checkData.checkout);
     console.log(checkData.checkin);
     console.log(checkData.checkout);
     try {
@@ -241,7 +257,7 @@ function monitorQueue() {
                 const currentTime = new Date();
                 // console.log(currentTime, "2");
                 // console.log(topBooking.checkin, "3");
-                if (currentTime>= topBooking.checkin) {
+                if (currentTime >= topBooking.checkin) {
                     triggerBooking(topBooking);
                     priorityQueue.dequeue();
                     // console.log("pop hogya");
@@ -251,4 +267,35 @@ function monitorQueue() {
     }, 10000);
 }
 
+export function deleteThisBooking(bookingId: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+        removeBooking(bookingId)
+            .then((results) => {
+                priorityQueue.getAllEntries();
+                priorityQueue.removeById(bookingId);
+                priorityQueue.getAllEntries();
+                resolve(results.rows);
+            })
+            .catch((error) => {
+                console.log(error)
+                reject("internal server error");
+            });
+    });
+}
+
+
+export function findConflictEntries(bookingData: { checkin: Date, checkout: Date, room: string }): Promise<any> {
+    return new Promise((resolve, reject) => {
+        bookingData.checkin = new Date(bookingData.checkin);
+        bookingData.checkout = new Date(bookingData.checkout);
+        findConflict(bookingData)
+            .then((results) => {
+                resolve(results.rows);
+            })
+            .catch((error) => {
+                console.log(error)
+                reject("internal server error");
+            });
+    });
+}
 
