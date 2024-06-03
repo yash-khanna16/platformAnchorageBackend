@@ -83,4 +83,4 @@ WHERE room = $3
 
 export const editGuestQuery= "Update guests set name=$2,phone=$3,company=$4,vessel=$5,rank=$6 where email=$1";
 
-export const findRoom= "";
+export const findRoom= "SELECT r.room, COUNT(b.booking_id) AS status FROM rooms r LEFT JOIN bookings b ON r.room = b.room AND $1 BETWEEN b.checkin AND b.checkout GROUP BY r.room;";

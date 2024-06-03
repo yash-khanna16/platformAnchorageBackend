@@ -144,9 +144,9 @@ export async function editGuest(guestData: { guestEmail: string, guestName: stri
   }
 }
 
-export async function findInstantRoom(): Promise<QueryResult<any>> {
+export async function findInstantRoom(date: Date): Promise<QueryResult<any>> {
   try {
-    const result = await pool.query(findRoom);
+    const result = await pool.query(findRoom, [date]);
     return result;
   } catch (error) {
     throw error;

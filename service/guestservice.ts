@@ -331,21 +331,31 @@ export function getInstantRoom(): Promise<any> {
     return new Promise(async(resolve, reject) => {
         const allRooms=await fetchAllRooms();
         const newDate=new Date();
+        console.log("here: ", newDate)
         const bookingData={checkin:newDate,checkout:newDate};
-        const occupancyMap = new Map(allRooms.rows.map((room: { room: string, occupancy:string }) => [room.room, '4/4']));
-         allRooms.rows.map(async(room)=>{
-            findConflict({...bookingData,room:room.room})
-            .then((results) => {
-                if(results.rows.length===1){
+       findInstantRoom(newDate).then((result)=>{
+           result.rows.map((row) => {
+               row.status = row.status+"/4";
+           })
+           resolve(result.rows)
+       }).catch((error)=>{
+        reject("Internal Server Error");
+       })
+
+        // const occupancyMap = new Map(allRooms.rows.map((room: { room: string, occupancy:string }) => [room.room, '4/4']));
+        //  allRooms.rows.map(async(room)=>{
+        //     findConflict({...bookingData,room:room.room})
+        //     .then((results) => {
+        //         if(results.rows.length===1){
                     
-                }
-            })
-            .catch((error) => {
-                console.log(error)
-                reject("internal server error");
-            });
+        //         }
+        //     })
+        //     .catch((error) => {
+        //         console.log(error)
+        //         reject("internal server error");
+        //     });
             
-        })
+        // })
         
     });
 }
