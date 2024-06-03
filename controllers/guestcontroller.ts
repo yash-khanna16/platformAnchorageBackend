@@ -49,7 +49,7 @@ export const loginAdmin = (req: Request, res: Response): void => {
       .catch((error) => {
         console.log(error);
         if (error === "Admin not found") {
-          res.status(401).send({ message: error });
+          res.status(401).send({ message: "Email ID Not found" });
         }
         else if (error = "Incorrect password")
           res.status(402).send({ message: error });
