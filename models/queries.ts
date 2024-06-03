@@ -80,3 +80,7 @@ WHERE room = $3
     OR (checkin >= $1 AND checkin <= $2 AND checkout >= $2)
   );
 `;
+
+export const editGuestQuery= "Update guests set name=$2,phone=$3,company=$4,vessel=$5,rank=$6 where email=$1";
+
+export const findRoom= "";
