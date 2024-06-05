@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getGuests, searchGuests, getAdmin, addGuests, getRoomResv, addBookingData, editBookingData, fetchAvailableRooms, getThisRoom, triggerBooking, deleteThisBooking, findConflictEntries,getInstantRoom,addNewRoom } from "../service/guestservice";
+import { getGuests, searchGuests, getAdmin, addGuests, getRoomResv, addBookingData, editBookingData, fetchAvailableRooms, getThisRoom, triggerBooking, deleteThisBooking, findConflictEntries,getInstantRoom,addNewRoom,removeRoom} from "../service/guestservice";
 
 export const getAllGuests = (req: Request, res: Response): void => {
   try {
@@ -229,6 +229,26 @@ export const addRoom = (req: Request, res: Response): void => {
       })
   } catch (error) {
     res.status(400).send({ message: "There is some error encountered!" });
+    console.log("error: ", error);
+  }
+};
+
+export const deleteRoom = (req: Request, res: Response): void => {
+  const {room}=req.body;
+  try {
+    removeRoom(room).then((results) => {
+      res.status(200).send({message:results});
+    })
+      .catch((error) => {
+        if(error==="no change"){
+          res.status(401).send({message:"Room has active bookings, can't delete"})
+        }
+        else{
+          res.status(500).send("internal server error");
+        }
+      })
+  } catch (error) {
+      res.status(400).send({ message: "There is some error encountered!" });
     console.log("error: ", error);
   }
 };
