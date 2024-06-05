@@ -1,4 +1,4 @@
-import { fetchGuests, fetchAllGuests, fetchAdmin, addGuestData, fetchRoomResv, addBooking, editBooking, fetchAvailRooms, fetchThisRooms, findGuest, fetchAllRooms, removeBooking, findConflict, editGuest,findInstantRoom,newRoom,fetchRoom,setIsActive} from "../models/guestmodel";
+import { fetchGuests, fetchAllGuests, fetchAdmin, addGuestData, fetchRoomResv, addBooking, editBooking, fetchAvailRooms, fetchThisRooms, findGuest, fetchAllRooms, removeBooking, findConflict, editGuest,findInstantRoom,newRoom,fetchRoom,setIsActive,hideRoom} from "../models/guestmodel";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken"
@@ -365,6 +365,26 @@ export function addNewRoom(room:string): Promise<any> {
             newRoom(room)
             .then((results) => {
                 resolve("Room added successfully");
+            })
+            .catch((error) => {
+                console.log(error)
+                reject("internal server error");
+            });
+        }
+        
+    });
+}
+
+export function removeRoom(room:string): Promise<any> {
+    return new Promise(async(resolve, reject) => {
+        const isRoomvalid=await fetchRoomResv(room);
+        if(isRoomvalid.rows.length>=1){
+            reject("no change")
+        }
+        else{
+            hideRoom(room)
+            .then((results) => {
+                resolve("Room deleted successfully");
             })
             .catch((error) => {
                 console.log(error)

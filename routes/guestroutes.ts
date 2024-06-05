@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAllGuests,searchAllGuests,loginAdmin,addNewGuests,getReserv,addBooking,editBooking,getAvailableRooms,getThisRooms,deleteBooking, findConflict,instantAvailableRooms,addRoom} from "../controllers/guestcontroller";
+import { getAllGuests,searchAllGuests,loginAdmin,addNewGuests,getReserv,addBooking,editBooking,getAvailableRooms,getThisRooms,deleteBooking, findConflict,instantAvailableRooms,addRoom,deleteRoom} from "../controllers/guestcontroller";
 const router = Router();
 
 router.get("/getGuests", getAllGuests);
@@ -15,6 +15,7 @@ router.get('/deleteBooking',deleteBooking);
 // router.post('/findConflict',findConflict);
 router.get('/instantAvailableRooms',instantAvailableRooms);
 router.post('/addRoom',addRoom);
+router.post('/deleteRoom',deleteRoom);
 
 
 export default router;

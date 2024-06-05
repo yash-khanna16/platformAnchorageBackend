@@ -81,3 +81,5 @@ export const addRoom="insert into rooms (room,active) values($1,'true')";
 export const getRoom="select * from rooms where room = $1"; 
 
 export const setActive="update rooms set active='true' where room =$1"; 
+
+export const hideThisRoom="update rooms set active='false' where room =$1"; 
