@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken"
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import { priorityQueue } from './priorityqueue';
+import { resolve } from "path";
 
 dotenv.config()
 
@@ -143,11 +144,11 @@ export function addBookingData(bookingData: { checkin: Date, checkout: Date, ema
         bookingData.checkout = new Date(bookingData.checkout);
         const checkData = { checkin: bookingData.checkin, checkout: bookingData.checkout, room: bookingData.room }
         const go_on = await fetchThisRooms(checkData);
-        console.log(go_on.rows[0]);
-        if (go_on.rows.length === 0 || (go_on.rows[0].condition_met === 'true')) {
+        const output=Number(go_on.rows[0].conflict_count);
+        if (output <= 3) {
             const isGuest = await findGuest(bookingData.email);
+            const guestData = { guestEmail: bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel, guestRank: bookingData.rank }
             if (isGuest.rows.length === 0) {
-                const guestData = { guestEmail: bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel, guestRank: bookingData.rank }
                 try {
                     await addGuestData(guestData);
                 } catch (error) {
@@ -155,6 +156,9 @@ export function addBookingData(bookingData: { checkin: Date, checkout: Date, ema
                     reject("internal server error");
                     return;
                 }
+            }
+            else{
+                const updateGuest = editGuest(guestData);
             }
             const booking_id = uuidv4();
             const bookingDataWithId = { ...bookingData, booking_id };
@@ -185,7 +189,7 @@ export function editBookingData(bookingData: { bookingId: string, checkin: Date,
         const checkData = { room: bookingData.room, checkin: bookingData.checkin, checkout: bookingData.checkout }
         const conflicts = await findConflict(checkData);
         console.log(conflicts.rows, conflicts);
-        if (conflicts.rows.length == 1) {
+        if (conflicts.rows.length <= 4) {
             editBooking(bookingData)
                 .then(async (results) => {
                     const guestData = { guestEmail: bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel, guestRank: bookingData.rank }
@@ -202,7 +206,7 @@ export function editBookingData(bookingData: { bookingId: string, checkin: Date,
                             }
                         }
                         else{
-                            const updateGuest = editGuest(guestData);
+                            const updateGuest = await editGuest(guestData);
                             resolve("Booking Edited");
                         }
                     }
@@ -247,7 +251,7 @@ export async function fetchAvailableRooms(checkData: { checkin: Date, checkout: 
 export async function getThisRoom(checkData: { checkin: Date, checkout: Date, room: string }): Promise<any> {
     try {
         const result = await fetchThisRooms(checkData);
-        return result.rows;
+        return result;
     } catch (error) {
         console.error(error);
         throw new Error("internal server error");

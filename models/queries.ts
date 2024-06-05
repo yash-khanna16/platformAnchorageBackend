@@ -41,28 +41,18 @@ GROUP BY room
 
 
 export const fetchThisRoom=`SELECT 
-room, 
-CASE 
-  WHEN EXISTS (
-    SELECT 1
-    FROM bookings
-    WHERE room = b.room
-      AND (
-        ($1 <= checkin AND $2 > checkin)  -- new booking starts before existing booking ends
-        OR 
-        ($1 < checkout AND $2 >= checkout)  -- new booking ends after existing booking starts
-        OR 
-        ($1 >= checkin AND $1 < checkout)  -- new booking starts within an existing booking
-        OR 
-        ($2 > checkin AND $2 <= checkout)  -- new booking ends within an existing booking
-      )
-  )
-  THEN 'false'
-  ELSE 'true'
-END AS condition_met 
-FROM bookings b
-where room =$3
-GROUP BY room`;
+COUNT(*) AS conflict_count
+FROM bookings
+WHERE room = $3
+AND (
+  ($1 <= checkin AND $2 > checkin)  -- new booking starts before existing booking ends
+  OR 
+  ($1 < checkout AND $2 >= checkout)  -- new booking ends after existing booking starts
+  OR 
+  ($1 >= checkin AND $1 < checkout)  -- new booking starts within an existing booking
+  OR 
+  ($2 > checkin AND $2 <= checkout)  -- new booking ends within an existing booking
+);`;
 
 export const fetchGuest="Select * from guests where email=$1";
 
@@ -83,4 +73,4 @@ WHERE room = $3
 
 export const editGuestQuery= "Update guests set name=$2,phone=$3,company=$4,vessel=$5,rank=$6 where email=$1";
 
-export const findRoom= "SELECT r.room, COUNT(b.booking_id) AS status FROM rooms r LEFT JOIN bookings b ON r.room = b.room AND $1 BETWEEN b.checkin AND b.checkout GROUP BY r.room;";
+export const findRoom= "SELECT r.room, COUNT(b.room) AS status FROM rooms r LEFT JOIN bookings b ON r.room = b.room AND $1 BETWEEN b.checkin AND b.checkout GROUP BY r.room;";
