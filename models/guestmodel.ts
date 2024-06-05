@@ -1,6 +1,6 @@
 import { QueryResult } from "pg";
 import pool from "../db";
-import { getAllGuests, getNamedGuests, getAdmin, addGuestQuery, fetchResv, addBookingDetails, editBookingDetails, serverTime, fetchRoom, fetchThisRoom, fetchGuest, fetchRooms, deleteBooking, findRoomConflict,editGuestQuery,findRoom } from "./queries";
+import { getAllGuests, getNamedGuests, getAdmin, addGuestQuery, fetchResv, addBookingDetails, editBookingDetails, serverTime, fetchThisRoom, fetchGuest, fetchRooms, deleteBooking, findRoomConflict,editGuestQuery,findRoom,addRoom ,getRoom,setActive} from "./queries";
 
 
 export async function fetchGuests(): Promise<QueryResult<any>> {
@@ -153,4 +153,30 @@ export async function findInstantRoom(date: Date): Promise<QueryResult<any>> {
   }
 }
 
+export async function newRoom(room:string): Promise<QueryResult<any>> {
+  try {
+    const result = await pool.query(addRoom, [room]);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function fetchRoom(room:string): Promise<QueryResult<any>> {
+  try {
+    const result = await pool.query(getRoom,[room]);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function setIsActive(room:string): Promise<QueryResult<any>> {
+  try {
+    const result = await pool.query(setActive,[room]);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
 
