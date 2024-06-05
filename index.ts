@@ -4,6 +4,8 @@ const cookieParser = require('cookie-parser');
 import cors from "cors";
 import bcrypt from "bcrypt";
 import guestRoutes from "./routes/guestroutes";
+import { loginAdmin } from "./controllers/guestcontroller";
+import { verifyAdmin } from "./middlewares/middleware";
  
 
 const app = express();
@@ -22,7 +24,10 @@ app.get("/abc",async function(req:Request,res:Response){
     console.log(hashPassword);
     res.send("password mil gya :)");
 })
-app.use("/api/admin",  guestRoutes)
+
+app.get("/loginAdmin",loginAdmin);
+
+app.use("/api/admin",verifyAdmin,  guestRoutes)
 
 // app.get("/test", (req:Request, res:Response)=>{
 //     pool.query("SELECT *FROM guests").then((results:any)=>{
