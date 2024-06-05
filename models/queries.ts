@@ -77,6 +77,6 @@ export const findRoom= "SELECT r.room, COUNT(b.room) AS status FROM rooms r LEFT
 
 export const addRoom="insert into rooms (room) values($1)";
 
-export const getRoom="select * from rooms where room = $1"; 
+export const getRoom="select * from rooms where room = $1 and sctive='true'"; 
 
 export const setActive="update rooms set active='true' where room =$1"; 
