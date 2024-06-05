@@ -1,6 +1,6 @@
 export const getAllGuests = "SELECT * FROM guests";
 
-export const getNamedGuests = `SELECT * FROM guests JOIN bookings ON bookings.guest_email = guests.email where guests.name like $1`;
+export const getNamedGuests = `SELECT * FROM guests JOIN bookings ON bookings.guest_email = guests.email where guests.name ilike $1`;
 
 export const getAdmin= "Select * FROM admin where email=$1";
 
@@ -74,7 +74,7 @@ WHERE room = $3
 
 export const editGuestQuery= "Update guests set name=$2,phone=$3,company=$4,vessel=$5,rank=$6 where email=$1";
 
-export const findRoom= "SELECT r.room, COUNT(b.room) AS status FROM rooms r LEFT JOIN bookings b ON r.room = b.room AND $1 BETWEEN b.checkin AND b.checkout GROUP BY r.room;";
+export const findRoom= "SELECT r.room , COUNT(b.room) AS status FROM rooms r LEFT JOIN bookings b ON r.room = b.room  AND $1 BETWEEN b.checkin AND b.checkout where r.active='true' GROUP BY r.room;";
 
 export const addRoom="insert into rooms (room,active) values($1,'true')";
 

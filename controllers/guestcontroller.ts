@@ -222,7 +222,7 @@ export const addRoom = (req: Request, res: Response): void => {
   const {room}=req.body;
   try {
     addNewRoom(room).then((results) => {
-      res.status(200).send({message:"Rooms added successfully"});
+      res.status(200).send({message:"Room added successfully"});
     })
       .catch((error) => {
         res.status(500).send("internal server error");
