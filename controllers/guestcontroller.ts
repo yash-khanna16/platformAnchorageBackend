@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getGuests, searchGuests, getAdmin, addGuests, getRoomResv, addBookingData, editBookingData, fetchAvailableRooms, getThisRoom, triggerBooking, deleteThisBooking, findConflictEntries,getInstantRoom } from "../service/guestservice";
+import { getGuests, searchGuests, getAdmin, addGuests, getRoomResv, addBookingData, editBookingData, fetchAvailableRooms, getThisRoom, triggerBooking, deleteThisBooking, findConflictEntries,getInstantRoom,addNewRoom } from "../service/guestservice";
 
 export const getAllGuests = (req: Request, res: Response): void => {
   try {
@@ -208,6 +208,21 @@ export const instantAvailableRooms = (req: Request, res: Response): void => {
   try {
     getInstantRoom().then((results) => {
       res.status(200).send(results);
+    })
+      .catch((error) => {
+        res.status(500).send("internal server error");
+      })
+  } catch (error) {
+    res.status(400).send({ message: "There is some error encountered!" });
+    console.log("error: ", error);
+  }
+};
+
+export const addRoom = (req: Request, res: Response): void => {
+  const {room}=req.body;
+  try {
+    addNewRoom(room).then((results) => {
+      res.status(200).send({message:"Rooms added successfully"});
     })
       .catch((error) => {
         res.status(500).send("internal server error");

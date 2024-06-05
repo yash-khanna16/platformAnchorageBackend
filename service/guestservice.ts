@@ -1,4 +1,4 @@
-import { fetchGuests, fetchAllGuests, fetchAdmin, addGuestData, fetchRoomResv, addBooking, editBooking, fetchAvailRooms, fetchThisRooms, findGuest, fetchAllRooms, removeBooking, findConflict, editGuest,findInstantRoom } from "../models/guestmodel";
+import { fetchGuests, fetchAllGuests, fetchAdmin, addGuestData, fetchRoomResv, addBooking, editBooking, fetchAvailRooms, fetchThisRooms, findGuest, fetchAllRooms, removeBooking, findConflict, editGuest,findInstantRoom,newRoom,fetchRoom,setIsActive} from "../models/guestmodel";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken"
@@ -346,21 +346,31 @@ export function getInstantRoom(): Promise<any> {
        }).catch((error)=>{
         reject("Internal Server Error");
        })
+    });
+}
 
-        // const occupancyMap = new Map(allRooms.rows.map((room: { room: string, occupancy:string }) => [room.room, '4/4']));
-        //  allRooms.rows.map(async(room)=>{
-        //     findConflict({...bookingData,room:room.room})
-        //     .then((results) => {
-        //         if(results.rows.length===1){
-                    
-        //         }
-        //     })
-        //     .catch((error) => {
-        //         console.log(error)
-        //         reject("internal server error");
-        //     });
-            
-        // })
+export function addNewRoom(room:string): Promise<any> {
+    return new Promise(async(resolve, reject) => {
+        const isRoom=await fetchRoom(room);
+        if(isRoom.rows.length===1){
+            try{
+                setIsActive(room);
+                resolve("Room added successfully");
+            }
+            catch{
+                reject("server issue");
+            }
+        }
+        else{
+            newRoom(room)
+            .then((results) => {
+                resolve("Room added successfully");
+            })
+            .catch((error) => {
+                console.log(error)
+                reject("internal server error");
+            });
+        }
         
     });
 }

@@ -56,7 +56,7 @@ AND (
 
 export const fetchGuest="Select * from guests where email=$1";
 
-export const fetchRooms="Select * from rooms";
+export const fetchRooms="Select * from rooms where active='true'";
 
 export const deleteBooking="DELETE from bookings where booking_id=$1";
 
@@ -74,3 +74,9 @@ WHERE room = $3
 export const editGuestQuery= "Update guests set name=$2,phone=$3,company=$4,vessel=$5,rank=$6 where email=$1";
 
 export const findRoom= "SELECT r.room, COUNT(b.room) AS status FROM rooms r LEFT JOIN bookings b ON r.room = b.room AND $1 BETWEEN b.checkin AND b.checkout GROUP BY r.room;";
+
+export const addRoom="insert into rooms (room) values($1)";
+
+export const getRoom="select * from rooms where room = $1"; 
+
+export const setActive="update rooms set active='true' where room =$1"; 
