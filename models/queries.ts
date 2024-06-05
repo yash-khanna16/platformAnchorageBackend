@@ -36,6 +36,7 @@ SELECT
     ELSE 'true'
   END AS condition_met 
 FROM bookings b
+
 GROUP BY room
 `;
 
@@ -75,8 +76,8 @@ export const editGuestQuery= "Update guests set name=$2,phone=$3,company=$4,vess
 
 export const findRoom= "SELECT r.room, COUNT(b.room) AS status FROM rooms r LEFT JOIN bookings b ON r.room = b.room AND $1 BETWEEN b.checkin AND b.checkout GROUP BY r.room;";
 
-export const addRoom="insert into rooms (room) values($1)";
+export const addRoom="insert into rooms (room,active) values($1,'true')";
 
-export const getRoom="select * from rooms where room = $1 and sctive='true'"; 
+export const getRoom="select * from rooms where room = $1"; 
 
 export const setActive="update rooms set active='true' where room =$1"; 
