@@ -1,10 +1,11 @@
-import { fetchGuests, fetchAllGuests, fetchAdmin, addGuestData, fetchRoomResv, addBooking, editBooking, fetchAvailRooms, fetchThisRooms, findGuest, fetchAllRooms, removeBooking, findConflict } from "../models/guestmodel";
+import { fetchGuests, fetchAllGuests, fetchAdmin, addGuestData, fetchRoomResv, addBooking, editBooking, fetchAvailRooms, fetchThisRooms, findGuest, fetchAllRooms, removeBooking, findConflict, editGuest,findInstantRoom,newRoom,fetchRoom,setIsActive,hideRoom} from "../models/guestmodel";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken"
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import { priorityQueue } from './priorityqueue';
+import { resolve } from "path";
 
 dotenv.config()
 
@@ -54,7 +55,13 @@ export function searchGuests(guestName: string): Promise<any> {
     return new Promise((resolve, reject) => {
         fetchAllGuests(newGuestName)
             .then((results) => {
-                resolve(results.rows);
+                // console.log(results.rows);
+                if (results.rows.length === 0) {
+                    reject("No such guest present");
+                }
+                else {
+                    resolve(results.rows);
+                }
             })
             .catch((error) => {
                 console.log(error)
@@ -70,7 +77,6 @@ export function getAdmin(adminId: string, password: string): Promise<any> {
                 try {
 
                     if (results.rows.length === 0) {
-                        console.log("hello");
                         reject("Admin not found");
                         return;
                     }
@@ -102,15 +108,21 @@ export function getAdmin(adminId: string, password: string): Promise<any> {
 }
 
 export function addGuests(guestData: { guestEmail: string, guestName: string, guestPhone: number, guestCompany: string, guestVessel: string, guestRank: string }): Promise<any> {
-    return new Promise((resolve, reject) => {
-        addGuestData(guestData)
-            .then((results) => {
-                resolve(results.rows);
-            })
-            .catch((error) => {
-                console.log(error)
-                reject("internal server error");
-            });
+    return new Promise(async (resolve, reject) => {
+        const isGuest = await findGuest(guestData.guestEmail);
+        if (isGuest.rows.length === 0) {
+            addGuestData(guestData)
+                .then((results) => {
+                    resolve(results.rows);
+                })
+                .catch((error) => {
+                    console.log(error)
+                    reject("internal server error");
+                });
+        }
+        else {
+            reject("Email already present");
+        }
     });
 }
 export function getRoomResv(roomNo: string): Promise<any> {
@@ -128,16 +140,16 @@ export function getRoomResv(roomNo: string): Promise<any> {
 
 export function addBookingData(bookingData: { checkin: Date, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string, room: string, name: string, phone: number, company: string, vessel: string, rank: string, breakfast: number }): Promise<any> {
     return new Promise(async (resolve, reject) => {
+
         bookingData.checkin = new Date(bookingData.checkin);
         bookingData.checkout = new Date(bookingData.checkout);
         const checkData = { checkin: bookingData.checkin, checkout: bookingData.checkout, room: bookingData.room }
         const go_on = await fetchThisRooms(checkData);
-        console.log("go_on: ",go_on.rows);
-
-        if (go_on.rows.length === 0 || (go_on.rows[0].condition_met === 'true')) {
+        const output=Number(go_on.rows[0].conflict_count);
+        if (output <= 3) {
             const isGuest = await findGuest(bookingData.email);
+            const guestData = { guestEmail: bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel, guestRank: bookingData.rank }
             if (isGuest.rows.length === 0) {
-                const guestData = { guestEmail: bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel, guestRank: bookingData.rank }
                 try {
                     await addGuestData(guestData);
                 } catch (error) {
@@ -146,16 +158,17 @@ export function addBookingData(bookingData: { checkin: Date, checkout: Date, ema
                     return;
                 }
             }
+            else{
+                const updateGuest = editGuest(guestData);
+            }
             const booking_id = uuidv4();
             const bookingDataWithId = { ...bookingData, booking_id };
 
             addBooking(bookingDataWithId)
                 .then((results) => {
-                    priorityQueue.getAllEntries();
                     priorityQueue.enqueue(bookingDataWithId);
-                    priorityQueue.getAllEntries();
                     // console.log("booking ho gyi");
-                    resolve(results.rows);
+                    resolve("Booking added suceessfull");
                 })
                 .catch((error) => {
                     console.log(error);
@@ -164,41 +177,60 @@ export function addBookingData(bookingData: { checkin: Date, checkout: Date, ema
         }
         else {
             console.log("here");
-            resolve("room unavailable");
-            return ("room unavailable");
+            reject("room unavailable");
+            return;
         }
     });
 }
 
-export function editBookingData(bookingData: { bookingId: string, checkin: Date, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string,room:string,breakfast:number }): Promise<any> {
+export function editBookingData(bookingData: { bookingId: string, checkin: Date, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string, room: string, name: string, phone: number, company: string, vessel: string, rank: string, breakfast: number }): Promise<any> {
     return new Promise(async (resolve, reject) => {
         bookingData.checkin = new Date(bookingData.checkin);
         bookingData.checkout = new Date(bookingData.checkout);
-        const checkData={ room: bookingData.room, checkin: bookingData.checkin, checkout: bookingData.checkout }
-        const conflicts=await findConflict(checkData);
-        console.log(conflicts.rows);
-        if(conflicts.rows.length==1){
+        const checkData = { room: bookingData.room, checkin: bookingData.checkin, checkout: bookingData.checkout }
+        const conflicts = await findConflict(checkData);
+        console.log(conflicts.rows, conflicts);
+        if (conflicts.rows.length <= 4) {
             editBooking(bookingData)
-            .then((results) => {
-                resolve(results.rows);
-            })
-            .catch((error) => {
-                console.log(error)
-                reject("internal server error");
-            });
+                .then(async (results) => {
+                    const guestData = { guestEmail: bookingData.email, guestName: bookingData.name, guestPhone: bookingData.phone, guestCompany: bookingData.company, guestVessel: bookingData.vessel, guestRank: bookingData.rank }
+                    try {
+                        const isGuest = await findGuest(bookingData.email);
+                        if (isGuest.rows.length === 0) {
+                            try {
+                                await addGuestData(guestData);
+                                resolve("Booking Edited");
+                            } catch (error) {
+                                console.log(error);
+                                reject("internal server error");
+                                return;
+                            }
+                        }
+                        else{
+                            const updateGuest = await editGuest(guestData);
+                            resolve("Booking Edited");
+                        }
+                    }
+                    catch {
+                        reject("Error changing the guest details")
+                    }
+                })
+                .catch((error) => {
+                    console.log(error)
+                    reject("internal server error");
+                });
         }
-        else{
-            resolve("room is booked for the given range cant change the checkout date");
+        else {
+            reject("room is booked for the given range cant change the checkout date");
             return;
         }
-        
     });
 }
 
 export async function fetchAvailableRooms(checkData: { checkin: Date, checkout: Date }): Promise<any> {
     console.log("hello");
-    checkData.checkin=new Date(checkData.checkin);
-    checkData.checkout=new Date(checkData.checkout);
+    checkData.checkin = new Date(checkData.checkin);
+    checkData.checkout = new Date(checkData.checkout);
     console.log(checkData.checkin);
     console.log(checkData.checkout);
     try {
@@ -220,7 +252,7 @@ export async function fetchAvailableRooms(checkData: { checkin: Date, checkout: 
 export async function getThisRoom(checkData: { checkin: Date, checkout: Date, room: string }): Promise<any> {
     try {
         const result = await fetchThisRooms(checkData);
-        return result.rows;
+        return result;
     } catch (error) {
         console.error(error);
         throw new Error("internal server error");
@@ -297,6 +329,69 @@ export function findConflictEntries(bookingData: { checkin: Date, checkout: Date
                 console.log(error)
                 reject("internal server error");
             });
+    });
+}
+
+export function getInstantRoom(): Promise<any> {
+    return new Promise(async(resolve, reject) => {
+        const allRooms=await fetchAllRooms();
+        const newDate=new Date();
+        console.log("here: ", newDate)
+        const bookingData={checkin:newDate,checkout:newDate};
+       findInstantRoom(newDate).then((result)=>{
+           result.rows.map((row) => {
+               row.status = row.status+"/4";
+           })
+           resolve(result.rows)
+       }).catch((error)=>{
+        reject("Internal Server Error");
+       })
+    });
+}
+
+export function addNewRoom(room:string): Promise<any> {
+    return new Promise(async(resolve, reject) => {
+        const isRoom=await fetchRoom(room);
+        if(isRoom.rows.length===1){
+            try{
+                setIsActive(room);
+                resolve("Room added successfully");
+            }
+            catch{
+                reject("server issue");
+            }
+        }
+        else{
+            newRoom(room)
+            .then((results) => {
+                resolve("Room added successfully");
+            })
+            .catch((error) => {
+                console.log(error)
+                reject("internal server error");
+            });
+        }
+        
+    });
+}
+
+export function removeRoom(room:string): Promise<any> {
+    return new Promise(async(resolve, reject) => {
+        const isRoomvalid=await fetchRoomResv(room);
+        if(isRoomvalid.rows.length>=1){
+            reject("no change")
+        }
+        else{
+            hideRoom(room)
+            .then((results) => {
+                resolve("Room deleted successfully");
+            })
+            .catch((error) => {
+                console.log(error)
+                reject("internal server error");
+            });
+        }
+        
     });
 }
 
