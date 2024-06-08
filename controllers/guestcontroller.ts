@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getGuests, searchGuests, getAdmin, addGuests, getRoomResv, addBookingData, editBookingData, fetchAvailableRooms, getThisRoom, triggerBooking, deleteThisBooking, findConflictEntries,getInstantRoom,addNewRoom,removeRoom} from "../service/guestservice";
+import { getGuests, searchGuests, getAdmin, addGuests, getRoomResv, addBookingData, editBookingData, fetchAvailableRooms, getThisRoom, triggerBooking, deleteThisBooking, findConflictEntries,getInstantRoom,addNewRoom,removeRoom, updateEmailTemplate, fetchEmailTemplate} from "../service/guestservice";
 
 export const getAllGuests = (req: Request, res: Response): void => {
   try {
@@ -251,3 +251,30 @@ export const deleteRoom = (req: Request, res: Response): void => {
     console.log("error: ", error);
   }
 };
+
+export const editEmailTemplate=async(req: Request, res:Response) => {
+  try {
+      const template = (req.body.template as string);
+      const content = (req.body.content as string);
+      const subject = req.body.subject as string;
+      updateEmailTemplate(template,content, subject).then(result=>{
+          res.status(200).send(result)
+      }).catch(error=>{
+          res.status(500).send({message: "Internal Server Error"})
+      })
+  } catch(error) {
+      res.status(500).send({message: "Something went wrong, Please try again!"})  
+  }
+}
+export const getEmailTemplate=async(req: Request, res:Response) => {
+  try {
+    const template_name = req.headers.template as string;  
+      fetchEmailTemplate(template_name).then(result=>{
+          res.status(200).send(result)
+      }).catch(error=>{
+          res.status(500).send({message: "Internal Server Error"})
+      })
+  } catch(error) {
+      res.status(500).send({message: "Something went wrong, Please try again!"})  
+  }
+}

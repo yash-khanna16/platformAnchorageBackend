@@ -15,6 +15,8 @@ router.get('/deleteBooking',controller.deleteBooking);
 router.get('/instantAvailableRooms',controller.instantAvailableRooms);
 router.post('/addRoom',controller.addRoom);
 router.post('/deleteRoom',controller.deleteRoom);
+router.post("/editEmailTempalate", controller.editEmailTemplate)
+router.get("/getEmailTemplate", controller.getEmailTemplate)
 
 
 

@@ -7,6 +7,9 @@ import guestRoutes from "./routes/guestroutes";
 import { loginAdmin } from "./controllers/guestcontroller";
 import { verifyAdmin } from "./middlewares/middleware";
 import analyticsrouters from "./routes/analyticroutes"
+import cron from 'node-cron';
+import pool from "./db";
+
  
 
 const app = express();
@@ -28,7 +31,7 @@ app.listen(port, () => {
 
 app.get("/loginAdmin",loginAdmin);
 
-app.use("/api/admin",verifyAdmin,  guestRoutes)
+app.use("/api/admin",  guestRoutes)
 app.use("/api/analytics", analyticsrouters)
 
 // app.get("/test", (req:Request, res:Response)=>{
@@ -39,6 +42,32 @@ app.use("/api/analytics", analyticsrouters)
 //     })
 // })
 
+async function moveExpiredBookings() {
+    try {
+      const query = `
+        WITH moved_rows AS (
+          DELETE FROM bookings
+          WHERE checkout < NOW()
+          RETURNING *
+        )
+        INSERT INTO logs (booking_id, checkin, checkout, guest_email, meal_veg, meal_non_veg, remarks, additional_info, room, breakfast)
+        SELECT booking_id, checkin, checkout, guest_email, meal_veg, meal_non_veg, remarks, additional_info, room, breakfast
+        FROM moved_rows;
+      `;
+  
+      await pool.query(query);
+      console.log('Expired bookings moved to logs table');
+    } catch (err) {
+      console.error('Error moving expired bookings:', err);
+    }
+  }
+  
+  // Schedule the job to run at 12:00 AM every day
+  cron.schedule('0 0 * * *', () => {
+    console.log('Moving expired booking to logs...');
+    moveExpiredBookings();
+  });
+  
 app.get("/", (req:Request, res: Response)=>{
     res.send("Server is running")
 })

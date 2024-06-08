@@ -83,3 +83,7 @@ export const getRoom="select * from rooms where room = $1";
 export const setActive="update rooms set active='true' where room =$1"; 
 
 export const hideThisRoom="update rooms set active='false' where room =$1"; 
+
+export const EmailTemplate = "UPDATE emails set content=$2, subject=$3 where template_name=$1"
+
+export const GetEmailTemplate= "SELECT content, subject from emails where template_name = $1";
