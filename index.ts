@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import guestRoutes from "./routes/guestroutes";
 import { loginAdmin } from "./controllers/guestcontroller";
 import { verifyAdmin } from "./middlewares/middleware";
+import analyticsrouters from "./routes/analyticroutes"
  
 
 const app = express();
@@ -18,16 +19,17 @@ app.use(bodyParser.json());
 app.listen(port, () => {
     console.log(`Server is running on port: http://localhost:${port}`)
 })
-app.get("/abc",async function(req:Request,res:Response){
-    const {password}=req.body;
-    const hashPassword=await bcrypt.hash(password,10);
-    console.log(hashPassword);
-    res.send("password mil gya :)");
-})
+// app.get("/abc",async function(req:Request,res:Response){
+//     const {password}=req.body;
+//     const hashPassword=await bcrypt.hash(password,10);
+//     console.log(hashPassword);
+//     res.send("password mil gya :)");
+// })
 
 app.get("/loginAdmin",loginAdmin);
 
 app.use("/api/admin",verifyAdmin,  guestRoutes)
+app.use("/api/analytics", analyticsrouters)
 
 // app.get("/test", (req:Request, res:Response)=>{
 //     pool.query("SELECT *FROM guests").then((results:any)=>{

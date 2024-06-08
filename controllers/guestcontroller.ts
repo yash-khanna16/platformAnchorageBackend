@@ -174,7 +174,6 @@ export const getThisRooms = (req: Request, res: Response): void => {
     console.log("error: ", error);
   }
 };
-
 export const deleteBooking = (req: Request, res: Response): void => {
   const bookingId = req.headers.bookingid as string;
   try {
