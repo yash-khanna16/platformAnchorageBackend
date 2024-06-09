@@ -315,7 +315,9 @@ export async function fetchAvailableRooms(checkData: {
   console.log(checkData.checkout);
   try {
     const allRooms = await fetchAllRooms();
+    console.log("here 1", allRooms)
     const result = await fetchAvailRooms(checkData);
+    console.log("here 2", result)
     const conditionMap = new Map(
       result.rows.map((room: { room: string; condition_met: string }) => [
         room.room,

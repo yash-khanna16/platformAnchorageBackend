@@ -1,6 +1,6 @@
 import { QueryResult } from "pg";
 import pool from "../db";
-import { getAllGuests, getNamedGuests, getAdmin, addGuestQuery, fetchResv, addBookingDetails, editBookingDetails, serverTime, fetchThisRoom, fetchGuest, fetchRooms, deleteBooking, findRoomConflict,editGuestQuery,findRoom,addRoom ,getRoom,setActive,hideThisRoom, EmailTemplate, GetEmailTemplate} from "./queries";
+import { getAllGuests, getNamedGuests, getAdmin, addGuestQuery, fetchResv, addBookingDetails, editBookingDetails, serverTime, fetchThisRoom, fetchGuest, fetchRooms, deleteBooking, findRoomConflict,editGuestQuery,findRoom,addRoom ,getRoom,setActive,hideThisRoom, EmailTemplate, GetEmailTemplate, fetchAvailRoom} from "./queries";
 
 
 export async function fetchGuests(): Promise<QueryResult<any>> {
@@ -81,7 +81,7 @@ export async function getServerTime(): Promise<QueryResult<any>> {
 
 export async function fetchAvailRooms(checkData: { checkin: Date, checkout: Date }): Promise<QueryResult<any>> {
   try {
-    const result = await pool.query(fetchRoom, [checkData.checkin, checkData.checkout]);
+    const result = await pool.query(fetchAvailRoom, [checkData.checkin, checkData.checkout]);
     return result;
   } catch (error) {
     throw error;

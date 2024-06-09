@@ -14,7 +14,7 @@ export const editBookingDetails = "update bookings SET checkout = $2,guest_email
 
 export const serverTime = "SELECT current_timestamp AT TIME ZONE 'Asia/Kolkata' AS server_time";
 
-export const fetchRoom = `
+export const fetchAvailRoom = `
 SELECT 
   room, 
   CASE 
