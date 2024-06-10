@@ -20,6 +20,8 @@ import {
   hideRoom,
   editEmailTemplate,
   getEmailTemplate,
+  updateGuestEmail,
+  deleteGuest
 } from "../models/guestmodel";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
@@ -185,6 +187,11 @@ export function addBookingData(bookingData: {
   return new Promise(async (resolve, reject) => {
     bookingData.checkin = new Date(bookingData.checkin);
     bookingData.checkout = new Date(bookingData.checkout);
+    if (bookingData.email.length === 0) {
+      let auxEmail = uuidv4();
+      auxEmail = `${auxEmail}@chotahaathi.com`
+      bookingData.email = auxEmail;
+    }
     const checkData = {
       checkin: bookingData.checkin,
       checkout: bookingData.checkout,
@@ -250,6 +257,7 @@ export function editBookingData(bookingData: {
   vessel: string;
   rank: string;
   breakfast: number;
+  originalEmail: string;
 }): Promise<any> {
   return new Promise(async (resolve, reject) => {
     bookingData.checkin = new Date(bookingData.checkin);
@@ -260,47 +268,72 @@ export function editBookingData(bookingData: {
       checkout: bookingData.checkout,
     };
     const conflicts = await findConflict(checkData);
-    console.log(conflicts.rows, conflicts);
+    console.log("hello", conflicts.rows);
     if (conflicts.rows.length <= 4) {
       editBooking(bookingData)
         .then(async (results) => {
-          const guestData = {
-            guestEmail: bookingData.email,
-            guestName: bookingData.name,
-            guestPhone: bookingData.phone,
-            guestCompany: bookingData.company,
-            guestVessel: bookingData.vessel,
-            guestRank: bookingData.rank,
-          };
           try {
-            const isGuest = await findGuest(bookingData.email);
-            if (isGuest.rows.length === 0) {
-              try {
-                await addGuestData(guestData);
-                resolve("Booking Edited");
-              } catch (error) {
-                console.log(error);
-                reject("internal server error");
-                return;
-              }
-            } else {
-              const updateGuest = await editGuest(guestData);
-              resolve("Booking Edited");
+            if (bookingData.originalEmail === bookingData.email) {
+              const guestData = {
+                guestEmail: bookingData.email,
+                guestName: bookingData.name,
+                guestPhone: bookingData.phone,
+                guestCompany: bookingData.company,
+                guestVessel: bookingData.vessel,
+                guestRank: bookingData.rank,
+              };
+              await editGuest(guestData);
+              resolve("editted successfully");
             }
-          } catch {
-            reject("Error changing the guest details");
+            else {
+              const isGuest = await findGuest(bookingData.email);
+              if (isGuest.rows.length === 0) {
+                try {
+                  const guestData = {
+                    guestEmail: bookingData.email,
+                    guestName: bookingData.name,
+                    guestPhone: bookingData.phone,
+                    guestCompany: bookingData.company,
+                    guestVessel: bookingData.vessel,
+                    guestRank: bookingData.rank,
+                    guestOrgEmail: bookingData.originalEmail
+                  };
+                  await updateGuestEmail(guestData);
+                  resolve("editted successfully");
+                } catch (error) {
+                  console.log(error);
+                  reject("internal server error");
+                  return;
+                }
+              } else {
+                const guestData = {
+                  guestEmail: bookingData.email,
+                  guestName: bookingData.name,
+                  guestPhone: bookingData.phone,
+                  guestCompany: bookingData.company,
+                  guestVessel: bookingData.vessel,
+                  guestRank: bookingData.rank,
+                };
+                await editGuest(guestData);
+                await deleteGuest(bookingData.originalEmail);
+                resolve("editted successfully");
+              }
+            }
           }
-        })
-        .catch((error) => {
-          console.log(error);
-          reject("internal server error");
-        });
-    } else {
-      reject(
-        "room is booked for the given range cant change the checkout date"
-      );
-      return;
-    }
+          catch {
+        reject("Error changing the guest details");
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+      reject("internal server error");
+    });
+} else {
+  reject(
+    "room is booked for the given range cant change the checkout date"
+  );
+  return;
+}
   });
 }
 
@@ -355,9 +388,9 @@ monitorQueue();
 
 export async function triggerBooking(booking: BookingData) {
 
-    const result = await fetchEmailTemplate("welcome");
-    const content = result.content;
-    const subject = result.subject;
+  const result = await fetchEmailTemplate("welcome");
+  const content = result.content;
+  const subject = result.subject;
   const mailOptions = {
     from: "deepanshupal2003@gmail.com",
     to: booking.email,
@@ -492,11 +525,11 @@ export function updateEmailTemplate(template: string, content: string, subject: 
   return new Promise(async (resolve, reject) => {
     editEmailTemplate(template, content, subject)
       .then((results) => {
-        resolve({message: "Template Edited Successfully"});
+        resolve({ message: "Template Edited Successfully" });
       })
       .catch((error) => {
         console.log(error);
-        reject({message: "internal server error"});
+        reject({ message: "internal server error" });
       });
   });
 }
