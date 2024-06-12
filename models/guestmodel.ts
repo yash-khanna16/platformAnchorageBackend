@@ -12,10 +12,10 @@ export async function fetchGuests(): Promise<QueryResult<any>> {
   }
 }
 
-export async function fetchAllGuests(guestName: string): Promise<QueryResult<any>> {
+export async function fetchAllGuests(): Promise<QueryResult<any>> {
   try {
     // console.log(guestName);
-    const result = await pool.query(getNamedGuests, [guestName]);
+    const result = await pool.query(getNamedGuests);
     return result;
   } catch (error) {
     console.log(error);

@@ -1,6 +1,6 @@
 export const getAllGuests = "SELECT * FROM guests";
 
-export const getNamedGuests = `SELECT * FROM guests JOIN bookings ON bookings.guest_email = guests.email where guests.name ilike $1`;
+export const getNamedGuests = `SELECT * FROM guests JOIN bookings ON bookings.guest_email = guests.email`;
 
 export const getAdmin= "Select * FROM admin where email=$1";
 
