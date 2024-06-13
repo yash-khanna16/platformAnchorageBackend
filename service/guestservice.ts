@@ -73,10 +73,9 @@ export function getGuests(): Promise<any> {
   });
 }
 
-export function searchGuests(guestName: string): Promise<any> {
-  const newGuestName = `%${guestName}%`;
+export function searchGuests(): Promise<any> {
   return new Promise((resolve, reject) => {
-    fetchAllGuests(newGuestName)
+    fetchAllGuests()
       .then((results) => {
         // console.log(results.rows);
         if (results.rows.length === 0) {
