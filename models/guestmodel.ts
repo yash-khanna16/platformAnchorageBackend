@@ -61,9 +61,9 @@ export async function addBooking(bookingData: { booking_id: string, checkin: Dat
 }
 
 
-export async function editBooking(bookingData: { bookingId: string,checkin:Date, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string,breakfast:number }): Promise<QueryResult<any>> {
+export async function editBooking(bookingData: { bookingId: string,checkin:Date, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string,breakfast:number,room:string }): Promise<QueryResult<any>> {
   try {
-    const result = await pool.query(editBookingDetails, [bookingData.bookingId,bookingData.checkin, bookingData.checkout, bookingData.email, bookingData.meal_veg, bookingData.meal_non_veg, bookingData.remarks, bookingData.additional,bookingData.breakfast]);
+    const result = await pool.query(editBookingDetails, [bookingData.bookingId,bookingData.checkin, bookingData.checkout, bookingData.email, bookingData.meal_veg, bookingData.meal_non_veg, bookingData.remarks, bookingData.additional,bookingData.breakfast,bookingData.room]);
     return result;
   } catch (error) {
     throw error;
