@@ -204,6 +204,7 @@ export const findConflict = (req: Request, res: Response): void => {
 export const instantAvailableRooms = (req: Request, res: Response): void => {
   try {
     getInstantRoom().then((results) => {
+      console.log(results);
       res.status(200).send(results);
     })
       .catch((error) => {

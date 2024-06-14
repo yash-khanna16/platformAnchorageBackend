@@ -2,9 +2,9 @@ export const getAllGuests = "SELECT * FROM guests";
 
 export const getNamedGuests = `SELECT * FROM guests JOIN bookings ON bookings.guest_email = guests.email`;
 
-export const getAdmin= "Select * FROM admin where email=$1";
+export const getAdmin = "Select * FROM admin where email=$1";
 
-export const addGuestQuery= "INSERT INTO guests (email,name,phone,company,vessel,rank)values($1,$2,$3,$4,$5,$6)";
+export const addGuestQuery = "INSERT INTO guests (email,name,phone,company,vessel,rank)values($1,$2,$3,$4,$5,$6)";
 
 export const fetchResv = "SELECT * FROM bookings JOIN guests ON guests.email=bookings.guest_email where room=$1";
 
@@ -41,7 +41,7 @@ GROUP BY room
 `;
 
 
-export const fetchThisRoom=`SELECT 
+export const fetchThisRoom = `SELECT 
 COUNT(*) AS conflict_count
 FROM bookings
 WHERE room = $3
@@ -55,16 +55,16 @@ AND (
   ($2 > checkin AND $2 <= checkout)  -- new booking ends within an existing booking
 );`;
 
-export const fetchGuest="Select * from guests where email=$1";
+export const fetchGuest = "Select * from guests where email=$1";
 
-export const fetchRooms="Select * from rooms where active='true'";
+export const fetchRooms = "Select * from rooms where active='true'";
 
-export const deleteBooking="DELETE from bookings where booking_id=$1";
+export const deleteBooking = "DELETE from bookings where booking_id=$1";
 
 
-export const deleteGuestDetails="DELETE from guests where email=$1";
+export const deleteGuestDetails = "DELETE from guests where email=$1";
 
-export const findRoomConflict=`SELECT *
+export const findRoomConflict = `SELECT *
 FROM bookings
 WHERE room = $3
   AND (
@@ -75,20 +75,33 @@ WHERE room = $3
   );
 `;
 
-export const editGuestQuery= "Update guests set name=$2,phone=$3,company=$4,vessel=$5,rank=$6 where email=$1";
+export const editGuestQuery = "Update guests set name=$2,phone=$3,company=$4,vessel=$5,rank=$6 where email=$1";
 
-export const editGuestEmail= "Update guests set email=$1,name=$2,phone=$3,company=$4,vessel=$5,rank=$6 where email=$7";
+export const editGuestEmail = "Update guests set email=$1,name=$2,phone=$3,company=$4,vessel=$5,rank=$6 where email=$7";
 
-export const findRoom= "SELECT r.room , COUNT(b.room) AS status FROM rooms r LEFT JOIN bookings b ON r.room = b.room  AND $1 BETWEEN b.checkin AND b.checkout where r.active='true' GROUP BY r.room;";
+export const findRoom = "SELECT r.room , COUNT(b.room) AS status FROM rooms r LEFT JOIN bookings b ON r.room = b.room  AND $1 BETWEEN b.checkin AND b.checkout where r.active='true' GROUP BY r.room ORDER BY room";
 
-export const addRoom="insert into rooms (room,active) values($1,'true')";
+export const addRoom = "insert into rooms (room,active) values($1,'true')";
 
-export const getRoom="select * from rooms where room = $1"; 
+export const getRoom = "select * from rooms where room = $1";
 
-export const setActive="update rooms set active='true' where room =$1"; 
+export const setActive = "update rooms set active='true' where room =$1";
 
-export const hideThisRoom="update rooms set active='false' where room =$1"; 
+export const hideThisRoom = "update rooms set active='false' where room =$1";
 
 export const EmailTemplate = "UPDATE emails set content=$2, subject=$3 where template_name=$1"
 
-export const GetEmailTemplate= "SELECT content, subject from emails where template_name = $1";
+export const GetEmailTemplate = "SELECT content, subject from emails where template_name = $1";
+
+export const getUpcoming = `
+  SELECT CASE 
+    WHEN EXISTS (
+      SELECT 1 
+      FROM bookings 
+      WHERE (checkin >= NOW() 
+        AND checkin <= NOW() + INTERVAL '2 hours') 
+        AND room = $1
+    ) THEN TRUE
+    ELSE FALSE
+  END as upcoming
+`;
