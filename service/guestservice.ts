@@ -34,10 +34,12 @@ import { resolve } from "path";
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  service: "gmail", // You can use any email service
+  // service: "gmail", // You can use any email service
+  host: 'email-smtp.us-east-1.amazonaws.com',
+  port: 25,
   auth: {
-    user: "deepanshupal2003@gmail.com",
-    pass: process.env.NODEMAILER_PASSWORD,
+    user: "AKIA6GBMELY3HFQNB6WK",
+    pass: "BMP6OW/ojjFDCg1CG9aGd0JjQP61JXWiN+Qcj+UP3OT4",
   },
 });
 
@@ -391,7 +393,7 @@ export async function triggerBooking(booking: BookingData) {
   const content = result.content;
   const subject = result.subject;
   const mailOptions = {
-    from: "deepanshupal2003@gmail.com",
+    from: "admin@platformanchorage.com",
     to: booking.email,
     subject: subject,
     text: content,
