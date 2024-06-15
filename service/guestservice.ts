@@ -21,7 +21,8 @@ import {
   editEmailTemplate,
   getEmailTemplate,
   updateGuestEmail,
-  deleteGuest
+  deleteGuest,
+  fetchUpcoming
 } from "../models/guestmodel";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
@@ -284,7 +285,6 @@ export function editBookingData(bookingData: {
                 guestRank: bookingData.rank,
               };
               await editGuest(guestData);
-              resolve("editted successfully");
             }
             else {
               const isGuest = await findGuest(bookingData.email);
@@ -317,24 +317,49 @@ export function editBookingData(bookingData: {
                 };
                 await editGuest(guestData);
                 await deleteGuest(bookingData.originalEmail);
-                resolve("editted successfully");
               }
+            }
+            const queueBooking = {
+              checkin: bookingData.checkin,
+              checkout: bookingData.checkout,
+              email: bookingData.email,
+              meal_veg: bookingData.meal_veg,
+              meal_non_veg: bookingData.meal_non_veg,
+              remarks: bookingData.remarks,
+              additional: bookingData.additional,
+              room: bookingData.room,
+              name: bookingData.name,
+              phone: bookingData.phone,
+              company: bookingData.company,
+              vessel: bookingData.vessel,
+              rank: bookingData.rank,
+              breakfast: bookingData.breakfast,
+              booking_id: bookingData.bookingId
+            }
+            try {
+              priorityQueue.removeById(bookingData.bookingId);
+              priorityQueue.enqueue(queueBooking);
+              resolve("Edit booking successfull");
+            }
+            catch {
+              priorityQueue.enqueue(queueBooking);
+              resolve("Edit booking successfull");
             }
           }
           catch {
-        reject("Error changing the guest details");
-      }
-    })
-    .catch((error) => {
-      console.log(error);
-      reject("internal server error");
-    });
-} else {
-  reject(
-    "room is booked for the given range cant change the checkout date"
-  );
-  return;
-}
+            reject("Error changing the guest details");
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+          reject("internal server error");
+        });
+    } else {
+      reject(
+        "room is booked for the given range cant change the checkout date"
+      );
+      return;
+    }
   });
 }
 
@@ -412,15 +437,13 @@ function monitorQueue() {
   setInterval(() => {
     if (!priorityQueue.isEmpty()) {
       const topBooking = priorityQueue.peek();
-      // console.log(topBooking, "1");
       if (topBooking) {
         const currentTime = new Date();
-        // console.log(currentTime, "2");
-        // console.log(topBooking.checkin, "3");
-        if (currentTime >= topBooking.checkin) {
+        const newTime = new Date(currentTime);
+        newTime.setHours(newTime.getHours() + 2);
+        if (newTime >= topBooking.checkin) {
           triggerBooking(topBooking);
           priorityQueue.dequeue();
-          // console.log("pop hogya");
         }
       }
     }
@@ -464,22 +487,28 @@ export function findConflictEntries(bookingData: {
 
 export function getInstantRoom(): Promise<any> {
   return new Promise(async (resolve, reject) => {
-    const allRooms = await fetchAllRooms();
-    const newDate = new Date();
-    console.log("here: ", newDate);
-    const bookingData = { checkin: newDate, checkout: newDate };
-    findInstantRoom(newDate)
-      .then((result) => {
-        result.rows.map((row) => {
-          row.status = row.status + "/4";
-        });
-        resolve(result.rows);
-      })
-      .catch((error) => {
-        reject("Internal Server Error");
-      });
+    try {
+      const newDate = new Date();
+      console.log("here: ", newDate);
+      const bookingData = { checkin: newDate, checkout: newDate };
+
+      const result = await findInstantRoom(newDate);
+
+      // Wait for all fetchUpcoming promises to resolve
+      const updatedRows = await Promise.all(result.rows.map(async (row) => {
+        row.status = row.status + "/4";
+        const res = await fetchUpcoming(row.room);
+        row.upcoming = res;
+        return row;
+      }));
+
+      resolve(updatedRows);
+    } catch (error) {
+      reject("Internal Server Error");
+    }
   });
 }
+
 
 export function addNewRoom(room: string): Promise<any> {
   return new Promise(async (resolve, reject) => {
