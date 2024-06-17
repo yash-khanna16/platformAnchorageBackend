@@ -1,20 +1,23 @@
 import { Router } from "express";
-import { getAllGuests,searchAllGuests,loginAdmin,addNewGuests,getReserv,addBooking,editBooking,getAvailableRooms,getThisRooms,deleteBooking, findConflict,instantAvailableRooms,addRoom,deleteRoom} from "../controllers/guestcontroller";
+import  * as controller from "../controllers/guestcontroller";
 const router = Router();
 
-router.get("/getGuests", getAllGuests);
-router.get("/searchAllGuest",searchAllGuests);
-router.post("/addGuests",addNewGuests);
-router.get("/getReserv",getReserv);
-router.post("/addBooking",addBooking);
-router.post("/editBooking",editBooking);
-router.post("/getAvailableRooms",getAvailableRooms);
+router.get("/getGuests", controller.getAllGuests);
+router.get("/searchAllGuest",controller.searchAllGuests);
+router.post("/addGuests",controller.addNewGuests);
+router.get("/getReserv",controller.getReserv);
+router.post("/addBooking",controller.addBooking);
+router.post("/editBooking",controller.editBooking);
+router.post("/getAvailableRooms",controller.getAvailableRooms);
 // router.get("/getThisRooms",getThisRooms);
-router.get('/deleteBooking',deleteBooking);
+router.get('/deleteBooking',controller.deleteBooking);
 // router.post('/findConflict',findConflict);
-router.get('/instantAvailableRooms',instantAvailableRooms);
-router.post('/addRoom',addRoom);
-router.post('/deleteRoom',deleteRoom);
+router.get('/instantAvailableRooms',controller.instantAvailableRooms);
+router.post('/addRoom',controller.addRoom);
+router.post('/deleteRoom',controller.deleteRoom);
+router.post("/editEmailTempalate", controller.editEmailTemplate)
+router.get("/getEmailTemplate", controller.getEmailTemplate)
+
 
 
 export default router;

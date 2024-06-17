@@ -1,6 +1,7 @@
 import { QueryResult } from "pg";
 import pool from "../db";
-import { getAllGuests, getNamedGuests, getAdmin, addGuestQuery, fetchResv, addBookingDetails, editBookingDetails, serverTime, fetchThisRoom, fetchGuest, fetchRooms, deleteBooking, findRoomConflict,editGuestQuery,findRoom,addRoom ,getRoom,setActive,hideThisRoom} from "./queries";
+import { getAllGuests, getNamedGuests, getAdmin, addGuestQuery, fetchResv, addBookingDetails, editBookingDetails, serverTime, fetchThisRoom, fetchGuest, fetchRooms, deleteBooking, findRoomConflict,editGuestQuery,findRoom,addRoom ,getRoom,setActive,hideThisRoom, EmailTemplate, GetEmailTemplate, fetchAvailRoom,editGuestEmail,deleteGuestDetails,getUpcoming
+} from "./queries";
 
 
 export async function fetchGuests(): Promise<QueryResult<any>> {
@@ -12,10 +13,10 @@ export async function fetchGuests(): Promise<QueryResult<any>> {
   }
 }
 
-export async function fetchAllGuests(guestName: string): Promise<QueryResult<any>> {
+export async function fetchAllGuests(): Promise<QueryResult<any>> {
   try {
     // console.log(guestName);
-    const result = await pool.query(getNamedGuests, [guestName]);
+    const result = await pool.query(getNamedGuests);
     return result;
   } catch (error) {
     console.log(error);
@@ -61,9 +62,9 @@ export async function addBooking(bookingData: { booking_id: string, checkin: Dat
 }
 
 
-export async function editBooking(bookingData: { bookingId: string, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string }): Promise<QueryResult<any>> {
+export async function editBooking(bookingData: { bookingId: string,checkin:Date, checkout: Date, email: string, meal_veg: number, meal_non_veg: number, remarks: string, additional: string,breakfast:number,room:string }): Promise<QueryResult<any>> {
   try {
-    const result = await pool.query(editBookingDetails, [bookingData.bookingId, bookingData.checkout, bookingData.email, bookingData.meal_veg, bookingData.meal_non_veg, bookingData.remarks, bookingData.additional]);
+    const result = await pool.query(editBookingDetails, [bookingData.bookingId,bookingData.checkin, bookingData.checkout, bookingData.email, bookingData.meal_veg, bookingData.meal_non_veg, bookingData.remarks, bookingData.additional,bookingData.breakfast,bookingData.room]);
     return result;
   } catch (error) {
     throw error;
@@ -81,7 +82,7 @@ export async function getServerTime(): Promise<QueryResult<any>> {
 
 export async function fetchAvailRooms(checkData: { checkin: Date, checkout: Date }): Promise<QueryResult<any>> {
   try {
-    const result = await pool.query(fetchRoom, [checkData.checkin, checkData.checkout]);
+    const result = await pool.query(fetchAvailRoom, [checkData.checkin, checkData.checkout]);
     return result;
   } catch (error) {
     throw error;
@@ -101,6 +102,14 @@ export async function fetchThisRooms(checkData: { checkin: Date, checkout: Date,
 export async function findGuest(email: string): Promise<QueryResult<any>> {
   try {
     const result = await pool.query(fetchGuest, [email]);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+export async function deleteGuest(email: string): Promise<QueryResult<any>> {
+  try {
+    const result = await pool.query(deleteGuestDetails, [email]);
     return result;
   } catch (error) {
     throw error;
@@ -138,6 +147,15 @@ export async function findConflict(checkData: { room: string, checkin: Date, che
 export async function editGuest(guestData: { guestEmail: string, guestName: string, guestPhone: number, guestCompany: string, guestVessel: string, guestRank: string }): Promise<QueryResult<any>> {
   try {
     const result = await pool.query(editGuestQuery, [guestData.guestEmail, guestData.guestName, guestData.guestPhone, guestData.guestCompany, guestData.guestVessel, guestData.guestRank]);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+export async function updateGuestEmail(guestData: { guestEmail: string, guestName: string, guestPhone: number, guestCompany: string, guestVessel: string, guestRank: string ,guestOrgEmail:string}): Promise<QueryResult<any>> {
+  try {
+    console.log(guestData);
+    const result = await pool.query(editGuestEmail, [guestData.guestEmail, guestData.guestName, guestData.guestPhone, guestData.guestCompany, guestData.guestVessel, guestData.guestRank,guestData.guestOrgEmail]);
     return result;
   } catch (error) {
     throw error;
@@ -187,4 +205,34 @@ export async function hideRoom(room:string): Promise<QueryResult<any>> {
     throw error;
   }
 }
+export async function editEmailTemplate(template: string, content: string, subject: string): Promise<QueryResult<any>> {
+  try {
+    const result = await pool.query(EmailTemplate,[template, content, subject]);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getEmailTemplate(template_name: string): Promise<QueryResult<any>> {
+  try {
+    const result = await pool.query(GetEmailTemplate,[template_name]);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function fetchUpcoming(room: string): Promise<QueryResult<any>> {
+  try {
+    const result = await pool.query(getUpcoming, [room]);
+    return result.rows[0].upcoming;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+
+
 
