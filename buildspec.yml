@@ -1,0 +1,22 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+  pre_build:
+    commands:
+      - echo Authenticating with Amazon ECR…
+      - aws ecr get-login-password --region $ECR_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY_URI
+  build:
+    commands:
+      - echo Building the Docker image…
+      - docker build -t $PROJECT_NAME .
+      - docker tag $PROJECT_NAME:latest $ECR_REGISTRY_URI/$PROJECT_NAME:latest
+  post_build:
+    commands:
+      - echo Pushing the Docker image…
+      - docker push $ECR_REGISTRY_URI/$PROJECT_NAME:latest
+artifacts:
+  files:
+    - 'Dockerrun.aws.json'

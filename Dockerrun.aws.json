@@ -1,0 +1,13 @@
+{
+    "AWSEBDockerrunVersion": "1",
+    "Image": {
+      "Name": "975050137142.dkr.ecr.us-east-1.amazonaws.com/platform_anchorage_backend:latest",
+      "Update": "true"
+    },
+    "Ports": [
+      {
+        "ContainerPort": "80",
+        "HostPort": "80"
+      }
+    ]
+  }
