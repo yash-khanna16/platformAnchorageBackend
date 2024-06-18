@@ -36,7 +36,7 @@ dotenv.config();
 
 const transporter = nodemailer.createTransport({
   // service: "gmail", // You can use any email service
-  host: 'email-smtp.us-east-1.amazonaws.com',
+  host: 'smtp.mailgun.org',
   port: 465,
   auth: {
     user: process.env.NODE_MAIL_USER,
