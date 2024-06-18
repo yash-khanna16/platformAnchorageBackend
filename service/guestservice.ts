@@ -39,8 +39,8 @@ const transporter = nodemailer.createTransport({
   host: 'email-smtp.us-east-1.amazonaws.com',
   port: 25,
   auth: {
-    user: "AKIA6GBMELY3HFQNB6WK",
-    pass: "BMP6OW/ojjFDCg1CG9aGd0JjQP61JXWiN+Qcj+UP3OT4",
+    user: process.env.NODE_MAIL_USER,
+    pass: process.env.NODEMAILER_PASSWORD,
   },
 });
 
@@ -418,7 +418,7 @@ export async function triggerBooking(booking: BookingData) {
   const content = result.content;
   const subject = result.subject;
   const mailOptions = {
-    from: "admin@platformanchorage.com",
+    from: process.env.NODE_MAIL_FROM_EMAIL,
     to: booking.email,
     subject: subject,
     text: content,
@@ -428,7 +428,7 @@ export async function triggerBooking(booking: BookingData) {
     if (error) {
       console.log("Error sending email:", error);
     } else {
-      console.log("Email sent:", info.response);
+      console.log("Email sent to: ", booking.email, " response: ", info.response);
     }
   });
 }
