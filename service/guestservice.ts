@@ -424,6 +424,8 @@ export async function triggerBooking(booking: BookingData) {
     text: content,
   };
 
+  console.log(`Sending Email to ${booking.email} from: ${process.env.NODE_MAIL_FROM_EMAIL} user: ${process.env.NODE_MAIL_USER} `)
+
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.log("Error sending email:", error);
