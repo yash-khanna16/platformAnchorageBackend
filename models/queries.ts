@@ -38,6 +38,7 @@ SELECT
 FROM bookings b
 
 GROUP BY room
+ORDER BY room
 `;
 
 
@@ -57,7 +58,7 @@ AND (
 
 export const fetchGuest = "Select * from guests where email=$1";
 
-export const fetchRooms = "Select * from rooms where active='true'";
+export const fetchRooms = "Select * from rooms where active='true' ORDER BY room";
 
 export const deleteBooking = "DELETE from bookings where booking_id=$1";
 
