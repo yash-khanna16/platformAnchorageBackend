@@ -45,10 +45,10 @@ class PriorityQueue {
     }
     public removeById(bookingId: string): BookingData | undefined {
         const index = this.queue.findIndex(booking => booking.booking_id === bookingId);
-        if (index !== -1) {
-            return this.queue.splice(index, 1)[0];
+        if (index === -1) {
+            throw new Error(`Booking with ID ${bookingId} not found`);
         }
-        return undefined;
+        return this.queue.splice(index, 1)[0];
     }
     public getAllEntries(): BookingData[] {
         console.log(this.queue,"this is queue");
