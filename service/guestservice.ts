@@ -315,7 +315,6 @@ export function editBookingData(bookingData: {
                   resolve("Edit booking successfull");
                 }
                 catch {
-                  priorityQueue.enqueue(queueBooking);
                   priorityQueue.getAllEntries();
                   resolve("Edit booking successfull");
                 }
