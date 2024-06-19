@@ -287,10 +287,10 @@ export function editBookingData(bookingData: {
                 guestRank: bookingData.rank,
               };
               await editGuest(guestData);
-              const newOriginalCheckin=new Date(originalCheckin.rows[0].checkin);
+              const newOriginalCheckin = new Date(originalCheckin.rows[0].checkin);
               console.log(newOriginalCheckin);
               console.log(bookingData.checkin);
-              if(newOriginalCheckin.toISOString()!==bookingData.checkin.toISOString()){
+              if (newOriginalCheckin.toISOString() !== bookingData.checkin.toISOString()) {
                 const queueBooking = {
                   checkin: bookingData.checkin,
                   checkout: bookingData.checkout,
@@ -381,7 +381,7 @@ export function editBookingData(bookingData: {
               }
               resolve("editted successfully");
             }
-            
+
           }
           catch {
             reject("Error changing the guest details");
@@ -450,26 +450,25 @@ export async function getThisRoom(checkData: {
 monitorQueue();
 
 export async function triggerBooking(booking: BookingData) {
-
-  const result = await fetchEmailTemplate("welcome");
-  const content = result.content;
-  const subject = result.subject;
-  const mailOptions = {
-    from: process.env.NODE_MAIL_FROM_EMAIL,
-    to: booking.email,
-    subject: subject,
-    text: content,
-  };
-
-  console.log(`Sending Email to ${booking.email} from: ${process.env.NODE_MAIL_FROM_EMAIL} user: ${process.env.NODE_MAIL_USER} `)
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.log("Error sending email:", error);
-    } else {
-      console.log("Email sent to: ", booking.email, " response: ", info.response);
-    }
-  });
+  if (booking.email.indexOf("@chotahaathi.com") !== -1) {
+    const result = await fetchEmailTemplate("welcome");
+    const content = result.content;
+    const subject = result.subject;
+    const mailOptions = {
+      from: process.env.NODE_MAIL_FROM_EMAIL,
+      to: booking.email,
+      subject: subject,
+      text: content,
+    };
+    console.log(`Sending Email to ${booking.email} from: ${process.env.NODE_MAIL_FROM_EMAIL} user: ${process.env.NODE_MAIL_USER} `)
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending email:", error);
+      } else {
+        console.log("Email sent to: ", booking.email, " response: ", info.response);
+      }
+    });
+  }
 }
 
 function monitorQueue() {
@@ -493,10 +492,13 @@ export function deleteThisBooking(bookingId: string): Promise<any> {
   return new Promise((resolve, reject) => {
     removeBooking(bookingId)
       .then((results) => {
-        priorityQueue.getAllEntries();
-        priorityQueue.removeById(bookingId);
-        priorityQueue.getAllEntries();
-        resolve(results.rows);
+        try {
+          priorityQueue.removeById(bookingId);
+          resolve(results.rows);
+        }
+        catch {
+          resolve(results.rows);
+        }
       })
       .catch((error) => {
         console.log(error);
