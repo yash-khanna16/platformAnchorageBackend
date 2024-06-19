@@ -22,7 +22,8 @@ import {
   getEmailTemplate,
   updateGuestEmail,
   deleteGuest,
-  fetchUpcoming
+  fetchUpcoming,
+  fetchBookingByBookingId
 } from "../models/guestmodel";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
@@ -272,6 +273,7 @@ export function editBookingData(bookingData: {
     const conflicts = await findConflict(checkData);
     console.log("hello", conflicts.rows);
     if (conflicts.rows.length <= 4) {
+      const originalCheckin = await fetchBookingByBookingId(bookingData.bookingId);
       editBooking(bookingData)
         .then(async (results) => {
           try {
@@ -285,6 +287,40 @@ export function editBookingData(bookingData: {
                 guestRank: bookingData.rank,
               };
               await editGuest(guestData);
+              const newOriginalCheckin=new Date(originalCheckin.rows[0].checkin);
+              console.log(newOriginalCheckin);
+              console.log(bookingData.checkin);
+              if(newOriginalCheckin.toISOString()!==bookingData.checkin.toISOString()){
+                const queueBooking = {
+                  checkin: bookingData.checkin,
+                  checkout: bookingData.checkout,
+                  email: bookingData.email,
+                  meal_veg: bookingData.meal_veg,
+                  meal_non_veg: bookingData.meal_non_veg,
+                  remarks: bookingData.remarks,
+                  additional: bookingData.additional,
+                  room: bookingData.room,
+                  name: bookingData.name,
+                  phone: bookingData.phone,
+                  company: bookingData.company,
+                  vessel: bookingData.vessel,
+                  rank: bookingData.rank,
+                  breakfast: bookingData.breakfast,
+                  booking_id: bookingData.bookingId
+                }
+                try {
+                  priorityQueue.removeById(bookingData.bookingId);
+                  priorityQueue.enqueue(queueBooking);
+                  priorityQueue.getAllEntries();
+                  resolve("Edit booking successfull");
+                }
+                catch {
+                  priorityQueue.enqueue(queueBooking);
+                  priorityQueue.getAllEntries();
+                  resolve("Edit booking successfull");
+                }
+              }
+              resolve("successfully editted");
             }
             else {
               const isGuest = await findGuest(bookingData.email);
@@ -300,7 +336,7 @@ export function editBookingData(bookingData: {
                     guestOrgEmail: bookingData.originalEmail
                   };
                   await updateGuestEmail(guestData);
-                  resolve("editted successfully");
+                  resolve("successfully editted")
                 } catch (error) {
                   console.log(error);
                   reject("internal server error");
@@ -318,33 +354,35 @@ export function editBookingData(bookingData: {
                 await editGuest(guestData);
                 await deleteGuest(bookingData.originalEmail);
               }
+              const queueBooking = {
+                checkin: bookingData.checkin,
+                checkout: bookingData.checkout,
+                email: bookingData.email,
+                meal_veg: bookingData.meal_veg,
+                meal_non_veg: bookingData.meal_non_veg,
+                remarks: bookingData.remarks,
+                additional: bookingData.additional,
+                room: bookingData.room,
+                name: bookingData.name,
+                phone: bookingData.phone,
+                company: bookingData.company,
+                vessel: bookingData.vessel,
+                rank: bookingData.rank,
+                breakfast: bookingData.breakfast,
+                booking_id: bookingData.bookingId
+              }
+              try {
+                priorityQueue.removeById(bookingData.bookingId);
+                priorityQueue.enqueue(queueBooking);
+                resolve("Edit booking successfull");
+              }
+              catch {
+                priorityQueue.enqueue(queueBooking);
+                resolve("Edit booking successfull");
+              }
+              resolve("editted successfully");
             }
-            const queueBooking = {
-              checkin: bookingData.checkin,
-              checkout: bookingData.checkout,
-              email: bookingData.email,
-              meal_veg: bookingData.meal_veg,
-              meal_non_veg: bookingData.meal_non_veg,
-              remarks: bookingData.remarks,
-              additional: bookingData.additional,
-              room: bookingData.room,
-              name: bookingData.name,
-              phone: bookingData.phone,
-              company: bookingData.company,
-              vessel: bookingData.vessel,
-              rank: bookingData.rank,
-              breakfast: bookingData.breakfast,
-              booking_id: bookingData.bookingId
-            }
-            try {
-              priorityQueue.removeById(bookingData.bookingId);
-              priorityQueue.enqueue(queueBooking);
-              resolve("Edit booking successfull");
-            }
-            catch {
-              priorityQueue.enqueue(queueBooking);
-              resolve("Edit booking successfull");
-            }
+            
           }
           catch {
             reject("Error changing the guest details");

@@ -2,7 +2,7 @@ import bodyParser from "body-parser";
 import express, { Request, Response } from "express";
 const cookieParser = require('cookie-parser');
 import cors from "cors";
-import bcrypt from "bcrypt";
+import bcrypt, { hash } from "bcrypt";
 import guestRoutes from "./routes/guestroutes";
 import { loginAdmin } from "./controllers/guestcontroller";
 import { verifyAdmin } from "./middlewares/middleware";
@@ -29,6 +29,27 @@ app.listen(port, () => {
 //     res.send("password mil gya :)");
 // })
 
+app.post("/createlogin", async (req: Request, res: Response)=> {
+  const data = req.body; // Assuming req.body is an array of objects
+  const insertions = [];
+  
+  for (const item of data) {
+      const email = item.email;
+      const password = item.password;
+      const role = item.role;
+
+      const pwd = await hash(password, 10);
+
+      try {
+          const result = await pool.query("INSERT INTO admin (email,password,role) values ($1, $2, $3)", [email, pwd, role]);
+          insertions.push({ email, message: `Admin added for email: ${email} and role: ${role} ` });
+      } catch (error) {
+          insertions.push({ email, message: "Internal Server Error!" });
+      }
+  }
+
+  res.send(insertions);
+})
 app.get("/loginAdmin",loginAdmin);
 
 app.use("/api/admin",  guestRoutes)

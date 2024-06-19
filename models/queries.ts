@@ -106,3 +106,5 @@ export const getUpcoming = `
     ELSE FALSE
   END as upcoming
 `;
+
+export const fetchBookingByBookingIdQuery = `SELECT * FROM bookings where booking_id = $1`;
