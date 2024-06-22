@@ -450,7 +450,7 @@ export async function getThisRoom(checkData: {
 monitorQueue();
 
 export async function triggerBooking(booking: BookingData) {
-  if (booking.email.indexOf("@chotahaathi.com") !== -1) {
+  if (!booking.email.includes("@chotahaathi.com")) {
     const result = await fetchEmailTemplate("welcome");
     const content = result.content;
     const subject = result.subject;
@@ -468,6 +468,8 @@ export async function triggerBooking(booking: BookingData) {
         console.log("Email sent to: ", booking.email, " response: ", info.response);
       }
     });
+  } else {
+    console.log("temp email found!")
   }
 }
 
