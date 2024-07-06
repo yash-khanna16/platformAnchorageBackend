@@ -6,7 +6,8 @@ import bcrypt, { hash } from "bcrypt";
 import guestRoutes from "./routes/guestroutes";
 import { loginAdmin } from "./controllers/guestcontroller";
 import { verifyAdmin } from "./middlewares/middleware";
-import analyticsrouters from "./routes/analyticroutes"
+import analyticsroutes from "./routes/analyticroutes"
+import movementroutes from "./routes/movementroutes"
 import cron from 'node-cron';
 import pool from "./db";
 
@@ -53,7 +54,8 @@ app.post("/createlogin", async (req: Request, res: Response)=> {
 app.get("/loginAdmin",loginAdmin);
 
 app.use("/api/admin",  guestRoutes)
-app.use("/api/analytics", analyticsrouters)
+app.use("/api/analytics", analyticsroutes)
+app.use("/api/movement", movementroutes)
 
 // app.get("/test", (req:Request, res:Response)=>{
 //     pool.query("SELECT *FROM guests").then((results:any)=>{
