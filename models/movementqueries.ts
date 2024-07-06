@@ -45,10 +45,12 @@ FROM movement
 WHERE
     (driver = $1 OR car_number = $2)
     AND
+    (
     ($3 <= pickup_time AND $4 >= pickup_time) OR
     ($3 <= return_time AND $4 >= return_time) OR
     ($3 >= pickup_time AND $4 <= return_time) OR
     ($3 <= pickup_time AND $4 >= return_time) 
+    )
 `;
 
 export const fetchAvailableCarsQuery = `
@@ -86,6 +88,38 @@ export const deleteCarQuery = 'DELETE FROM cars where number = $1';
 export const addDriverQuery = 'INSERT INTO drivers (name,phone) values ($1,$2)';
 
 export const deleteDriverQuery = 'DELETE FROM drivers WHERE name = $1';
+
+
+export const fetchAllCarsQuery = `
+SELECT 
+    c.number AS car_number,
+    CASE 
+        WHEN m.movement_id IS NULL THEN 1
+        ELSE 0
+    END AS status
+FROM
+    cars c
+LEFT JOIN 
+    movement m 
+ON 
+    c.number = m.car_number
+    AND (CURRENT_TIMESTAMP BETWEEN m.pickup_time AND m.return_time);
+`
+
+export const fetchAllDriversQuery = `SELECT 
+    d.name AS driver_name,
+    CASE 
+        WHEN m.movement_id IS NULL THEN 1
+        ELSE 0
+    END AS status
+FROM 
+    drivers d
+LEFT JOIN 
+    movement m 
+ON 
+    d.name = m.driver
+    AND (CURRENT_TIMESTAMP BETWEEN m.pickup_time AND m.return_time);
+;`
 
 
 

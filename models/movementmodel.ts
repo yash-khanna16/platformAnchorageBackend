@@ -1,6 +1,6 @@
 import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
 import pool from "../db";
-import { addCarQuery, addDriverQuery, checkConflictQuery, deleteCarQuery, deleteDriverQuery, fetchAvailableCarsQuery, fetchAvailableDriversQuery, fetchMovementQuery } from "./movementqueries";
+import { addCarQuery, addDriverQuery, checkConflictQuery, deleteCarQuery, deleteDriverQuery, fetchAllCarsQuery, fetchAllDriversQuery, fetchAvailableCarsQuery, fetchAvailableDriversQuery, fetchMovementQuery } from "./movementqueries";
 import { v4 as uuidv4 } from "uuid";
 
 export async function fetchMovementModel() {
@@ -244,6 +244,25 @@ export async function deletePassengerFromMovementModel(movementId: string, passe
       console.error('Error deleting passenger:', error);
       throw new Error('Error deleting passenger');
   } 
+}
+
+export async function fetchAllCarsModel() {
+  try {
+    const result = await pool.query(fetchAllCarsQuery);
+    return result.rows;
+  } catch(error) {
+    console.log("Error fetching all cars model: ", error)
+    throw new Error('Error fetching all cars');
+  }
+}
+export async function fetchAllDriversModel() {
+  try {
+    const result = await pool.query(fetchAllDriversQuery);
+    return result.rows;
+  } catch(error) {
+    console.log("Error fetching all drivers model: ", error)
+    throw new Error('Error fetching all drivers');
+  }
 }
 
 
