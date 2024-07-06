@@ -29,6 +29,7 @@ export const addMovement=async(req: Request, res: Response) => {
 }
 export const editMovement=async(req: Request, res: Response) => {
     const details:editMovementDetailsType = req.body;
+    console.log("hello");
     try {        
         editMovementService(details).then(result=>{
             res.status(200).send(result);
