@@ -1,5 +1,5 @@
 import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
-import { addCarModel, addDriverModel, addMovementModel, checkConflict, deleteCarModel, deleteDriverModel, deleteMovementModel, editMovementModel, fetchAvailableCarsModel, fetchAvailableDriversModel, fetchMovementModel } from "../models/movementmodel";
+import { addCarModel, addDriverModel, addMovementModel, checkConflict, deleteCarModel, deleteDriverModel, deletePassengerFromMovementModel, editMovementModel, fetchAvailableCarsModel, fetchAvailableDriversModel, fetchMovementModel } from "../models/movementmodel";
 
 export async function fetchMovementService() {
   return new Promise((resolve, reject) => {
@@ -167,10 +167,10 @@ export async function deleteDriverService(name: string) {
     })
   })
 }
-export async function deleteMovementService(movement_id: string) {
+export async function deletePassengerFromMovementService(movement_id: string, passenger_id: string) {
   return new Promise((resolve, reject) => {
 
-    deleteMovementModel(movement_id) .then((results) => {
+    deletePassengerFromMovementModel(movement_id, passenger_id) .then((results) => {
       resolve(results)
     }).catch((error)=>{
       console.log("error deleting movement", error)

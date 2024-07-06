@@ -192,41 +192,57 @@ export async function deleteDriverModel(name: string) {
   }
 }
 
-export async function deleteMovementModel(movement_id: string) {
-
+export async function deletePassengerFromMovementModel(movementId: string, passengerId: string) {
+  // const client = await pool.connect();
   try {
-    console.log("1")
-    const deletePassengersQuery = `
-    DELETE FROM passengers
-    WHERE passenger_id IN (
-      SELECT passenger_id
-      FROM passenger_movement
-      WHERE movement_id = $1
-      );
-      `;
-      await pool.query(deletePassengersQuery, [movement_id]);
-      console.log("2")
-      
-      // Delete related records from passenger_movement table
-      const deletePassengerMovementQuery = `
-      DELETE FROM passenger_movement
-      WHERE movement_id = $1;
-      `;
-      await pool.query(deletePassengerMovementQuery, [movement_id]);
-      console.log("3")
-      
-      // Delete the movement
-      const deleteMovementQuery = `
-      DELETE FROM movement
-      WHERE movement_id = $1;
-      `;
-      await pool.query(deleteMovementQuery, [movement_id]);
-      console.log("4")
-    console.log('Movement and related records deleted successfully');
-    return {message: "Movement and related records deleted successfully"};
-  } catch (err) {
-    console.log('Error deleting movement and related records:', err);
-    return {message: "Error deleting movement and related records"};
+      // await client.query('BEGIN');
+
+      // Fetch booking_id and check passenger count in the same query
+      console.log("data: ", movementId, passengerId)
+      const result = await pool.query(`
+          WITH passenger_info AS (
+              SELECT
+                  booking_id,
+                  (SELECT COUNT(*) FROM passengers WHERE movement_id = $2) as passenger_count
+              FROM passengers
+              WHERE passenger_id = $1 AND movement_id = $2
+          ),
+          delete_passenger AS (
+              DELETE FROM passengers
+              WHERE passenger_id = $1 AND movement_id = $2
+              RETURNING *
+          )
+          SELECT passenger_info.booking_id, passenger_info.passenger_count
+          FROM passenger_info
+          LEFT JOIN delete_passenger ON true
+      `, [passengerId, movementId]);
+      console.log(result.rows)
+
+      const { booking_id: bookingId, passenger_count: passengerCount } = result.rows[0];
+      console.log("booking id", bookingId, "passenger count ", passengerCount)
+
+      // If booking_id is not null, delete from external_passenger table
+      if (!bookingId) {
+          await pool.query(`
+              DELETE FROM external_passenger
+              WHERE passenger_id = $1
+          `, [passengerId]);
+      }
+
+      // If no passengers are left in the movement, delete the movement
+      if (passengerCount === '1') { // Since we already deleted one passenger, check for 1
+          await pool.query(`
+              DELETE FROM movement
+              WHERE movement_id = $1
+          `, [movementId]);
+      }
+
+      // await client.query('COMMIT');
+      return { message: 'Passenger and related records deleted successfully.' };
+  } catch (error) {
+      // await client.query('ROLLBACK');
+      console.error('Error deleting passenger:', error);
+      throw new Error('Error deleting passenger');
   } 
 }
 

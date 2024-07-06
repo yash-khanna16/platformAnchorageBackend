@@ -5,7 +5,7 @@ import {
   addMovement,
   deleteCar,
   deleteDriver,
-  deleteMovement,
+  deletePassengerFromMovement,
   editMovement,
   fetchavailableCars,
   fetchavailableDrivers,
@@ -22,6 +22,6 @@ router.post("/addCar", addCar);
 router.get("/deleteCar", deleteCar);
 router.post("/addDriver", addDriver);
 router.get("/deleteDriver", deleteDriver);
-router.get("/deleteMovement", deleteMovement);
+router.get("/deletePassengerFromMovement", deletePassengerFromMovement);
 
 export default router;

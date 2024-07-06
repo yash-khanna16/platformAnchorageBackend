@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { addCarService, addDriverService, addMovementService, deleteCarService, deleteDriverService, deleteMovementService, editMovementService, fetchAvailableCarsService, fetchAvailableDriversService, fetchMovementService } from "../service/movementservice";
+import { addCarService, addDriverService, addMovementService, deleteCarService, deleteDriverService, deletePassengerFromMovementService, editMovementService, fetchAvailableCarsService, fetchAvailableDriversService, fetchMovementService } from "../service/movementservice";
 import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
 
 export const fetchMovevment=async(req: Request, res: Response) => {
@@ -118,10 +118,11 @@ export const deleteDriver=async(req: Request, res: Response) => {
         res.status(500).send({message: "Something went wrong, Please try again!"})  
     }
 }
-export const deleteMovement=async(req: Request, res: Response) => {
+export const deletePassengerFromMovement=async(req: Request, res: Response) => {
     const movement_id = req.headers.movementid as string;
+    const passenger_id = req.headers.passengerid as string;
     try {        
-        deleteMovementService(movement_id).then(result=>{
+        deletePassengerFromMovementService(movement_id, passenger_id).then(result=>{
             res.status(200).send(result);
         }).catch(error=>{
             res.status(500).send({message: "Internal Server Error"});
