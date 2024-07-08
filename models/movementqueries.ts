@@ -92,7 +92,7 @@ export const deleteDriverQuery = 'DELETE FROM drivers WHERE name = $1';
 
 export const fetchAllCarsQuery = `
 SELECT 
-    c.number AS car_number,
+    c.number AS number,c.name AS name,
     CASE 
         WHEN m.movement_id IS NULL THEN 1
         ELSE 0
@@ -107,7 +107,7 @@ ON
 `
 
 export const fetchAllDriversQuery = `SELECT 
-    d.name AS driver_name,
+    d.name AS name, d.phone as phone,
     CASE 
         WHEN m.movement_id IS NULL THEN 1
         ELSE 0

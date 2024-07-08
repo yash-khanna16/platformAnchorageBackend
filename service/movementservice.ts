@@ -5,35 +5,35 @@ export async function fetchMovementService() {
   return new Promise((resolve, reject) => {
     fetchMovementModel()
       .then((results) => {
-        // const movements: { [key: string]: any } = {};
-        // results.rows.forEach((row:any) => {
-        //   const movement_id = row.movement_id;
+        const movements: { [key: string]: any } = {};
+        results.rows.forEach((row:any) => {
+          const movement_id = row.movement_id;
       
-        //   if (!movements[movement_id]) {
-        //     movements[movement_id] = {
-        //       movement_id: row.movement_id,
-        //       pickup_location: row.pickup_location,
-        //       pickup_time: row.pickup_time,
-        //       return_time: row.return_time,
-        //       car_number: row.car_number,
-        //       driver: row.driver,
-        //       car_name: row.car_name,
-        //       drop_location: row.drop_location,
-        //       passengers: []
-        //     };
-        //   }
+          if (!movements[movement_id]) {
+            movements[movement_id] = {
+              movement_id: row.movement_id,
+              pickup_location: row.pickup_location,
+              pickup_time: row.pickup_time,
+              return_time: row.return_time,
+              car_number: row.car_number,
+              driver: row.driver,
+              car_name: row.car_name,
+              drop_location: row.drop_location,
+              passengers: []
+            };
+          }
       
-        //   const passenger = {
-        //     passenger_id: row.passenger_id,
-        //     name: row.passenger_name,
-        //     phone: row.phone,
-        //     company: row.company,
-        //     remark: row.remark,
-        //     booking_id: row.booking_id
-        //   };
+          const passenger = {
+            passenger_id: row.passenger_id,
+            name: row.passenger_name,
+            phone: row.phone,
+            company: row.company,
+            remark: row.remark,
+            booking_id: row.booking_id
+          };
       
-        //   movements[movement_id].passengers.push(passenger);
-        // });
+          movements[movement_id].passengers.push(passenger);
+        });
       
         resolve(results.rows);
         // resolve(results.rows);

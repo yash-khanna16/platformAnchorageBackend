@@ -108,6 +108,7 @@ export const addDriver=async(req: Request, res: Response) => {
 }
 export const deleteDriver=async(req: Request, res: Response) => {
     const name = req.headers.name as string;
+    console.log("first: ", name)
     try {        
         deleteDriverService(name).then(result=>{
             res.status(200).send(result);
