@@ -1,6 +1,6 @@
 import { QueryResult } from "pg";
 import pool from "../db";
-import { getAllGuests, getNamedGuests, getAdmin, addGuestQuery, fetchResv, addBookingDetails, editBookingDetails, serverTime, fetchThisRoom, fetchGuest, fetchRooms, deleteBooking, findRoomConflict,editGuestQuery,findRoom,addRoom ,getRoom,setActive,hideThisRoom, EmailTemplate, GetEmailTemplate, fetchAvailRoom,editGuestEmail,deleteGuestDetails,getUpcoming, fetchBookingByBookingIdQuery
+import { getAllGuests, getNamedGuests, getAdmin, addGuestQuery, fetchResv, addBookingDetails, editBookingDetails, serverTime, fetchThisRoom, fetchGuest, fetchRooms, deleteBooking, findRoomConflict,editGuestQuery,findRoom,addRoom ,getRoom,setActive,hideThisRoom, EmailTemplate, GetEmailTemplate, fetchAvailRoom,editGuestEmail,deleteGuestDetails,getUpcoming, fetchBookingByBookingIdQuery, fetchMealsByDateQuery
 } from "./queries";
 
 
@@ -34,9 +34,9 @@ export async function fetchAdmin(adminId: string): Promise<QueryResult<any>> {
   }
 }
 
-export async function addGuestData(guestData: { guestEmail: string, guestName: string, guestPhone: number, guestCompany: string, guestVessel: string, guestRank: string }): Promise<QueryResult<any>> {
+export async function addGuestData(guestData: { guestEmail: string, guestName: string, guestPhone: number, guestCompany: string, guestVessel: string, guestRank: string; guestId: string; }): Promise<QueryResult<any>> {
   try {
-    const result = await pool.query(addGuestQuery, [guestData.guestEmail, guestData.guestName, guestData.guestPhone, guestData.guestCompany, guestData.guestVessel, guestData.guestRank]);
+    const result = await pool.query(addGuestQuery, [guestData.guestEmail, guestData.guestName, guestData.guestPhone, guestData.guestCompany, guestData.guestVessel, guestData.guestRank, guestData.guestId]);
     return result;
   } catch (error) {
     throw error;
@@ -144,9 +144,9 @@ export async function findConflict(checkData: { room: string, checkin: Date, che
   }
 }
 
-export async function editGuest(guestData: { guestEmail: string, guestName: string, guestPhone: number, guestCompany: string, guestVessel: string, guestRank: string }): Promise<QueryResult<any>> {
+export async function editGuest(guestData: { guestEmail: string, guestName: string, guestPhone: number, guestCompany: string, guestVessel: string, guestRank: string; guestId: string; }): Promise<QueryResult<any>> {
   try {
-    const result = await pool.query(editGuestQuery, [guestData.guestEmail, guestData.guestName, guestData.guestPhone, guestData.guestCompany, guestData.guestVessel, guestData.guestRank]);
+    const result = await pool.query(editGuestQuery, [guestData.guestEmail, guestData.guestName, guestData.guestPhone, guestData.guestCompany, guestData.guestVessel, guestData.guestRank, guestData.guestId]);
     return result;
   } catch (error) {
     throw error;
@@ -235,6 +235,62 @@ export async function fetchUpcoming(room: string): Promise<QueryResult<any>> {
 export async function fetchBookingByBookingId(bookingID: string): Promise<QueryResult<any>> {
   try {
     const result = await pool.query(fetchBookingByBookingIdQuery, [bookingID]);
+      return result;
+  } catch(error) {
+    throw error;
+  }
+}
+
+export async function updateMealsModel(mealDetailsList: MealDetails[]) {
+
+
+  try {
+
+    const values = mealDetailsList.map((mealDetails, index) => {
+      return `(
+        $${index * 8 + 1}, $${index * 8 + 2}, $${index * 8 + 3}, $${index * 8 + 4}, 
+        $${index * 8 + 5}, $${index * 8 + 6}, $${index * 8 + 7}, $${index * 8 + 8}
+      )`;
+    }).join(',');
+
+    const upsertQuery = `
+      INSERT INTO meals (
+        booking_id, date, breakfast_veg, breakfast_nonveg, lunch_veg, lunch_nonveg, dinner_veg, dinner_nonveg
+      ) VALUES ${values}
+      ON CONFLICT (booking_id, date) DO UPDATE
+      SET
+        breakfast_veg = EXCLUDED.breakfast_veg,
+        breakfast_nonveg = EXCLUDED.breakfast_nonveg,
+        lunch_veg = EXCLUDED.lunch_veg,
+        lunch_nonveg = EXCLUDED.lunch_nonveg,
+        dinner_veg = EXCLUDED.dinner_veg,
+        dinner_nonveg = EXCLUDED.dinner_nonveg;
+    `;
+
+    const params = mealDetailsList.flatMap(mealDetails => [
+      mealDetails.booking_id,
+      mealDetails.date,
+      mealDetails.breakfast_veg,
+      mealDetails.breakfast_nonveg,
+      mealDetails.lunch_veg,
+      mealDetails.lunch_nonveg,
+      mealDetails.dinner_veg,
+      mealDetails.dinner_nonveg,
+    ]);
+
+    await pool.query(upsertQuery, params);
+
+    // await client.query('COMMIT');
+    return { message: 'Meals updated successfully!' };
+  } catch (error) {
+    console.error('Error updating meals:', error);
+    throw new Error('Error updating meals');
+  }
+}
+
+export async function fetchMealsByDateModel(date: Date) {
+  try {
+    const result = await pool.query(fetchMealsByDateQuery, [date]);
       return result;
   } catch(error) {
     throw error;

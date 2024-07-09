@@ -6,9 +6,9 @@ export async function fetchMovementService() {
     fetchMovementModel()
       .then((results) => {
         const movements: { [key: string]: any } = {};
-        results.rows.forEach((row:any) => {
+        results.rows.forEach((row: any) => {
           const movement_id = row.movement_id;
-      
+
           if (!movements[movement_id]) {
             movements[movement_id] = {
               movement_id: row.movement_id,
@@ -22,7 +22,7 @@ export async function fetchMovementService() {
               passengers: []
             };
           }
-      
+
           const passenger = {
             passenger_id: row.passenger_id,
             name: row.passenger_name,
@@ -31,12 +31,12 @@ export async function fetchMovementService() {
             remark: row.remark,
             booking_id: row.booking_id
           };
-      
+
           movements[movement_id].passengers.push(passenger);
         });
-      
-        resolve(results.rows);
-        // resolve(results.rows);
+
+        const movementsArray = Object.values(movements);
+        resolve(movementsArray);
       })
       .catch((error) => {
         console.log(error);
