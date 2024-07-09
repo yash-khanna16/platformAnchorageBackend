@@ -120,7 +120,7 @@ export async function editMovementModel(details: editMovementDetailsType) {
             name = EXCLUDED.name,
             movement_id = EXCLUDED.movement_id;
         `;
-        await pool.query(upsertPassengerQuery, [passenger_id, company, phone, name]);
+        await pool.query(upsertPassengerQuery, [passenger_id, company, phone, name, movement_id]);
       }
 
       const upsertPassengerMovementQuery = `
