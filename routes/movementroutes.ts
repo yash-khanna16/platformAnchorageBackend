@@ -14,6 +14,7 @@ import {
   fetchavailableDrivers,
   fetchMovementByBookingId,
   fetchMovevment,
+  fetchEachPassenger,
 } from "../controllers/movementcontroller";
 const router = Router();
 
@@ -31,5 +32,7 @@ router.get("/fetchAllCars", fetchAllCars);
 router.get("/fetchAllDrivers", fetchAllDrivers);
 router.get("/deleteMovementFromMovementId", deleteMovementFromMovementId);
 router.get("/fetchMovementByBookingId", fetchMovementByBookingId);
+router.get("/fetchEachPassenger", fetchEachPassenger);
+
 
 export default router;
