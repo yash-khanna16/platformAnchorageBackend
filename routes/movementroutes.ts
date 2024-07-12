@@ -33,6 +33,6 @@ router.get("/fetchAllDrivers", fetchAllDrivers);
 router.get("/deleteMovementFromMovementId", deleteMovementFromMovementId);
 router.get("/fetchMovementByBookingId", fetchMovementByBookingId);
 router.get("/fetchEachPassenger", fetchEachPassenger);
-
+router.get("/fetchMovementByBookingId", fetchMovementByBookingId);
 
 export default router;
