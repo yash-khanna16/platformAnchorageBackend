@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getGuests, searchGuests, getAdmin, addGuests, getRoomResv, addBookingData, editBookingData, fetchAvailableRooms, getThisRoom, triggerBooking, deleteThisBooking, findConflictEntries,getInstantRoom,addNewRoom,removeRoom, updateEmailTemplate, fetchEmailTemplate, updateMealsService, fetchMealsByDateService} from "../service/guestservice";
+import { getGuests, searchGuests, getAdmin, addGuests, getRoomResv, addBookingData, editBookingData, fetchAvailableRooms, getThisRoom, triggerBooking, deleteThisBooking, findConflictEntries,getInstantRoom,addNewRoom,removeRoom, updateEmailTemplate, fetchEmailTemplate, updateMealsService, fetchMealsByDateService, fetchMealsByBookingIdService} from "../service/guestservice";
 
 export const getAllGuests = (req: Request, res: Response): void => {
   try {
@@ -280,6 +280,7 @@ export const getEmailTemplate=async(req: Request, res:Response) => {
 export const updateMeals=async(req: Request, res:Response) => {
   try {
     const mealDetails:MealDetails[] = req.body;  
+    console.log("first ", mealDetails)
       updateMealsService(mealDetails).then(result=>{
           res.status(200).send(result)
       }).catch(error=>{
@@ -293,6 +294,19 @@ export const fetchMealsByDate=async(req: Request, res:Response) => {
   try {
     const date:string = req.headers.date as string;  
       fetchMealsByDateService(date).then(result=>{
+          res.status(200).send(result)
+      }).catch(error=>{
+          res.status(500).send({message: "Internal Server Error"})
+      })
+  } catch(error) {
+      res.status(500).send({message: "Something went wrong, Please try again!"})  
+  }
+}
+
+export const fetchMealsByBookingId=async(req: Request, res:Response) => {
+  try {
+    const bookingId:string = req.headers.bookingid as string;  
+      fetchMealsByBookingIdService(bookingId).then(result=>{
           res.status(200).send(result)
       }).catch(error=>{
           res.status(500).send({message: "Internal Server Error"})

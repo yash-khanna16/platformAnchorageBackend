@@ -17,8 +17,9 @@ router.post('/addRoom',controller.addRoom);
 router.post('/deleteRoom',controller.deleteRoom);
 router.post("/editEmailTempalate", controller.editEmailTemplate)
 router.get("/getEmailTemplate", controller.getEmailTemplate)
-router.get("/updateMeals", controller.updateMeals)
+router.post("/updateMeals", controller.updateMeals)
 router.get("/fetchMealsByDate", controller.fetchMealsByDate)
+router.get("/fetchMealsByBookingId", controller.fetchMealsByBookingId)
 
 
 

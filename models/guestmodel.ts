@@ -1,6 +1,6 @@
 import { QueryResult } from "pg";
 import pool from "../db";
-import { getAllGuests, getNamedGuests, getAdmin, addGuestQuery, fetchResv, addBookingDetails, editBookingDetails, serverTime, fetchThisRoom, fetchGuest, fetchRooms, deleteBooking, findRoomConflict,editGuestQuery,findRoom,addRoom ,getRoom,setActive,hideThisRoom, EmailTemplate, GetEmailTemplate, fetchAvailRoom,editGuestEmail,deleteGuestDetails,getUpcoming, fetchBookingByBookingIdQuery, fetchMealsByDateQuery
+import { getAllGuests, getNamedGuests, getAdmin, addGuestQuery, fetchResv, addBookingDetails, editBookingDetails, serverTime, fetchThisRoom, fetchGuest, fetchRooms, deleteBooking, findRoomConflict,editGuestQuery,findRoom,addRoom ,getRoom,setActive,hideThisRoom, EmailTemplate, GetEmailTemplate, fetchAvailRoom,editGuestEmail,deleteGuestDetails,getUpcoming, fetchBookingByBookingIdQuery, fetchMealsByDateQuery, fetchMealsByBookingIdQuery
 } from "./queries";
 
 
@@ -242,8 +242,6 @@ export async function fetchBookingByBookingId(bookingID: string): Promise<QueryR
 }
 
 export async function updateMealsModel(mealDetailsList: MealDetails[]) {
-
-
   try {
 
     const values = mealDetailsList.map((mealDetails, index) => {
@@ -278,6 +276,8 @@ export async function updateMealsModel(mealDetailsList: MealDetails[]) {
       mealDetails.dinner_nonveg,
     ]);
 
+    console.log("query: ", upsertQuery, "params: ", params)
+
     await pool.query(upsertQuery, params);
 
     // await client.query('COMMIT');
@@ -288,7 +288,7 @@ export async function updateMealsModel(mealDetailsList: MealDetails[]) {
   }
 }
 
-export async function fetchMealsByDateModel(date: Date) {
+export async function fetchMealsByDateModel(date: string) {
   try {
     const result = await pool.query(fetchMealsByDateQuery, [date]);
       return result;
@@ -296,6 +296,17 @@ export async function fetchMealsByDateModel(date: Date) {
     throw error;
   }
 }
+
+export async function fetchMealsByBookingIdModel(bookingId: string) {
+  try {
+    console.log("bookingId ", bookingId)
+    const result = await pool.query(fetchMealsByBookingIdQuery, [bookingId]);
+      return result;
+  } catch(error) {
+    throw error;
+  }
+}
+
 
 
 

@@ -1,5 +1,5 @@
 import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
-import { addCarModel, addDriverModel, addMovementModel, checkConflict, deleteCarModel, deleteDriverModel, deleteMovementModel, deletePassengerFromMovementModel, editMovementModel, fetchAllCarsModel, fetchAllDriversModel, fetchAvailableCarsModel, fetchAvailableDriversModel, fetchMovementModel } from "../models/movementmodel";
+import { addCarModel, addDriverModel, addMovementModel, checkConflict, deleteCarModel, deleteDriverModel, deleteMovementModel, deletePassengerFromMovementModel, editMovementModel, fetchAllCarsModel, fetchAllDriversModel, fetchAvailableCarsModel, fetchAvailableDriversModel, fetchMovementByBookingIdModel, fetchMovementModel } from "../models/movementmodel";
 
 export async function fetchMovementService() {
   return new Promise((resolve, reject) => {
@@ -210,6 +210,16 @@ export async function deleteMovementService(movementId: string) {
     }).catch((error)=>{
       console.log("error deleting movement", error)
       reject("Error deleting movement!")
+    })
+  })
+}
+export async function fetchMovementByBookingIdService(bookingId: string) {
+  return new Promise((resolve, reject) => {
+    fetchMovementByBookingIdModel(bookingId).then((results) => {
+      resolve(results)
+    }).catch((error)=>{
+      console.log("error fetching movement by booking id", error)
+      reject("error fetching movement by booking id")
     })
   })
 }

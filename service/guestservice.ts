@@ -25,7 +25,8 @@ import {
   fetchUpcoming,
   fetchBookingByBookingId,
   updateMealsModel,
-  fetchMealsByDateModel
+  fetchMealsByDateModel,
+  fetchMealsByBookingIdModel
 } from "../models/guestmodel";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
@@ -630,6 +631,10 @@ export function fetchEmailTemplate(template_name: string): Promise<any> {
 }
 export function updateMealsService(mealDetails: MealDetails[] ): Promise<any> {
   return new Promise(async (resolve, reject) => {
+    mealDetails.map((meal) => {
+      console.log("date ", meal.date)
+      meal.date = new Date(meal.date);
+    })
     updateMealsModel(mealDetails)
       .then((results) => {
         resolve(results);
@@ -643,8 +648,24 @@ export function updateMealsService(mealDetails: MealDetails[] ): Promise<any> {
 
 export function fetchMealsByDateService(date: string): Promise<any> {
   return new Promise(async (resolve, reject) => {
-    const newDate = new Date(date)
+    const newDate = new Date(new Date(date).getTime() + 5.5 * 60 * 60 * 1000).toISOString().split("T")[0];
+    console.log("new date: ", newDate)
     fetchMealsByDateModel(newDate)
+      .then((results) => {
+        results.rows.map((row:any) => {
+          row.date = newDate;
+        })
+        resolve(results.rows);
+      })
+      .catch((error) => {
+        console.log(error);
+        reject("internal server error");
+      });
+  });
+}
+export function fetchMealsByBookingIdService(bookingId: string): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    fetchMealsByBookingIdModel(bookingId)
       .then((results) => {
         resolve(results.rows);
       })
@@ -654,5 +675,8 @@ export function fetchMealsByDateService(date: string): Promise<any> {
       });
   });
 }
+
+
+
 
 

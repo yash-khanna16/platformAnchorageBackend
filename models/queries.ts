@@ -112,4 +112,23 @@ export const fetchBookingByBookingIdQuery = `SELECT * FROM bookings where bookin
 
 export const insertMealByBookingID = `INSERT INTO meals (booking_id, date, breakfast_veg, breakfast_nonveg, lunch_veg, lunch_nonveg, dinner_veg, dinner_nonveg) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`;
 
-export const fetchMealsByDateQuery = `SELECT * FROM meals where date=$1`;
+export const fetchMealsByDateQuery = `
+    SELECT 
+        COALESCE(m.booking_id, b.booking_id) AS booking_id,
+        COALESCE(m.date, $1) AS date,
+        COALESCE(m.breakfast_veg, 0) AS breakfast_veg,
+        COALESCE(m.breakfast_nonveg, 0) AS breakfast_nonveg,
+        COALESCE(m.lunch_veg, 0) AS lunch_veg,
+        COALESCE(m.lunch_nonveg, 0) AS lunch_nonveg,
+        COALESCE(m.dinner_veg, 0) AS dinner_veg,
+        COALESCE(m.dinner_nonveg, 0) AS dinner_nonveg,
+        b.checkin,
+        b.checkout,
+        b.room,
+        g.name AS name
+    FROM bookings AS b
+    LEFT JOIN meals AS m ON b.booking_id = m.booking_id AND m.date = $1
+    LEFT JOIN guests AS g ON b.guest_email = g.email
+    WHERE b.checkin <= $1 AND b.checkout >= $1;`;
+
+export const fetchMealsByBookingIdQuery = `SELECT * FROM meals where booking_id = $1 ORDER BY date`

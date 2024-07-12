@@ -66,7 +66,7 @@ SELECT *
         ($1 <= m2.pickup_time AND $2 >= m2.return_time) 
         )
     );
-`
+`;
 export const fetchAvailableDriversQuery = `
 SELECT *
     FROM drivers
@@ -80,15 +80,14 @@ SELECT *
         ($1 <= m2.pickup_time AND $2 >= m2.return_time) 
         )
     );
-`
+`;
 export const addCarQuery = `INSERT INTO cars (name,number) values ($1,$2)`;
 
-export const deleteCarQuery = 'DELETE FROM cars where number = $1';
+export const deleteCarQuery = "DELETE FROM cars where number = $1";
 
-export const addDriverQuery = 'INSERT INTO drivers (name,phone) values ($1,$2)';
+export const addDriverQuery = "INSERT INTO drivers (name,phone) values ($1,$2)";
 
-export const deleteDriverQuery = 'DELETE FROM drivers WHERE name = $1';
-
+export const deleteDriverQuery = "DELETE FROM drivers WHERE name = $1";
 
 export const fetchAllCarsQuery = `
 SELECT 
@@ -104,7 +103,7 @@ LEFT JOIN
 ON 
     c.number = m.car_number
     AND (CURRENT_TIMESTAMP BETWEEN m.pickup_time AND m.return_time);
-`
+`;
 
 export const fetchAllDriversQuery = `SELECT 
     d.name AS name, d.phone as phone,
@@ -119,7 +118,11 @@ LEFT JOIN
 ON 
     d.name = m.driver
     AND (CURRENT_TIMESTAMP BETWEEN m.pickup_time AND m.return_time);
-;`
+;`;
 
-
-
+export const fetchMovementByBookingIdQuery = `SELECT 
+m.movement_id,p.booking_id,m.car_number, m.driver, m.pickup_location, m.pickup_time, m.return_time, m.drop_location
+ FROM movement AS m
+  INNER JOIN passengers AS p
+    ON m.movement_id = p.movement_id
+    WHERE p.booking_id = $1`;

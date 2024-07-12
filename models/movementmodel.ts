@@ -1,6 +1,6 @@
 import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
 import pool from "../db";
-import { addCarQuery, addDriverQuery, checkConflictQuery, deleteCarQuery, deleteDriverQuery, fetchAllCarsQuery, fetchAllDriversQuery, fetchAvailableCarsQuery, fetchAvailableDriversQuery, fetchMovementQuery } from "./movementqueries";
+import { addCarQuery, addDriverQuery, checkConflictQuery, deleteCarQuery, deleteDriverQuery, fetchAllCarsQuery, fetchAllDriversQuery, fetchAvailableCarsQuery, fetchAvailableDriversQuery, fetchMovementByBookingIdQuery, fetchMovementQuery } from "./movementqueries";
 import { v4 as uuidv4 } from "uuid";
 
 export async function fetchMovementModel() {
@@ -295,6 +295,15 @@ export async function deleteMovementModel(movementId: string) {
   } catch (error) {
     console.error('Error deleting movement and related data:', error);
     throw new Error('Error deleting movement and related data');
+  }
+}
+export async function fetchMovementByBookingIdModel(bookingId: string) {
+  try {    
+    const result = await pool.query(fetchMovementByBookingIdQuery, [bookingId]);
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching movement by booking id', error);
+    throw new Error('Error fetching movement by booking id');
   }
 }
 
