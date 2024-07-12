@@ -44,6 +44,19 @@ export async function fetchMovementService() {
       });
   });
 }
+export async function fetchEachPassengerService() {
+  return new Promise((resolve, reject) => {
+    fetchMovementModel()
+      .then((results) => {
+        const movements: { [key: string]: any } = {};
+        resolve(results.rows);
+      })
+      .catch((error) => {
+        console.log(error);
+        reject("Internal Server Error");
+      });
+  });
+}
 
 export async function addMovementService(details: movementDetailsType) {
   return new Promise((resolve, reject) => {
