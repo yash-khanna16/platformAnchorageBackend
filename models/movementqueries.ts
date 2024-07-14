@@ -7,6 +7,10 @@ export const fetchMovementQuery = `SELECT
     m.driver,
     c.name AS car_name,
     CASE
+        WHEN b.booking_id IS NOT NULL THEN FALSE
+        ELSE TRUE
+    END AS external_booking,
+    CASE
         WHEN b.booking_id IS NOT NULL THEN g.name
         ELSE ep.name
     END AS passenger_name,

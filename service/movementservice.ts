@@ -5,6 +5,7 @@ export async function fetchMovementService() {
   return new Promise((resolve, reject) => {
     fetchMovementModel()
       .then((results) => {
+        // console.log("first ", results)
         const movements: { [key: string]: any } = {};
         results.rows.forEach((row: any) => {
           const movement_id = row.movement_id;
@@ -29,6 +30,7 @@ export async function fetchMovementService() {
             phone: row.phone,
             company: row.company,
             remark: row.remark,
+            external_booking: row.external_booking,
             booking_id: row.booking_id
           };
 
@@ -101,12 +103,38 @@ export async function editMovementService(details: editMovementDetailsType) {
     details.pickup_time = new Date(details.pickup_time).toISOString();
     details.return_time = new Date(details.return_time).toISOString();
 
-    editMovementModel(details) .then((results) => {
-      resolve(results)
-    }).catch((error)=>{
-      console.log("error editing movement details: ", error)
-      reject("Error editing movement details")
-    })
+    if (!(details.driver === "Default" || details.car_number === "Default")) {
+      checkConflict(details.driver, details.car_number, details.pickup_time, details.return_time)
+        .then((conflict) => {
+          let conflicts = conflict.rows.filter((row:any)=> row.movement_id !== details.movement_id)
+          console.log("conflicts: ", conflicts);
+          if (conflicts.length > 0) {
+            resolve({message: "Conflicting Movements!", conflicts: conflicts});
+          } else {
+            editMovementModel(details)
+              .then((results) => {
+                resolve(results);
+              })
+              .catch((error) => {
+                console.log(error);
+                reject("Internal Server Error");
+              });
+          }
+        })
+        .catch((error) => {
+          console.log("Error fetching conflict ", error);
+          reject("Error fetching conflict");
+        });
+    } else {
+      editMovementModel(details)
+        .then((results) => {
+          resolve(results);
+        })
+        .catch((error) => {
+          console.log(error);
+          reject("Internal Server Error");
+        });
+    }
   })
 }
 export async function fetchAvailableCarsService(pickup_time: string, return_time: string) {
