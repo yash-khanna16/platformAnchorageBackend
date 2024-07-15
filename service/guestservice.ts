@@ -667,6 +667,9 @@ export function fetchMealsByBookingIdService(bookingId: string): Promise<any> {
   return new Promise(async (resolve, reject) => {
     fetchMealsByBookingIdModel(bookingId)
       .then((results) => {
+        results.rows.map((row:any) => {
+          row.date = new Date(new Date(row.date).getTime() + 5.5 * 60 * 60 * 1000)
+        })
         resolve(results.rows);
       })
       .catch((error) => {

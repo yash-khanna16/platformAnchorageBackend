@@ -129,6 +129,6 @@ export const fetchMealsByDateQuery = `
     FROM bookings AS b
     LEFT JOIN meals AS m ON b.booking_id = m.booking_id AND m.date = $1
     LEFT JOIN guests AS g ON b.guest_email = g.email
-    WHERE b.checkin <= $1 AND b.checkout >= $1;`;
+    WHERE b.checkin::date <= $1::date AND b.checkout::date >= $1::date;`;
 
 export const fetchMealsByBookingIdQuery = `SELECT * FROM meals where booking_id = $1 ORDER BY date`
