@@ -23,7 +23,10 @@ import {
   updateGuestEmail,
   deleteGuest,
   fetchUpcoming,
-  fetchBookingByBookingId
+  fetchBookingByBookingId,
+  updateMealsModel,
+  fetchMealsByDateModel,
+  fetchMealsByBookingIdModel
 } from "../models/guestmodel";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
@@ -141,6 +144,7 @@ export function addGuests(guestData: {
   guestCompany: string;
   guestVessel: string;
   guestRank: string;
+  guestId: string;
 }): Promise<any> {
   return new Promise(async (resolve, reject) => {
     const isGuest = await findGuest(guestData.guestEmail);
@@ -186,6 +190,7 @@ export function addBookingData(bookingData: {
   vessel: string;
   rank: string;
   breakfast: number;
+  guestId: string;
 }): Promise<any> {
   return new Promise(async (resolve, reject) => {
     bookingData.checkin = new Date(bookingData.checkin);
@@ -211,6 +216,7 @@ export function addBookingData(bookingData: {
         guestCompany: bookingData.company,
         guestVessel: bookingData.vessel,
         guestRank: bookingData.rank,
+        guestId: bookingData.guestId
       };
       if (isGuest.rows.length === 0) {
         try {
@@ -261,6 +267,8 @@ export function editBookingData(bookingData: {
   rank: string;
   breakfast: number;
   originalEmail: string;
+  guestId: string;
+
 }): Promise<any> {
   return new Promise(async (resolve, reject) => {
     bookingData.checkin = new Date(bookingData.checkin);
@@ -285,6 +293,7 @@ export function editBookingData(bookingData: {
                 guestCompany: bookingData.company,
                 guestVessel: bookingData.vessel,
                 guestRank: bookingData.rank,
+                guestId: bookingData.guestId
               };
               await editGuest(guestData);
               const newOriginalCheckin = new Date(originalCheckin.rows[0].checkin);
@@ -349,6 +358,7 @@ export function editBookingData(bookingData: {
                   guestCompany: bookingData.company,
                   guestVessel: bookingData.vessel,
                   guestRank: bookingData.rank,
+                  guestId: bookingData.guestId
                 };
                 await editGuest(guestData);
                 await deleteGuest(bookingData.originalEmail);
@@ -619,5 +629,57 @@ export function fetchEmailTemplate(template_name: string): Promise<any> {
       });
   });
 }
+export function updateMealsService(mealDetails: MealDetails[] ): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    mealDetails.map((meal) => {
+      console.log("date ", meal.date)
+      meal.date = new Date(meal.date);
+    })
+    updateMealsModel(mealDetails)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log(error);
+        reject("internal server error");
+      });
+  });
+}
+
+export function fetchMealsByDateService(date: string): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    const newDate = new Date(new Date(date).getTime() + 5.5 * 60 * 60 * 1000).toISOString().split("T")[0];
+    console.log("new date: ", newDate)
+    fetchMealsByDateModel(newDate)
+      .then((results) => {
+        results.rows.map((row:any) => {
+          row.date = newDate;
+        })
+        resolve(results.rows);
+      })
+      .catch((error) => {
+        console.log(error);
+        reject("internal server error");
+      });
+  });
+}
+export function fetchMealsByBookingIdService(bookingId: string): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    fetchMealsByBookingIdModel(bookingId)
+      .then((results) => {
+        results.rows.map((row:any) => {
+          row.date = new Date(new Date(row.date).getTime() + 5.5 * 60 * 60 * 1000)
+        })
+        resolve(results.rows);
+      })
+      .catch((error) => {
+        console.log(error);
+        reject("internal server error");
+      });
+  });
+}
+
+
+
 
 

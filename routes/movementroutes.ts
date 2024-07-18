@@ -5,11 +5,16 @@ import {
   addMovement,
   deleteCar,
   deleteDriver,
-  deleteMovement,
+  deleteMovementFromMovementId,
+  deletePassengerFromMovement,
   editMovement,
+  fetchAllCars,
+  fetchAllDrivers,
   fetchavailableCars,
   fetchavailableDrivers,
+  fetchMovementByBookingId,
   fetchMovevment,
+  fetchEachPassenger,
 } from "../controllers/movementcontroller";
 const router = Router();
 
@@ -22,6 +27,13 @@ router.post("/addCar", addCar);
 router.get("/deleteCar", deleteCar);
 router.post("/addDriver", addDriver);
 router.get("/deleteDriver", deleteDriver);
-router.get("/deleteMovement", deleteMovement);
+router.get("/deletePassengerFromMovement", deletePassengerFromMovement);
+router.get("/fetchAllCars", fetchAllCars);
+router.get("/fetchAllDrivers", fetchAllDrivers);
+router.get("/deleteMovementFromMovementId", deleteMovementFromMovementId);
+router.get("/fetchEachPassenger", fetchEachPassenger);
+router.get("/fetchMovementByBookingId", fetchMovementByBookingId);
+router.get("/fetchEachPassenger", fetchEachPassenger);
+router.get("/fetchMovementByBookingId", fetchMovementByBookingId);
 
 export default router;

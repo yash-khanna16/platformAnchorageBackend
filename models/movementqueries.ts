@@ -7,6 +7,10 @@ export const fetchMovementQuery = `SELECT
     m.driver,
     c.name AS car_name,
     CASE
+        WHEN b.booking_id IS NOT NULL THEN FALSE
+        ELSE TRUE
+    END AS external_booking,
+    CASE
         WHEN b.booking_id IS NOT NULL THEN g.name
         ELSE ep.name
     END AS passenger_name,
@@ -45,10 +49,12 @@ FROM movement
 WHERE
     (driver = $1 OR car_number = $2)
     AND
+    (
     ($3 <= pickup_time AND $4 >= pickup_time) OR
     ($3 <= return_time AND $4 >= return_time) OR
     ($3 >= pickup_time AND $4 <= return_time) OR
     ($3 <= pickup_time AND $4 >= return_time) 
+    )
 `;
 
 export const fetchAvailableCarsQuery = `
@@ -64,7 +70,7 @@ SELECT *
         ($1 <= m2.pickup_time AND $2 >= m2.return_time) 
         )
     );
-`
+`;
 export const fetchAvailableDriversQuery = `
 SELECT *
     FROM drivers
@@ -78,14 +84,81 @@ SELECT *
         ($1 <= m2.pickup_time AND $2 >= m2.return_time) 
         )
     );
-`
+`;
 export const addCarQuery = `INSERT INTO cars (name,number) values ($1,$2)`;
 
-export const deleteCarQuery = 'DELETE FROM cars where number = $1';
+export const deleteCarQuery = "DELETE FROM cars where number = $1";
 
-export const addDriverQuery = 'INSERT INTO drivers (name,phone) values ($1,$2)';
+export const addDriverQuery = "INSERT INTO drivers (name,phone) values ($1,$2)";
 
-export const deleteDriverQuery = 'DELETE FROM drivers WHERE name = $1';
+export const deleteDriverQuery = "DELETE FROM drivers WHERE name = $1";
 
+export const fetchAllCarsQuery = `
+SELECT 
+    c.number AS number,c.name AS name,
+    CASE 
+        WHEN m.movement_id IS NULL THEN 1
+        ELSE 0
+    END AS status
+FROM
+    cars c
+LEFT JOIN 
+    movement m 
+ON 
+    c.number = m.car_number
+    AND (CURRENT_TIMESTAMP BETWEEN m.pickup_time AND m.return_time);
+`;
 
+export const fetchAllDriversQuery = `SELECT 
+    d.name AS name, d.phone as phone,
+    CASE 
+        WHEN m.movement_id IS NULL THEN 1
+        ELSE 0
+    END AS status
+FROM 
+    drivers d
+LEFT JOIN 
+    movement m 
+ON 
+    d.name = m.driver
+    AND (CURRENT_TIMESTAMP BETWEEN m.pickup_time AND m.return_time);
+;`;
+
+export const fetchMovementByBookingIdQuery = `
+  SELECT 
+    m.movement_id,
+    p.booking_id,
+    m.car_number,
+    m.driver,
+    m.pickup_location,
+    m.pickup_time,
+    m.return_time,
+    m.drop_location
+  FROM 
+    movement AS m
+  INNER JOIN 
+    passengers AS p
+  ON 
+    m.movement_id = p.movement_id
+  WHERE 
+    p.booking_id = $1
+  UNION
+  SELECT 
+    ml.movement_id,
+    pl.booking_id,
+    ml.car_number,
+    ml.driver,
+    ml.pickup_location,
+    ml.pickup_time,
+    ml.return_time,
+    ml.drop_location
+  FROM 
+    movement_logs AS ml
+  INNER JOIN 
+    passengers_logs AS pl
+  ON 
+    ml.movement_id = pl.movement_id
+  WHERE 
+    pl.booking_id = $1
+`;
 

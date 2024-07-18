@@ -1,10 +1,22 @@
 import { Request, Response } from "express";
-import { addCarService, addDriverService, addMovementService, deleteCarService, deleteDriverService, deleteMovementService, editMovementService, fetchAvailableCarsService, fetchAvailableDriversService, fetchMovementService } from "../service/movementservice";
+import { addCarService, addDriverService, addMovementService, deleteCarService,fetchEachPassengerService, deleteDriverService, deleteMovementService, deletePassengerFromMovementService, editMovementService, fetchAllCarsService, fetchAllDriversService, fetchAvailableCarsService, fetchAvailableDriversService, fetchMovementService, fetchMovementByBookingIdService } from "../service/movementservice";
 import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
 
 export const fetchMovevment=async(req: Request, res: Response) => {
     try {        
         fetchMovementService().then(result=>{
+            res.status(200).send(result);
+        }).catch(error=>{
+            res.status(500).send({message: "Internal Server Error"});
+        })
+    } catch(error) {
+        res.status(500).send({message: "Something went wrong, Please try again!"})  
+    }
+}
+
+export const fetchEachPassenger=async(req: Request, res: Response) => {
+    try {        
+        fetchEachPassengerService().then(result=>{
             res.status(200).send(result);
         }).catch(error=>{
             res.status(500).send({message: "Internal Server Error"});
@@ -109,6 +121,7 @@ export const addDriver=async(req: Request, res: Response) => {
 }
 export const deleteDriver=async(req: Request, res: Response) => {
     const name = req.headers.name as string;
+    console.log("first: ", name)
     try {        
         deleteDriverService(name).then(result=>{
             res.status(200).send(result);
@@ -119,10 +132,11 @@ export const deleteDriver=async(req: Request, res: Response) => {
         res.status(500).send({message: "Something went wrong, Please try again!"})  
     }
 }
-export const deleteMovement=async(req: Request, res: Response) => {
+export const deletePassengerFromMovement=async(req: Request, res: Response) => {
     const movement_id = req.headers.movementid as string;
+    const passenger_id = req.headers.passengerid as string;
     try {        
-        deleteMovementService(movement_id).then(result=>{
+        deletePassengerFromMovementService(movement_id, passenger_id).then(result=>{
             res.status(200).send(result);
         }).catch(error=>{
             res.status(500).send({message: "Internal Server Error"});
@@ -131,3 +145,56 @@ export const deleteMovement=async(req: Request, res: Response) => {
         res.status(500).send({message: "Something went wrong, Please try again!"})  
     }
 }
+
+export const fetchAllCars=async(req: Request, res: Response) => {
+    try {        
+        fetchAllCarsService().then(result=>{
+            res.status(200).send(result);
+        }).catch(error=>{
+            res.status(500).send({message: "Internal Server Error"});
+        })
+    } catch(error) {
+        res.status(500).send({message: "Something went wrong, Please try again!"})  
+    }
+}
+
+export const fetchAllDrivers=async(req: Request, res: Response) => {
+    try {        
+        fetchAllDriversService().then(result=>{
+            res.status(200).send(result);
+        }).catch(error=>{
+            res.status(500).send({message: "Internal Server Error"});
+        })
+    } catch(error) {
+        res.status(500).send({message: "Something went wrong, Please try again!"})  
+    }
+}
+
+export const deleteMovementFromMovementId=async(req: Request, res: Response) => {
+    const movementId = req.headers.movementid as string;
+
+    try {        
+        deleteMovementService(movementId).then(result=>{
+            res.status(200).send(result);
+        }).catch(error=>{
+            res.status(500).send({message: "Internal Server Error"});
+        })
+    } catch(error) {
+        res.status(500).send({message: "Something went wrong, Please try again!"})  
+    }
+}
+
+export const fetchMovementByBookingId=async(req: Request, res: Response) => {
+    const bookingId = req.headers.bookingid as string;
+    try {        
+        fetchMovementByBookingIdService(bookingId).then(result=>{
+            res.status(200).send(result);
+        }).catch(error=>{
+            res.status(500).send({message: "Internal Server Error"});
+        })
+    } catch(error) {
+        res.status(500).send({message: "Something went wrong, Please try again!"})  
+    }
+}
+
+
