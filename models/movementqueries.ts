@@ -124,9 +124,41 @@ ON
     AND (CURRENT_TIMESTAMP BETWEEN m.pickup_time AND m.return_time);
 ;`;
 
-export const fetchMovementByBookingIdQuery = `SELECT 
-m.movement_id,p.booking_id,m.car_number, m.driver, m.pickup_location, m.pickup_time, m.return_time, m.drop_location
- FROM movement AS m
-  INNER JOIN passengers AS p
-    ON m.movement_id = p.movement_id
-    WHERE p.booking_id = $1`;
+export const fetchMovementByBookingIdQuery = `
+  SELECT 
+    m.movement_id,
+    p.booking_id,
+    m.car_number,
+    m.driver,
+    m.pickup_location,
+    m.pickup_time,
+    m.return_time,
+    m.drop_location
+  FROM 
+    movement AS m
+  INNER JOIN 
+    passengers AS p
+  ON 
+    m.movement_id = p.movement_id
+  WHERE 
+    p.booking_id = $1
+  UNION
+  SELECT 
+    ml.movement_id,
+    pl.booking_id,
+    ml.car_number,
+    ml.driver,
+    ml.pickup_location,
+    ml.pickup_time,
+    ml.return_time,
+    ml.drop_location
+  FROM 
+    movement_logs AS ml
+  INNER JOIN 
+    passengers_logs AS pl
+  ON 
+    ml.movement_id = pl.movement_id
+  WHERE 
+    pl.booking_id = $1
+`;
+
