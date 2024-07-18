@@ -31,6 +31,7 @@ router.get("/deletePassengerFromMovement", deletePassengerFromMovement);
 router.get("/fetchAllCars", fetchAllCars);
 router.get("/fetchAllDrivers", fetchAllDrivers);
 router.get("/deleteMovementFromMovementId", deleteMovementFromMovementId);
+router.get("/fetchEachPassenger", fetchEachPassenger);
 router.get("/fetchMovementByBookingId", fetchMovementByBookingId);
 router.get("/fetchEachPassenger", fetchEachPassenger);
 router.get("/fetchMovementByBookingId", fetchMovementByBookingId);
