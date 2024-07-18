@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { addCarService, addDriverService, addMovementService, deleteCarService,fetchEachPassengerService, deleteDriverService, deleteMovementService, deletePassengerFromMovementService, editMovementService, fetchAllCarsService, fetchAllDriversService, fetchAvailableCarsService, fetchAvailableDriversService, fetchMovementService } from "../service/movementservice";
+import { addCarService, addDriverService, addMovementService, deleteCarService,fetchEachPassengerService, deleteDriverService, deleteMovementService, deletePassengerFromMovementService, editMovementService, fetchAllCarsService, fetchAllDriversService, fetchAvailableCarsService, fetchAvailableDriversService, fetchMovementService, fetchMovementByBookingIdService } from "../service/movementservice";
 import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
 
 export const fetchMovevment=async(req: Request, res: Response) => {
