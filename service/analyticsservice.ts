@@ -33,6 +33,7 @@ export async function fetchAverageMealsBoughtPerDay(year: number, month: number)
         getAverageMealsBoughtPerDay(year, month)
             .then((results) => {
                 results.rows.map((row:{average_meals_per_day: string|null,booking_date: string}) => row.average_meals_per_day=row.average_meals_per_day ? row.average_meals_per_day:'0' )
+                console.log("results: ", results.rows)
                 resolve(results.rows);
             })
             .catch((error) => {
