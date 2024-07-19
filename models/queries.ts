@@ -101,7 +101,7 @@ export const getUpcoming = `
       SELECT 1 
       FROM bookings 
       WHERE (checkin >= NOW() 
-        AND checkin <= NOW() + INTERVAL '2 hours') 
+        AND checkin <= NOW() + INTERVAL '6 hours') 
         AND room = $1
     ) THEN TRUE
     ELSE FALSE
