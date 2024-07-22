@@ -675,17 +675,114 @@ export function fetchMealsByBookingIdService(bookingId: string): Promise<any> {
       });
   });
 }
-export function fetchOccupancyByBookingService(bookingId: string): Promise<any> {
+
+
+type BookingDateRange = {
+  start: string;
+  end: string;
+  bookings: BookingData[];
+};
+
+type BookingCategoryByDateRange = {
+  singleBookingRanges: BookingDateRange[];
+  doubleBookingRanges: BookingDateRange[];
+  tripleBookingRanges: BookingDateRange[];
+  quadrupleBookingRanges: BookingDateRange[];
+};
+
+export function fetchOccupancyByBookingService(bookingId: string): Promise<BookingCategoryByDateRange> {
   return new Promise(async (resolve, reject) => {
-    fetchBookingByBookingId(bookingId)
-      .then((data) => {
-        const bookingData = data;
-        console.log(bookingData);
-        // const conflicts=findConflictEntries({checkin:bookingData.checkin,checkout:bookingData.checkout,room:bookingData.room})
-        resolve(data);
-      })
-      .catch((error) => {
-        reject(error);
+    try {
+      const data = await fetchBookingByBookingId(bookingId);
+      const bookingData: BookingData = data.rows[0];
+      console.log(bookingData);
+      const conflicts: BookingData[] = await findConflictEntries({
+        checkin: bookingData.checkin,
+        checkout: bookingData.checkout,
+        room: bookingData.room,
       });
+
+      const categorizedConflicts = categorizeConflicts(bookingData, conflicts);
+      resolve(categorizedConflicts);
+    } catch (error) {
+      reject(error);
+    }
   });
+}
+
+function categorizeConflicts(bookingData: BookingData, conflicts: BookingData[]): BookingCategoryByDateRange {
+  const bookingDates = getDateRange(new Date(bookingData.checkin), new Date(bookingData.checkout));
+  const singleBookingRanges: BookingDateRange[] = [];
+  const doubleBookingRanges: BookingDateRange[] = [];
+  const tripleBookingRanges: BookingDateRange[] = [];
+  const quadrupleBookingRanges: BookingDateRange[] = [];
+
+  let currentRange: BookingDateRange | null = null;
+  let currentCount = 0;
+  let currentBookings: BookingData[] = [];
+
+  const pushCurrentRange = () => {
+    if (currentRange) {
+      switch (currentCount) {
+        case 1:
+          singleBookingRanges.push({ ...currentRange, bookings: currentBookings });
+          break;
+        case 2:
+          doubleBookingRanges.push({ ...currentRange, bookings: currentBookings });
+          break;
+        case 3:
+          tripleBookingRanges.push({ ...currentRange, bookings: currentBookings });
+          break;
+        case 4:
+          quadrupleBookingRanges.push({ ...currentRange, bookings: currentBookings });
+          break;
+      }
+      currentRange = null;
+      currentBookings = [];
+    }
+  };
+
+  bookingDates.forEach(date => {
+    const { overlapCount, overlappingBookings } = countOverlappingBookingsOnDate(date, bookingData, conflicts);
+
+    if (currentRange && overlapCount === currentCount) {
+      currentRange.end = date.toISOString();
+    } else {
+      pushCurrentRange();
+      currentCount = overlapCount;
+      currentBookings = overlappingBookings;
+      currentRange = { start: date.toISOString(), end: date.toISOString(), bookings: currentBookings };
+    }
+  });
+
+  pushCurrentRange();
+
+  return {
+    singleBookingRanges,
+    doubleBookingRanges,
+    tripleBookingRanges,
+    quadrupleBookingRanges,
+  };
+}
+
+function countOverlappingBookingsOnDate(date: Date, booking: BookingData, conflicts: BookingData[]): { overlapCount: number, overlappingBookings: BookingData[] } {
+  const overlappingBookings = conflicts.filter(conflict => 
+    conflict.booking_id !== booking.booking_id &&
+    new Date(conflict.checkin) <= date &&
+    new Date(conflict.checkout) >= date
+  );
+
+  const overlapCount = overlappingBookings.length + 1; // Including the booking itself
+
+  return { overlapCount, overlappingBookings: [booking, ...overlappingBookings] };
+}
+
+function getDateRange(startDate: Date, endDate: Date): Date[] {
+  const dates = [];
+  let currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    dates.push(new Date(currentDate));
+    currentDate.setHours(currentDate.getHours() + 1); // Increment by 1 hour
+  }
+  return dates;
 }
