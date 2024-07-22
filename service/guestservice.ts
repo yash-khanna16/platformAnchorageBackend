@@ -26,7 +26,7 @@ import {
   fetchBookingByBookingId,
   updateMealsModel,
   fetchMealsByDateModel,
-  fetchMealsByBookingIdModel
+  fetchMealsByBookingIdModel,
 } from "../models/guestmodel";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
@@ -40,7 +40,7 @@ dotenv.config();
 
 const transporter = nodemailer.createTransport({
   // service: "gmail", // You can use any email service
-  host: 'smtp.mailgun.org',
+  host: "smtp.mailgun.org",
   port: 465,
   auth: {
     user: process.env.NODE_MAIL_USER,
@@ -107,10 +107,7 @@ export function getAdmin(adminId: string, password: string): Promise<any> {
             reject("Admin not found");
             return;
           }
-          const compare = await bcrypt.compare(
-            password,
-            results.rows[0].password
-          );
+          const compare = await bcrypt.compare(password, results.rows[0].password);
 
           if (compare) {
             const token = jwt.sign(
@@ -197,7 +194,7 @@ export function addBookingData(bookingData: {
     bookingData.checkout = new Date(bookingData.checkout);
     if (bookingData.email.length === 0) {
       let auxEmail = uuidv4();
-      auxEmail = `${auxEmail}@chotahaathi.com`
+      auxEmail = `${auxEmail}@chotahaathi.com`;
       bookingData.email = auxEmail;
     }
     const checkData = {
@@ -216,7 +213,7 @@ export function addBookingData(bookingData: {
         guestCompany: bookingData.company,
         guestVessel: bookingData.vessel,
         guestRank: bookingData.rank,
-        guestId: bookingData.guestId
+        guestId: bookingData.guestId,
       };
       if (isGuest.rows.length === 0) {
         try {
@@ -268,7 +265,6 @@ export function editBookingData(bookingData: {
   breakfast: number;
   originalEmail: string;
   guestId: string;
-
 }): Promise<any> {
   return new Promise(async (resolve, reject) => {
     bookingData.checkin = new Date(bookingData.checkin);
@@ -293,7 +289,7 @@ export function editBookingData(bookingData: {
                 guestCompany: bookingData.company,
                 guestVessel: bookingData.vessel,
                 guestRank: bookingData.rank,
-                guestId: bookingData.guestId
+                guestId: bookingData.guestId,
               };
               await editGuest(guestData);
               const newOriginalCheckin = new Date(originalCheckin.rows[0].checkin);
@@ -315,22 +311,20 @@ export function editBookingData(bookingData: {
                   vessel: bookingData.vessel,
                   rank: bookingData.rank,
                   breakfast: bookingData.breakfast,
-                  booking_id: bookingData.bookingId
-                }
+                  booking_id: bookingData.bookingId,
+                };
                 try {
                   priorityQueue.removeById(bookingData.bookingId);
                   priorityQueue.enqueue(queueBooking);
                   priorityQueue.getAllEntries();
                   resolve("Edit booking successfull");
-                }
-                catch {
+                } catch {
                   priorityQueue.getAllEntries();
                   resolve("Edit booking successfull");
                 }
               }
               resolve("successfully editted");
-            }
-            else {
+            } else {
               const isGuest = await findGuest(bookingData.email);
               if (isGuest.rows.length === 0) {
                 try {
@@ -341,10 +335,10 @@ export function editBookingData(bookingData: {
                     guestCompany: bookingData.company,
                     guestVessel: bookingData.vessel,
                     guestRank: bookingData.rank,
-                    guestOrgEmail: bookingData.originalEmail
+                    guestOrgEmail: bookingData.originalEmail,
                   };
                   await updateGuestEmail(guestData);
-                  resolve("successfully editted")
+                  resolve("successfully editted");
                 } catch (error) {
                   console.log(error);
                   reject("internal server error");
@@ -358,7 +352,7 @@ export function editBookingData(bookingData: {
                   guestCompany: bookingData.company,
                   guestVessel: bookingData.vessel,
                   guestRank: bookingData.rank,
-                  guestId: bookingData.guestId
+                  guestId: bookingData.guestId,
                 };
                 await editGuest(guestData);
                 await deleteGuest(bookingData.originalEmail);
@@ -378,22 +372,19 @@ export function editBookingData(bookingData: {
                 vessel: bookingData.vessel,
                 rank: bookingData.rank,
                 breakfast: bookingData.breakfast,
-                booking_id: bookingData.bookingId
-              }
+                booking_id: bookingData.bookingId,
+              };
               try {
                 priorityQueue.removeById(bookingData.bookingId);
                 priorityQueue.enqueue(queueBooking);
                 resolve("Edit booking successfull");
-              }
-              catch {
+              } catch {
                 priorityQueue.enqueue(queueBooking);
                 resolve("Edit booking successfull");
               }
               resolve("editted successfully");
             }
-
-          }
-          catch {
+          } catch {
             reject("Error changing the guest details");
           }
         })
@@ -402,9 +393,7 @@ export function editBookingData(bookingData: {
           reject("internal server error");
         });
     } else {
-      reject(
-        "room is booked for the given range cant change the checkout date"
-      );
+      reject("room is booked for the given range cant change the checkout date");
       return;
     }
   });
@@ -421,9 +410,9 @@ export async function fetchAvailableRooms(checkData: {
   console.log(checkData.checkout);
   try {
     const allRooms = await fetchAllRooms();
-    console.log("here 1", allRooms)
+    console.log("here 1", allRooms);
     const result = await fetchAvailRooms(checkData);
-    console.log("here 2", result)
+    console.log("here 2", result);
     const conditionMap = new Map(
       result.rows.map((room: { room: string; condition_met: string }) => [
         room.room,
@@ -470,7 +459,9 @@ export async function triggerBooking(booking: BookingData) {
       subject: subject,
       text: content,
     };
-    console.log(`Sending Email to ${booking.email} from: ${process.env.NODE_MAIL_FROM_EMAIL} user: ${process.env.NODE_MAIL_USER} `)
+    console.log(
+      `Sending Email to ${booking.email} from: ${process.env.NODE_MAIL_FROM_EMAIL} user: ${process.env.NODE_MAIL_USER} `
+    );
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.log("Error sending email:", error);
@@ -479,7 +470,7 @@ export async function triggerBooking(booking: BookingData) {
       }
     });
   } else {
-    console.log("temp email found!")
+    console.log("temp email found!");
   }
 }
 
@@ -507,8 +498,7 @@ export function deleteThisBooking(bookingId: string): Promise<any> {
         try {
           priorityQueue.removeById(bookingId);
           resolve(results.rows);
-        }
-        catch {
+        } catch {
           resolve(results.rows);
         }
       })
@@ -548,12 +538,14 @@ export function getInstantRoom(): Promise<any> {
       const result = await findInstantRoom(newDate);
 
       // Wait for all fetchUpcoming promises to resolve
-      const updatedRows = await Promise.all(result.rows.map(async (row) => {
-        row.status = row.status + "/4";
-        const res = await fetchUpcoming(row.room);
-        row.upcoming = res;
-        return row;
-      }));
+      const updatedRows = await Promise.all(
+        result.rows.map(async (row) => {
+          row.status = row.status + "/4";
+          const res = await fetchUpcoming(row.room);
+          row.upcoming = res;
+          return row;
+        })
+      );
 
       resolve(updatedRows);
     } catch (error) {
@@ -561,7 +553,6 @@ export function getInstantRoom(): Promise<any> {
     }
   });
 }
-
 
 export function addNewRoom(room: string): Promise<any> {
   return new Promise(async (resolve, reject) => {
@@ -604,7 +595,11 @@ export function removeRoom(room: string): Promise<any> {
   });
 }
 
-export function updateEmailTemplate(template: string, content: string, subject: string): Promise<any> {
+export function updateEmailTemplate(
+  template: string,
+  content: string,
+  subject: string
+): Promise<any> {
   return new Promise(async (resolve, reject) => {
     editEmailTemplate(template, content, subject)
       .then((results) => {
@@ -629,12 +624,12 @@ export function fetchEmailTemplate(template_name: string): Promise<any> {
       });
   });
 }
-export function updateMealsService(mealDetails: MealDetails[] ): Promise<any> {
+export function updateMealsService(mealDetails: MealDetails[]): Promise<any> {
   return new Promise(async (resolve, reject) => {
     mealDetails.map((meal) => {
-      console.log("date ", meal.date)
+      console.log("date ", meal.date);
       meal.date = new Date(meal.date);
-    })
+    });
     updateMealsModel(mealDetails)
       .then((results) => {
         resolve(results);
@@ -648,13 +643,15 @@ export function updateMealsService(mealDetails: MealDetails[] ): Promise<any> {
 
 export function fetchMealsByDateService(date: string): Promise<any> {
   return new Promise(async (resolve, reject) => {
-    const newDate = new Date(new Date(date).getTime() + 5.5 * 60 * 60 * 1000).toISOString().split("T")[0];
-    console.log("new date: ", newDate)
+    const newDate = new Date(new Date(date).getTime() + 5.5 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+    console.log("new date: ", newDate);
     fetchMealsByDateModel(newDate)
       .then((results) => {
-        results.rows.map((row:any) => {
+        results.rows.map((row: any) => {
           row.date = newDate;
-        })
+        });
         resolve(results.rows);
       })
       .catch((error) => {
@@ -667,9 +664,9 @@ export function fetchMealsByBookingIdService(bookingId: string): Promise<any> {
   return new Promise(async (resolve, reject) => {
     fetchMealsByBookingIdModel(bookingId)
       .then((results) => {
-        results.rows.map((row:any) => {
-          row.date = new Date(new Date(row.date).getTime() + 5.5 * 60 * 60 * 1000)
-        })
+        results.rows.map((row: any) => {
+          row.date = new Date(new Date(row.date).getTime() + 5.5 * 60 * 60 * 1000);
+        });
         resolve(results.rows);
       })
       .catch((error) => {
@@ -678,8 +675,17 @@ export function fetchMealsByBookingIdService(bookingId: string): Promise<any> {
       });
   });
 }
-
-
-
-
-
+export function fetchOccupancyByBookingService(bookingId: string): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    fetchBookingByBookingId(bookingId)
+      .then((data) => {
+        const bookingData = data;
+        console.log(bookingData);
+        // const conflicts=findConflictEntries({checkin:bookingData.checkin,checkout:bookingData.checkout,room:bookingData.room})
+        resolve(data);
+      })
+      .catch((error) => {
+        reject(error);
+      });
+  });
+}
