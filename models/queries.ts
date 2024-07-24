@@ -67,14 +67,21 @@ export const deleteBooking = "DELETE from bookings where booking_id=$1";
 
 export const deleteGuestDetails = "DELETE from guests where email=$1";
 
-export const findRoomConflict = `SELECT *
-FROM bookings
-WHERE room = $3
+export const findRoomConflict = `SELECT 
+  b.*,
+  g.name,
+  g.phone,
+  g.company,
+  g.vessel,
+  g.rank
+FROM bookings b
+JOIN guests g ON b.guest_email = g.email
+WHERE b.room = $3
   AND (
-    (checkin <= $1 AND checkout >= $2)
-    OR (checkin >= $1 AND checkout <= $2)
-    OR (checkin <= $1 AND checkout >= $1 AND checkout <= $2)
-    OR (checkin >= $1 AND checkin <= $2 AND checkout >= $2)
+    (b.checkin <= $1 AND b.checkout >= $2)
+    OR (b.checkin >= $1 AND b.checkout <= $2)
+    OR (b.checkin <= $1 AND b.checkout >= $1 AND b.checkout <= $2)
+    OR (b.checkin >= $1 AND b.checkin <= $2 AND b.checkout >= $2)
   );
 `;
 

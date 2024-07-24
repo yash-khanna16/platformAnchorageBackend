@@ -677,6 +677,26 @@ export function fetchMealsByBookingIdService(bookingId: string): Promise<any> {
 }
 
 
+function convertUTCToIST(date: Date): Date {
+  // Calculate the IST offset in milliseconds (5 hours 30 minutes)
+  const istOffset: number = 5 * 60 * 60 * 1000 + 30 * 60 * 1000;
+
+  // Get the UTC time in milliseconds
+  const utcTime: number = date.getTime();
+
+  // Calculate the IST time by adding the offset
+  const istTime: Date = new Date(utcTime + istOffset);
+
+  return istTime;
+}
+
+type TimelineEntry = {
+  start: Date;
+  end: Date;
+  occupancy: string;
+  bookings: BookingData[];
+}
+
 type BookingDateRange = {
   start: string;
   end: string;
@@ -690,99 +710,188 @@ type BookingCategoryByDateRange = {
   quadrupleBookingRanges: BookingDateRange[];
 };
 
-export function fetchOccupancyByBookingService(bookingId: string): Promise<BookingCategoryByDateRange> {
+export async function fetchOccupancyByBookingService(bookingId: string): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
       const data = await fetchBookingByBookingId(bookingId);
       const bookingData: BookingData = data.rows[0];
-      console.log(bookingData);
       const conflicts: BookingData[] = await findConflictEntries({
-        checkin: bookingData.checkin,
-        checkout: bookingData.checkout,
+        checkin: (bookingData.checkin),
+        checkout: (bookingData.checkout),
         room: bookingData.room,
       });
 
-      const categorizedConflicts = categorizeConflicts(bookingData, conflicts);
-      resolve(categorizedConflicts);
+      conflicts.forEach((conflict) => {
+        conflict.checkin = convertUTCToIST(conflict.checkin);
+        conflict.checkout = convertUTCToIST(conflict.checkout);
+      })
+
+      bookingData.checkin = convertUTCToIST(bookingData.checkin);
+      bookingData.checkout = convertUTCToIST(bookingData.checkout)
+
+      console.log("conflicts: ", conflicts)
+
+      const timeline = generateTimeline(bookingData, conflicts);
+      resolve(timeline);
     } catch (error) {
+      console.log("first ", error)
       reject(error);
     }
   });
 }
 
-function categorizeConflicts(bookingData: BookingData, conflicts: BookingData[]): BookingCategoryByDateRange {
-  const bookingDates = getDateRange(new Date(bookingData.checkin), new Date(bookingData.checkout));
-  const singleBookingRanges: BookingDateRange[] = [];
-  const doubleBookingRanges: BookingDateRange[] = [];
-  const tripleBookingRanges: BookingDateRange[] = [];
-  const quadrupleBookingRanges: BookingDateRange[] = [];
+function generateTimeline(bookingData: BookingData, conflicts: BookingData[]): TimelineEntry[] {
+  interface Event {
+    time: Date;
+    type: 'start' | 'end';
+    booking: BookingData;
+  }
 
-  let currentRange: BookingDateRange | null = null;
-  let currentCount = 0;
-  let currentBookings: BookingData[] = [];
+  const events: Event[] = [];
 
-  const pushCurrentRange = () => {
-    if (currentRange) {
-      switch (currentCount) {
-        case 1:
-          singleBookingRanges.push({ ...currentRange, bookings: currentBookings });
-          break;
-        case 2:
-          doubleBookingRanges.push({ ...currentRange, bookings: currentBookings });
-          break;
-        case 3:
-          tripleBookingRanges.push({ ...currentRange, bookings: currentBookings });
-          break;
-        case 4:
-          quadrupleBookingRanges.push({ ...currentRange, bookings: currentBookings });
-          break;
-      }
-      currentRange = null;
-      currentBookings = [];
+  // Add the main booking as an event
+  events.push({ time: bookingData.checkin, type: 'start', booking: bookingData });
+  events.push({ time: bookingData.checkout, type: 'end', booking: bookingData });
+
+  // Add conflict bookings as events
+  conflicts.forEach(conflict => {
+    events.push({ time: conflict.checkin, type: 'start', booking: conflict });
+    events.push({ time: conflict.checkout, type: 'end', booking: conflict });
+  });
+
+  // Sort events by time
+  events.sort((a, b) => a.time.getTime() - b.time.getTime());
+
+  const timeline: TimelineEntry[] = [];
+  const activeBookings: Map<string, BookingData> = new Map();
+  let lastTime: Date = events[0].time;
+
+  events.forEach(event => {
+    if (event.time.getTime() !== lastTime.getTime()) {
+      timeline.push({
+        start: lastTime,
+        end: event.time,
+        occupancy: getOccupancyDescription(activeBookings.size),
+        bookings: Array.from(activeBookings.values()),
+      });
+      lastTime = event.time;
     }
-  };
 
-  bookingDates.forEach(date => {
-    const { overlapCount, overlappingBookings } = countOverlappingBookingsOnDate(date, bookingData, conflicts);
-
-    if (currentRange && overlapCount === currentCount) {
-      currentRange.end = date.toISOString();
-    } else {
-      pushCurrentRange();
-      currentCount = overlapCount;
-      currentBookings = overlappingBookings;
-      currentRange = { start: date.toISOString(), end: date.toISOString(), bookings: currentBookings };
+    if (event.type === 'start') {
+      activeBookings.set(event.booking.booking_id, event.booking);
+    } else if (event.type === 'end') {
+      activeBookings.delete(event.booking.booking_id);
     }
   });
 
-  pushCurrentRange();
-
-  return {
-    singleBookingRanges,
-    doubleBookingRanges,
-    tripleBookingRanges,
-    quadrupleBookingRanges,
-  };
-}
-
-function countOverlappingBookingsOnDate(date: Date, booking: BookingData, conflicts: BookingData[]): { overlapCount: number, overlappingBookings: BookingData[] } {
-  const overlappingBookings = conflicts.filter(conflict => 
-    conflict.booking_id !== booking.booking_id &&
-    new Date(conflict.checkin) <= date &&
-    new Date(conflict.checkout) >= date
-  );
-
-  const overlapCount = overlappingBookings.length + 1; // Including the booking itself
-
-  return { overlapCount, overlappingBookings: [booking, ...overlappingBookings] };
-}
-
-function getDateRange(startDate: Date, endDate: Date): Date[] {
-  const dates = [];
-  let currentDate = new Date(startDate);
-  while (currentDate <= endDate) {
-    dates.push(new Date(currentDate));
-    currentDate.setHours(currentDate.getHours() + 1); // Increment by 1 hour
+  // Add final timeline entry if there's remaining active bookings
+  if (activeBookings.size > 0) {
+    timeline.push({
+      start: lastTime,
+      end: events[events.length - 1].time,
+      occupancy: getOccupancyDescription(activeBookings.size),
+      bookings: Array.from(activeBookings.values()),
+    });
   }
-  return dates;
+
+  let filteredTimeLine:TimelineEntry[] = [];
+
+  timeline.forEach((event)=>{
+    if ((event.start.getTime() >= bookingData.checkin.getTime()) && (event.end.getTime() <= bookingData.checkout.getTime())) {
+      filteredTimeLine.push(event); 
+    }
+  })
+
+  return filteredTimeLine;
 }
+
+function getOccupancyDescription(size: number): string {
+  switch (size) {
+    case 1:
+      return 'SINGLE OCCUPANCY';
+    case 2:
+      return 'DOUBLE OCCUPANCY';
+    case 3:
+      return 'TRIPLE OCCUPANCY';
+    case 4:
+      return 'QUADRUPLE OCCUPANCY'
+    default:
+      return `${size}-PLE OCCUPANCY`;
+  }
+}
+// function categorizeConflicts(bookingData: BookingData, conflicts: BookingData[]): BookingCategoryByDateRange {
+//   const bookingDates = getDateRange(new Date(bookingData.checkin), new Date(bookingData.checkout));
+//   const singleBookingRanges: BookingDateRange[] = [];
+//   const doubleBookingRanges: BookingDateRange[] = [];
+//   const tripleBookingRanges: BookingDateRange[] = [];
+//   const quadrupleBookingRanges: BookingDateRange[] = [];
+
+//   let currentRange: BookingDateRange | null = null;
+//   let currentCount = 0;
+//   let currentBookings: BookingData[] = [];
+
+//   const pushCurrentRange = () => {
+//     if (currentRange) {
+//       switch (currentCount) {
+//         case 1:
+//           singleBookingRanges.push({ ...currentRange, bookings: currentBookings });
+//           break;
+//         case 2:
+//           doubleBookingRanges.push({ ...currentRange, bookings: currentBookings });
+//           break;
+//         case 3:
+//           tripleBookingRanges.push({ ...currentRange, bookings: currentBookings });
+//           break;
+//         case 4:
+//           quadrupleBookingRanges.push({ ...currentRange, bookings: currentBookings });
+//           break;
+//       }
+//       currentRange = null;
+//       currentBookings = [];
+//     }
+//   };
+
+//   bookingDates.forEach(date => {
+//     const { overlapCount, overlappingBookings } = countOverlappingBookingsOnDate(date, bookingData, conflicts);
+
+//     if (currentRange && overlapCount === currentCount) {
+//       currentRange.end = date.toISOString();
+//     } else {
+//       pushCurrentRange();
+//       currentCount = overlapCount;
+//       currentBookings = overlappingBookings;
+//       currentRange = { start: date.toISOString(), end: date.toISOString(), bookings: currentBookings };
+//     }
+//   });
+
+//   pushCurrentRange();
+
+//   return {
+//     singleBookingRanges,
+//     doubleBookingRanges,
+//     tripleBookingRanges,
+//     quadrupleBookingRanges,
+//   };
+// }
+
+// function countOverlappingBookingsOnDate(date: Date, booking: BookingData, conflicts: BookingData[]): { overlapCount: number, overlappingBookings: BookingData[] } {
+//   const overlappingBookings = conflicts.filter(conflict => 
+//     conflict.booking_id !== booking.booking_id &&
+//     new Date(conflict.checkin) <= date &&
+//     new Date(conflict.checkout) >= date
+//   );
+
+//   const overlapCount = overlappingBookings.length + 1; // Including the booking itself
+
+//   return { overlapCount, overlappingBookings: [booking, ...overlappingBookings] };
+// }
+
+// function getDateRange(startDate: Date, endDate: Date): Date[] {
+//   const dates = [];
+//   let currentDate = new Date(startDate);
+//   while (currentDate <= endDate) {
+//     dates.push(new Date(currentDate));
+//     currentDate.setHours(currentDate.getHours() + 1); // Increment by 1 hour
+//   }
+//   return dates;
+// }
