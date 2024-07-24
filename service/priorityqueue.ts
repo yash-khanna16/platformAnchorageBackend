@@ -46,7 +46,7 @@ class PriorityQueue {
     public removeById(bookingId: string): BookingData | undefined {
         const index = this.queue.findIndex(booking => booking.booking_id === bookingId);
         if (index === -1) {
-            throw new Error(`Booking with ID ${bookingId} not found`);
+            return ;
         }
         return this.queue.splice(index, 1)[0];
     }
