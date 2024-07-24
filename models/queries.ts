@@ -74,7 +74,11 @@ export const findRoomConflict = `SELECT
   g.company,
   g.vessel,
   g.rank
-FROM bookings b
+FROM (
+  SELECT * FROM bookings
+  UNION ALL
+  SELECT * FROM logs
+) b
 JOIN guests g ON b.guest_email = g.email
 WHERE b.room = $3
   AND (
@@ -83,6 +87,7 @@ WHERE b.room = $3
     OR (b.checkin <= $1 AND b.checkout >= $1 AND b.checkout <= $2)
     OR (b.checkin >= $1 AND b.checkin <= $2 AND b.checkout >= $2)
   );
+
 `;
 
 export const editGuestQuery =
