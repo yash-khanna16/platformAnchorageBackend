@@ -5,6 +5,7 @@ export const fetchMovementQuery = `SELECT
     m.return_time,
     m.car_number,
     m.driver,
+    p.booking_id,
     c.name AS car_name,
     CASE
         WHEN b.booking_id IS NOT NULL THEN FALSE
@@ -161,4 +162,59 @@ export const fetchMovementByBookingIdQuery = `
   WHERE 
     pl.booking_id = $1
 `;
+export const deleteMovementByBookingIdQueryFromPassengers = `
+DELETE FROM passengers
+WHERE booking_id = $1;
+  `;
+export const deleteMovementByBookingIdQueryFromPassengersLog = `
+DELETE FROM passengers_logs
+WHERE booking_id = $1;
+  `;
 
+
+  export const fetchMovementQueryByMovementId = `SELECT 
+    m.movement_id,
+    m.pickup_location,
+    m.pickup_time,
+    m.return_time,
+    m.car_number,
+    m.driver,
+    p.booking_id,
+    c.name AS car_name,
+    CASE
+        WHEN b.booking_id IS NOT NULL THEN FALSE
+        ELSE TRUE
+    END AS external_booking,
+    CASE
+        WHEN b.booking_id IS NOT NULL THEN g.name
+        ELSE ep.name
+    END AS passenger_name,
+    p.passenger_id AS passenger_id,
+    CASE
+        WHEN b.booking_id IS NOT NULL THEN g.phone
+        ELSE ep.phone
+    END AS phone,
+    m.drop_location AS drop_location,
+    CASE
+        WHEN b.booking_id IS NOT NULL THEN g.company
+        ELSE ep.company
+    END AS company,
+    p.remark
+FROM 
+    movement m
+LEFT JOIN 
+    cars c ON m.car_number = c.number
+LEFT JOIN 
+    passengers p ON m.movement_id = p.movement_id
+LEFT JOIN 
+    bookings b ON p.booking_id = b.booking_id
+LEFT JOIN 
+    guests g ON b.guest_email = g.email
+LEFT JOIN 
+    external_passenger ep ON p.passenger_id = ep.passenger_id
+WHERE 
+    ((b.booking_id IS NULL AND p.passenger_id IS NOT NULL)
+    OR (b.booking_id IS NOT NULL) )
+    AND (m.movement_id=$1)
+ORDER BY m.movement_id, passenger_name;
+`;

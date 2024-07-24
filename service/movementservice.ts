@@ -1,5 +1,5 @@
 import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
-import { addCarModel, addDriverModel, addMovementModel, checkConflict, deleteCarModel, deleteDriverModel, deleteMovementModel, deletePassengerFromMovementModel, editMovementModel, fetchAllCarsModel, fetchAllDriversModel, fetchAvailableCarsModel, fetchAvailableDriversModel, fetchMovementByBookingIdModel, fetchMovementModel } from "../models/movementmodel";
+import { addCarModel, addDriverModel, addMovementModel, checkConflict, deleteCarModel,deleteMovementByBookingIdModel, deleteDriverModel, deleteMovementModel, deletePassengerFromMovementModel, editMovementModel, fetchAllCarsModel, fetchAllDriversModel, fetchAvailableCarsModel, fetchAvailableDriversModel, fetchMovementByBookingIdModel, fetchMovementModel } from "../models/movementmodel";
 
 export async function fetchMovementService() {
   return new Promise((resolve, reject) => {
@@ -7,6 +7,7 @@ export async function fetchMovementService() {
       .then((results) => {
         // console.log("first ", results)
         const movements: { [key: string]: any } = {};
+        console.log(results.rows)
         results.rows.forEach((row: any) => {
           const movement_id = row.movement_id;
 
@@ -257,6 +258,17 @@ export async function deleteMovementService(movementId: string) {
 export async function fetchMovementByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
     fetchMovementByBookingIdModel(bookingId).then((results) => {
+      resolve(results)
+    }).catch((error)=>{
+      console.log("error fetching movement by booking id", error)
+      reject("error fetching movement by booking id")
+    })
+  })
+}
+export async function deleteMovementByBookingIdService(bookingId: string) {
+  return new Promise((resolve, reject) => {
+    console.log("Hello");
+    deleteMovementByBookingIdModel(bookingId).then((results) => {
       resolve(results)
     }).catch((error)=>{
       console.log("error fetching movement by booking id", error)

@@ -28,6 +28,7 @@ import {
   fetchMealsByDateModel,
   fetchMealsByBookingIdModel,
 } from "../models/guestmodel";
+import { deleteMovementByBookingIdService } from "./movementservice";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
@@ -494,12 +495,14 @@ function monitorQueue() {
 export function deleteThisBooking(bookingId: string): Promise<any> {
   return new Promise((resolve, reject) => {
     removeBooking(bookingId)
-      .then((results) => {
+      .then(async (results) => {
         try {
           priorityQueue.removeById(bookingId);
-          resolve(results.rows);
+          const data = await deleteMovementByBookingIdService(bookingId);
+          resolve(data);
         } catch {
-          resolve(results.rows);
+          console.log("inside catch 2");
+          reject("Some problem occured");
         }
       })
       .catch((error) => {
@@ -676,7 +679,6 @@ export function fetchMealsByBookingIdService(bookingId: string): Promise<any> {
   });
 }
 
-
 type BookingDateRange = {
   start: string;
   end: string;
@@ -690,7 +692,9 @@ type BookingCategoryByDateRange = {
   quadrupleBookingRanges: BookingDateRange[];
 };
 
-export function fetchOccupancyByBookingService(bookingId: string): Promise<BookingCategoryByDateRange> {
+export function fetchOccupancyByBookingService(
+  bookingId: string
+): Promise<BookingCategoryByDateRange> {
   return new Promise(async (resolve, reject) => {
     try {
       const data = await fetchBookingByBookingId(bookingId);
@@ -710,7 +714,10 @@ export function fetchOccupancyByBookingService(bookingId: string): Promise<Booki
   });
 }
 
-function categorizeConflicts(bookingData: BookingData, conflicts: BookingData[]): BookingCategoryByDateRange {
+function categorizeConflicts(
+  bookingData: BookingData,
+  conflicts: BookingData[]
+): BookingCategoryByDateRange {
   const bookingDates = getDateRange(new Date(bookingData.checkin), new Date(bookingData.checkout));
   const singleBookingRanges: BookingDateRange[] = [];
   const doubleBookingRanges: BookingDateRange[] = [];
@@ -742,8 +749,12 @@ function categorizeConflicts(bookingData: BookingData, conflicts: BookingData[])
     }
   };
 
-  bookingDates.forEach(date => {
-    const { overlapCount, overlappingBookings } = countOverlappingBookingsOnDate(date, bookingData, conflicts);
+  bookingDates.forEach((date) => {
+    const { overlapCount, overlappingBookings } = countOverlappingBookingsOnDate(
+      date,
+      bookingData,
+      conflicts
+    );
 
     if (currentRange && overlapCount === currentCount) {
       currentRange.end = date.toISOString();
@@ -751,7 +762,11 @@ function categorizeConflicts(bookingData: BookingData, conflicts: BookingData[])
       pushCurrentRange();
       currentCount = overlapCount;
       currentBookings = overlappingBookings;
-      currentRange = { start: date.toISOString(), end: date.toISOString(), bookings: currentBookings };
+      currentRange = {
+        start: date.toISOString(),
+        end: date.toISOString(),
+        bookings: currentBookings,
+      };
     }
   });
 
@@ -765,11 +780,16 @@ function categorizeConflicts(bookingData: BookingData, conflicts: BookingData[])
   };
 }
 
-function countOverlappingBookingsOnDate(date: Date, booking: BookingData, conflicts: BookingData[]): { overlapCount: number, overlappingBookings: BookingData[] } {
-  const overlappingBookings = conflicts.filter(conflict => 
-    conflict.booking_id !== booking.booking_id &&
-    new Date(conflict.checkin) <= date &&
-    new Date(conflict.checkout) >= date
+function countOverlappingBookingsOnDate(
+  date: Date,
+  booking: BookingData,
+  conflicts: BookingData[]
+): { overlapCount: number; overlappingBookings: BookingData[] } {
+  const overlappingBookings = conflicts.filter(
+    (conflict) =>
+      conflict.booking_id !== booking.booking_id &&
+      new Date(conflict.checkin) <= date &&
+      new Date(conflict.checkout) >= date
   );
 
   const overlapCount = overlappingBookings.length + 1; // Including the booking itself
