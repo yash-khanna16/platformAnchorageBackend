@@ -1,5 +1,6 @@
 import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
 import { addCarModel, addDriverModel, addMovementModel, checkConflict, deleteCarModel,deleteMovementByBookingIdModel, deleteDriverModel, deleteMovementModel, deletePassengerFromMovementModel, editMovementModel, fetchAllCarsModel, fetchAllDriversModel, fetchAvailableCarsModel, fetchAvailableDriversModel, fetchMovementByBookingIdModel, fetchMovementModel } from "../models/movementmodel";
+import { convertUTCToIST } from "./guestservice";
 
 export async function fetchMovementService() {
   return new Promise((resolve, reject) => {
@@ -105,10 +106,10 @@ export async function editMovementService(details: editMovementDetailsType) {
     details.pickup_time = new Date(details.pickup_time).toISOString();
     details.return_time = new Date(details.return_time).toISOString();
 
-    if (!(details.driver === "Default" || details.car_number === "Default")) {
+    if (!(details.driver === "default" || details.car_number === "default")) {
       checkConflict(details.driver, details.car_number, details.pickup_time, details.return_time)
         .then((conflict) => {
-          let conflicts = conflict.rows.filter((row:any)=> row.movement_id !== details.movement_id)
+          let conflicts = conflict.rows.filter((row:any)=> (row.movement_id !== details.movement_id))
           console.log("conflicts: ", conflicts);
           if (conflicts.length > 0) {
             resolve({message: "Conflicting Movements!", conflicts: conflicts});
@@ -259,6 +260,11 @@ export async function deleteMovementService(movementId: string) {
 export async function fetchMovementByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
     fetchMovementByBookingIdModel(bookingId).then((results) => {
+      results.forEach((result:any) => {
+        result.pickup_time = convertUTCToIST(new Date(result.pickup_time))
+        result.return_time = convertUTCToIST(new Date(result.return_time))
+      })
+      console.log("results: ",  results)
       resolve(results)
     }).catch((error)=>{
       console.log("error fetching movement by booking id", error)

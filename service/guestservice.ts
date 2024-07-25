@@ -680,7 +680,7 @@ export function fetchMealsByBookingIdService(bookingId: string): Promise<any> {
 }
 
 
-function convertUTCToIST(date: Date): Date {
+export function convertUTCToIST(date: Date): Date {
   // Calculate the IST offset in milliseconds (5 hours 30 minutes)
   const istOffset: number = 5 * 60 * 60 * 1000 + 30 * 60 * 1000;
 
