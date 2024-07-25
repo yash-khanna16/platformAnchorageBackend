@@ -65,7 +65,8 @@ export async function addMovementService(details: movementDetailsType) {
   return new Promise((resolve, reject) => {
     details.pickup_time = new Date(details.pickup_time).toISOString();
     details.return_time = new Date(details.return_time).toISOString();
-    if (!(details.driver === "Default" || details.car_number === "Default")) {
+    console.log("details: ", details)
+    if (!(details.driver === "default" || details.car_number === "default")) {
       checkConflict(details.driver, details.car_number, details.pickup_time, details.return_time)
         .then((conflict) => {
           console.log("conflicts: ", conflict.rows);
