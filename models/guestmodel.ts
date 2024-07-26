@@ -29,6 +29,7 @@ import {
   fetchBookingByBookingIdQuery,
   fetchMealsByDateQuery,
   fetchMealsByBookingIdQuery,
+  fetchBookingLogsQuery
 } from "./queries";
 
 export async function fetchGuests(): Promise<QueryResult<any>> {
@@ -442,6 +443,15 @@ export async function fetchMealsByBookingIdModel(bookingId: string) {
   try {
     console.log("bookingId ", bookingId);
     const result = await pool.query(fetchMealsByBookingIdQuery, [bookingId]);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function fetchBookingLogsModel() {
+  try {
+    const result = await pool.query(fetchBookingLogsQuery);
     return result;
   } catch (error) {
     throw error;

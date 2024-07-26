@@ -27,6 +27,7 @@ import {
   updateMealsModel,
   fetchMealsByDateModel,
   fetchMealsByBookingIdModel,
+  fetchBookingLogsModel,
 } from "../models/guestmodel";
 import { deleteMovementByBookingIdService } from "./movementservice";
 import bcrypt from "bcrypt";

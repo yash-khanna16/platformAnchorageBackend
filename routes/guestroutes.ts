@@ -21,5 +21,6 @@ router.post("/updateMeals", controller.updateMeals);
 router.get("/fetchMealsByDate", controller.fetchMealsByDate);
 router.get("/fetchMealsByBookingId", controller.fetchMealsByBookingId);
 router.get("/fetchOccupancyByBooking", controller.fetchOccupancyByBookingId);
+router.get("/fetchBookingLogs",controller.getBookingLogs)
 
 export default router;
