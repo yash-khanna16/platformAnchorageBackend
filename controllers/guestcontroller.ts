@@ -21,6 +21,7 @@ import {
   fetchMealsByDateService,
   fetchMealsByBookingIdService,
   fetchOccupancyByBookingService,
+  fetchBookingLogsService,
 } from "../service/guestservice";
 
 export const getAllGuests = (req: Request, res: Response): void => {
@@ -360,6 +361,19 @@ export const fetchOccupancyByBookingId = async (req: Request, res: Response) => 
     const bookingId: string = req.headers.bookingid as string;
     console.log(bookingId);
     fetchOccupancyByBookingService(bookingId)
+      .then((result) => {
+        res.status(200).send(result);
+      })
+      .catch((error) => {
+        res.status(500).send({ message: "Internal Server Error" });
+      });
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, Please try again!" });
+  }
+};
+export const getBookingLogs = async (req: Request, res: Response) => {
+  try {
+    fetchBookingLogsService()
       .then((result) => {
         res.status(200).send(result);
       })
