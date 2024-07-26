@@ -141,7 +141,8 @@ export const fetchMealsByDateQuery = `
         b.checkin,
         b.checkout,
         b.room,
-        g.name AS name
+        g.name AS name,
+        g.company AS company
     FROM bookings AS b
     LEFT JOIN meals AS m ON b.booking_id = m.booking_id AND m.date = $1
     LEFT JOIN guests AS g ON b.guest_email = g.email
