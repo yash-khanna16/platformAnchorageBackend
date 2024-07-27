@@ -8,6 +8,7 @@ import { loginAdmin } from "./controllers/guestcontroller";
 import { verifyAdmin } from "./middlewares/middleware";
 import analyticsroutes from "./routes/analyticroutes";
 import movementroutes from "./routes/movementroutes";
+import cosroutes from "./routes/cosroutes"
 import cron from "node-cron";
 import pool from "./db";
 
@@ -51,10 +52,10 @@ app.post("/createlogin", async (req: Request, res: Response) => {
 });
 app.get("/loginAdmin", loginAdmin);
 
-app.use("/api/admin", verifyAdmin, guestRoutes);
-app.use("/api/analytics", verifyAdmin, analyticsroutes);
-app.use("/api/movement", verifyAdmin, movementroutes);
-
+app.use("/api/admin", guestRoutes);
+app.use("/api/analytics", analyticsroutes);
+app.use("/api/movement", movementroutes);
+app.use("/api/cos", cosroutes);
 
 // app.get("/test", (req:Request, res:Response)=>{
 //     pool.query("SELECT *FROM guests").then((results:any)=>{
