@@ -453,7 +453,8 @@ monitorQueue();
 export async function triggerBooking(booking: BookingData) {
   if (!booking.email.includes("@chotahaathi.com")) {
     const result = await fetchEmailTemplate("welcome");
-    const content = result.content;
+    let content:string = result.content;
+    content = content.replace("Guest", booking.name)
     const subject = result.subject;
     const mailOptions = {
       from: process.env.NODE_MAIL_FROM_EMAIL,
