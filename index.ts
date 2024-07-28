@@ -21,12 +21,12 @@ app.use(bodyParser.json());
 app.listen(port, () => {
   console.log(`Server is running on port: http://localhost:${port}`);
 });
-// app.get("/abc",async function(req:Request,res:Response){
-//     const {password}=req.body;
-//     const hashPassword=await bcrypt.hash(password,10);
-//     console.log(hashPassword);
-//     res.send("password mil gya :)");
-// })
+app.get("/abc",async function(req:Request,res:Response){
+    const {password}=req.body;
+    const hashPassword=await bcrypt.hash(password,10);
+    console.log(hashPassword);
+    res.send("password mil gya :)");
+})
 
 app.post("/createlogin", async (req: Request, res: Response) => {
   const data = req.body; // Assuming req.body is an array of objects
@@ -51,9 +51,10 @@ app.post("/createlogin", async (req: Request, res: Response) => {
 });
 app.get("/loginAdmin", loginAdmin);
 
-app.use("/api/admin", guestRoutes);
-app.use("/api/analytics", analyticsroutes);
-app.use("/api/movement", movementroutes);
+app.use("/api/admin", verifyAdmin, guestRoutes);
+app.use("/api/analytics", verifyAdmin, analyticsroutes);
+app.use("/api/movement", verifyAdmin, movementroutes);
+
 
 // app.get("/test", (req:Request, res:Response)=>{
 //     pool.query("SELECT *FROM guests").then((results:any)=>{

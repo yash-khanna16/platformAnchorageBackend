@@ -152,3 +152,13 @@ export const fetchMealsByBookingIdQuery = `SELECT * FROM meals where booking_id 
 
 export const fetchBookingLogsQuery =
   "SELECT * FROM logs JOIN guests ON guests.email=logs.guest_email";
+
+
+export const addToAuditLogs =
+  "insert into audit_logs(audit_id,time,author,api_call)values($1,$2,$3,$4)";
+
+export const fetchAdminByPass =
+  "select * from admin where delete_password=$1";
+
+export const getAuditLogsServiceQuery =
+  "select * from audit_logs ";

@@ -28,6 +28,9 @@ import {
   fetchMealsByDateModel,
   fetchMealsByBookingIdModel,
   fetchBookingLogsModel,
+  addAuditLogsModal,
+  fetchAdminByPassword,
+  getAuditLogsServiceModel
 } from "../models/guestmodel";
 import { deleteMovementByBookingIdService } from "./movementservice";
 import bcrypt from "bcrypt";
@@ -37,6 +40,7 @@ import nodemailer from "nodemailer";
 import { v4 as uuidv4 } from "uuid";
 import { priorityQueue } from "./priorityqueue";
 import { resolve } from "path";
+import { error } from "console";
 
 dotenv.config();
 
@@ -840,3 +844,60 @@ export function fetchBookingLogsService(): Promise<any> {
       });
   });
 }
+
+export function addAuditLogs(auditData: { user: string, endpoint: string }): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    const time =new Date();
+    console.log(time);
+    const auditId = uuidv4();
+    const newAuditData = {
+      ...auditData,
+      auditId: auditId,
+      time: time,
+    };
+    try {
+      const results = await addAuditLogsModal(newAuditData);
+      resolve(results);
+    } catch (error) {
+      console.log(error);
+      reject("internal server error");
+    }
+  });
+}
+export function getAuditLogs(auditData: { user: string, password: string, endpoint: string }): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const time = new Date();
+      const data = await fetchAdminByPassword(auditData.password);
+      if (data.length === 0) {
+        throw new Error("Invalid password");
+      }
+      const auditId = uuidv4();
+      const newAuditData = {
+        ...auditData,
+        user: data[0].email,
+        auditId: auditId,
+        time: time,
+      };
+      console.log(newAuditData);
+      const results = await addAuditLogsModal(newAuditData);
+      resolve(results);
+    } catch (error) {
+      console.log(error);
+      reject(new Error("Internal server error"));
+    }
+  });
+}
+  export function getAuditLogsService(): Promise<any> {
+    return new Promise(async (resolve, reject) => {
+      getAuditLogsServiceModel()
+        .then((results) => {
+          
+          resolve(results);
+        })
+        .catch((error) => {
+          console.log(error);
+          reject("internal server error");
+        });
+    });
+  }

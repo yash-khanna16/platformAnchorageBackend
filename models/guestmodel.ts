@@ -29,7 +29,10 @@ import {
   fetchBookingByBookingIdQuery,
   fetchMealsByDateQuery,
   fetchMealsByBookingIdQuery,
-  fetchBookingLogsQuery
+  fetchBookingLogsQuery,
+  addToAuditLogs,
+  fetchAdminByPass,
+  getAuditLogsServiceQuery
 } from "./queries";
 
 export async function fetchGuests(): Promise<QueryResult<any>> {
@@ -453,6 +456,30 @@ export async function fetchBookingLogsModel() {
   try {
     const result = await pool.query(fetchBookingLogsQuery);
     return result;
+  } catch (error) {
+    throw error;
+  }
+}
+export async function addAuditLogsModal(newAuditData:{user:string,endpoint:string,time:Date,auditId:string}) {
+  try {
+    const result = await pool.query(addToAuditLogs,[newAuditData.auditId,newAuditData.time,newAuditData.user,newAuditData.endpoint]);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+export async function fetchAdminByPassword(password:string) {
+  try {
+    const result = await pool.query(fetchAdminByPass,[password]);
+    return result.rows;
+  } catch (error) {
+    throw error;
+  }
+}
+export async function getAuditLogsServiceModel() {
+  try {
+    const result = await pool.query(getAuditLogsServiceQuery);
+    return result.rows;
   } catch (error) {
     throw error;
   }

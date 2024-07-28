@@ -9,7 +9,6 @@ import {
   editBookingData,
   fetchAvailableRooms,
   getThisRoom,
-  triggerBooking,
   deleteThisBooking,
   findConflictEntries,
   getInstantRoom,
@@ -22,6 +21,7 @@ import {
   fetchMealsByBookingIdService,
   fetchOccupancyByBookingService,
   fetchBookingLogsService,
+  getAuditLogsService
 } from "../service/guestservice";
 
 export const getAllGuests = (req: Request, res: Response): void => {
@@ -89,7 +89,7 @@ export const addNewGuests = (req: Request, res: Response): void => {
   try {
     addGuests(guestData)
       .then((results) => {
-        res.status(200).send({ message: "Guest Added Successfully!" });
+          res.status(200).send({ message: "Guest Added Successfully!" });
       })
       .catch((error) => {
         if (error === "Email already present") {
@@ -374,6 +374,20 @@ export const fetchOccupancyByBookingId = async (req: Request, res: Response) => 
 export const getBookingLogs = async (req: Request, res: Response) => {
   try {
     fetchBookingLogsService()
+      .then((result) => {
+        res.status(200).send(result);
+      })
+      .catch((error) => {
+        res.status(500).send({ message: "Internal Server Error" });
+      });
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, Please try again!" });
+  }
+};
+
+export const getAuditLogs = async (req: Request, res: Response) => {
+  try {
+    getAuditLogsService()
       .then((result) => {
         res.status(200).send(result);
       })
