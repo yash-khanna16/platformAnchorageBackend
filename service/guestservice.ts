@@ -730,6 +730,8 @@ export async function fetchOccupancyByBookingService(bookingId: string): Promise
         room: bookingData.room,
       });
 
+      console.log("before conflicts: ", conflicts)
+
       conflicts.forEach((conflict) => {
         conflict.checkin = convertUTCToIST(conflict.checkin);
         conflict.checkout = convertUTCToIST(conflict.checkout);
