@@ -1,10 +1,11 @@
 export const fetchMovementQuery = `SELECT 
     m.movement_id,
-    m.pickup AS pickup_time,
-    m.return AS return_time,
-    m.number AS car_number,
+    m.pickup_location,
+    m.pickup_time,
+    m.return_time,
+    m.car_number,
     m.driver,
-    p.passenger_id,
+    p.booking_id,
     c.name AS car_name,
     CASE
         WHEN b.booking_id IS NOT NULL OR l.booking_id IS NOT NULL THEN FALSE
@@ -12,41 +13,39 @@ export const fetchMovementQuery = `SELECT
     END AS external_booking,
     CASE
         WHEN b.booking_id IS NOT NULL THEN g.name
-        WHEN l.booking_id IS NOT NULL THEN lg.name
+        WHEN l.booking_id IS NOT NULL THEN g.name
         ELSE ep.name
     END AS passenger_name,
+    p.passenger_id AS passenger_id,
     CASE
         WHEN b.booking_id IS NOT NULL THEN g.phone
-        WHEN l.booking_id IS NOT NULL THEN lg.phone
+        WHEN l.booking_id IS NOT NULL THEN g.phone
         ELSE ep.phone
     END AS phone,
-    m.location AS drop_location,
+    m.drop_location AS drop_location,
     CASE
         WHEN b.booking_id IS NOT NULL THEN g.company
-        WHEN l.booking_id IS NOT NULL THEN lg.company
+        WHEN l.booking_id IS NOT NULL THEN g.company
         ELSE ep.company
     END AS company,
     p.remark
 FROM 
-    movement m
+    public.movement m
 LEFT JOIN 
-    cars c ON m.number = c.name
+    public.cars c ON m.car_number = c.number
 LEFT JOIN 
-    passenger p ON m.movement_id = p.movement_id
+    public.passengers p ON m.movement_id = p.movement_id
 LEFT JOIN 
-    bookings b ON p.passenger_id = b.booking_id
+    public.bookings b ON p.booking_id = b.booking_id
 LEFT JOIN 
-    logs l ON p.passenger_id = l.booking_id
+    public.logs l ON p.booking_id = l.booking_id
 LEFT JOIN 
-    guests g ON b.guest_email = g.email
+    public.guests g ON b.guest_email = g.email OR l.guest_email = g.email
 LEFT JOIN 
-    guests lg ON l.guest_email = lg.email
-LEFT JOIN 
-    external_passenger ep ON p.passenger_id = ep.passenger_id
+    public.external_passenger ep ON p.passenger_id = ep.passenger_id
 WHERE 
     (b.booking_id IS NULL AND l.booking_id IS NULL AND p.passenger_id IS NOT NULL)
-    OR (b.booking_id IS NOT NULL)
-    OR (l.booking_id IS NOT NULL)
+    OR (b.booking_id IS NOT NULL OR l.booking_id IS NOT NULL)
 ORDER BY m.movement_id, passenger_name;
 `;
 
