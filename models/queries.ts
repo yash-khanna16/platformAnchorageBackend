@@ -124,7 +124,7 @@ export const getUpcoming = `
   END as upcoming
 `;
 
-export const fetchBookingByBookingIdQuery = `SELECT * FROM bookings where booking_id = $1`;
+export const fetchBookingByBookingIdQuery = `  SELECT * FROM bookings WHERE booking_id = $1 UNION SELECT * FROM logs WHERE booking_id = $1;`;
 
 export const insertMealByBookingID = `INSERT INTO meals (booking_id, date, breakfast_veg, breakfast_nonveg, lunch_veg, lunch_nonveg, dinner_veg, dinner_nonveg) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`;
 
