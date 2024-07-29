@@ -21,12 +21,12 @@ app.use(bodyParser.json());
 app.listen(port, () => {
   console.log(`Server is running on port: http://localhost:${port}`);
 });
-app.get("/abc",async function(req:Request,res:Response){
-    const {password}=req.body;
-    const hashPassword=await bcrypt.hash(password,10);
-    console.log(hashPassword);
-    res.send("password mil gya :)");
-})
+// app.get("/abc",async function(req:Request,res:Response){
+//     const {password}=req.body;
+//     const hashPassword=await bcrypt.hash(password,10);
+//     console.log(hashPassword);
+//     res.send("password mil gya :)");
+// })
 
 app.post("/createlogin", async (req: Request, res: Response) => {
   const data = req.body; // Assuming req.body is an array of objects
@@ -158,6 +158,20 @@ async function moveExpiredData() {
     console.error("Error moving expired data:", err);
   }
 }
+const moveExpiredAuditLogs = async () => {
+  try {
+    const query = `
+      DELETE FROM audit_logs 
+      WHERE time < NOW() - INTERVAL '15 days'
+    `;
+    const result = await pool.query(query);
+    console.log(`Deleted ${result.rowCount} old audit log(s)`);
+  } catch (error) {
+    console.error('Error deleting old audit logs:', error);
+  } finally {
+    await pool.end();
+  }
+};
 
 
 
@@ -174,6 +188,11 @@ cron.schedule("0 0 * */2 *", () => {
   moveExpiredData(); 
 });
 
+// Schedule the job to run at 12:00 AM every 2 months
+cron.schedule("0 0 * * *", () => {
+  console.log("Moving expired booking and movements to logs...");
+  moveExpiredAuditLogs();
+});
 app.get("/", (req: Request, res: Response) => {
   res.send("Server is running");
 });

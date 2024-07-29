@@ -30,7 +30,11 @@ import {
   fetchBookingLogsModel,
   addAuditLogsModal,
   fetchAdminByPassword,
-  getAuditLogsServiceModel
+  getAuditLogsServiceModel,
+  fetchBookingDetails,
+  fetchPassengerDetails,
+  fetchExternalPassengerDetails,
+  fetchMovementDetails,
 } from "../models/guestmodel";
 import { deleteMovementByBookingIdService } from "./movementservice";
 import bcrypt from "bcrypt";
@@ -457,8 +461,8 @@ monitorQueue();
 export async function triggerBooking(booking: BookingData) {
   if (!booking.email.includes("@chotahaathi.com")) {
     const result = await fetchEmailTemplate("welcome");
-    let content:string = result.content;
-    content = content.replace("Guest", booking.name)
+    let content: string = result.content;
+    content = content.replace("Guest", booking.name);
     const subject = result.subject;
     const mailOptions = {
       from: process.env.NODE_MAIL_FROM_EMAIL,
@@ -685,7 +689,6 @@ export function fetchMealsByBookingIdService(bookingId: string): Promise<any> {
   });
 }
 
-
 export function convertUTCToIST(date: Date): Date {
   // Calculate the IST offset in milliseconds (5 hours 30 minutes)
   const istOffset: number = 5 * 60 * 60 * 1000 + 30 * 60 * 1000;
@@ -704,7 +707,7 @@ type TimelineEntry = {
   end: Date;
   occupancy: string;
   bookings: BookingData[];
-}
+};
 
 type BookingDateRange = {
   start: string;
@@ -725,27 +728,27 @@ export async function fetchOccupancyByBookingService(bookingId: string): Promise
       const data = await fetchBookingByBookingId(bookingId);
       const bookingData: BookingData = data.rows[0];
       const conflicts: BookingData[] = await findConflictEntries({
-        checkin: (bookingData.checkin),
-        checkout: (bookingData.checkout),
+        checkin: bookingData.checkin,
+        checkout: bookingData.checkout,
         room: bookingData.room,
       });
 
-      console.log("before conflicts: ", conflicts)
+      console.log("before conflicts: ", conflicts);
 
       conflicts.forEach((conflict) => {
         conflict.checkin = convertUTCToIST(conflict.checkin);
         conflict.checkout = convertUTCToIST(conflict.checkout);
-      })
+      });
 
       bookingData.checkin = convertUTCToIST(bookingData.checkin);
-      bookingData.checkout = convertUTCToIST(bookingData.checkout)
+      bookingData.checkout = convertUTCToIST(bookingData.checkout);
 
-      console.log("conflicts: ", conflicts)
+      console.log("conflicts: ", conflicts);
 
       const timeline = generateTimeline(bookingData, conflicts);
       resolve(timeline);
     } catch (error) {
-      console.log("first ", error)
+      console.log("first ", error);
       reject(error);
     }
   });
@@ -754,20 +757,20 @@ export async function fetchOccupancyByBookingService(bookingId: string): Promise
 function generateTimeline(bookingData: BookingData, conflicts: BookingData[]): TimelineEntry[] {
   interface Event {
     time: Date;
-    type: 'start' | 'end';
+    type: "start" | "end";
     booking: BookingData;
   }
 
   const events: Event[] = [];
 
   // Add the main booking as an event
-  events.push({ time: bookingData.checkin, type: 'start', booking: bookingData });
-  events.push({ time: bookingData.checkout, type: 'end', booking: bookingData });
+  events.push({ time: bookingData.checkin, type: "start", booking: bookingData });
+  events.push({ time: bookingData.checkout, type: "end", booking: bookingData });
 
   // Add conflict bookings as events
-  conflicts.forEach(conflict => {
-    events.push({ time: conflict.checkin, type: 'start', booking: conflict });
-    events.push({ time: conflict.checkout, type: 'end', booking: conflict });
+  conflicts.forEach((conflict) => {
+    events.push({ time: conflict.checkin, type: "start", booking: conflict });
+    events.push({ time: conflict.checkout, type: "end", booking: conflict });
   });
 
   // Sort events by time
@@ -777,7 +780,7 @@ function generateTimeline(bookingData: BookingData, conflicts: BookingData[]): T
   const activeBookings: Map<string, BookingData> = new Map();
   let lastTime: Date = events[0].time;
 
-  events.forEach(event => {
+  events.forEach((event) => {
     if (event.time.getTime() !== lastTime.getTime()) {
       timeline.push({
         start: lastTime,
@@ -788,9 +791,9 @@ function generateTimeline(bookingData: BookingData, conflicts: BookingData[]): T
       lastTime = event.time;
     }
 
-    if (event.type === 'start') {
+    if (event.type === "start") {
       activeBookings.set(event.booking.booking_id, event.booking);
-    } else if (event.type === 'end') {
+    } else if (event.type === "end") {
       activeBookings.delete(event.booking.booking_id);
     }
   });
@@ -805,13 +808,16 @@ function generateTimeline(bookingData: BookingData, conflicts: BookingData[]): T
     });
   }
 
-  let filteredTimeLine:TimelineEntry[] = [];
+  let filteredTimeLine: TimelineEntry[] = [];
 
-  timeline.forEach((event)=>{
-    if ((event.start.getTime() >= bookingData.checkin.getTime()) && (event.end.getTime() <= bookingData.checkout.getTime())) {
-      filteredTimeLine.push(event); 
+  timeline.forEach((event) => {
+    if (
+      event.start.getTime() >= bookingData.checkin.getTime() &&
+      event.end.getTime() <= bookingData.checkout.getTime()
+    ) {
+      filteredTimeLine.push(event);
     }
-  })
+  });
 
   return filteredTimeLine;
 }
@@ -819,13 +825,13 @@ function generateTimeline(bookingData: BookingData, conflicts: BookingData[]): T
 function getOccupancyDescription(size: number): string {
   switch (size) {
     case 1:
-      return 'SINGLE OCCUPANCY';
+      return "SINGLE OCCUPANCY";
     case 2:
-      return 'DOUBLE OCCUPANCY';
+      return "DOUBLE OCCUPANCY";
     case 3:
-      return 'TRIPLE OCCUPANCY';
+      return "TRIPLE OCCUPANCY";
     case 4:
-      return 'QUADRUPLE OCCUPANCY'
+      return "QUADRUPLE OCCUPANCY";
     default:
       return `${size}-PLE OCCUPANCY`;
   }
@@ -847,15 +853,17 @@ export function fetchBookingLogsService(): Promise<any> {
   });
 }
 
-export function addAuditLogs(auditData: { user: string, endpoint: string }): Promise<any> {
+export function addAuditLogs(auditData: { user: string; endpoint: string }): Promise<any> {
   return new Promise(async (resolve, reject) => {
-    const time =new Date();
+    const time = new Date();
     console.log(time);
     const auditId = uuidv4();
     const newAuditData = {
       ...auditData,
       auditId: auditId,
       time: time,
+      name: "",
+      phone: "",
     };
     try {
       const results = await addAuditLogsModal(newAuditData);
@@ -866,40 +874,56 @@ export function addAuditLogs(auditData: { user: string, endpoint: string }): Pro
     }
   });
 }
-export function getAuditLogs(auditData: { user: string, password: string, endpoint: string }): Promise<any> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const time = new Date();
-      const data = await fetchAdminByPassword(auditData.password);
-      if (data.length === 0) {
-        throw new Error("Invalid password");
-      }
-      const auditId = uuidv4();
-      const newAuditData = {
-        ...auditData,
-        user: data[0].email,
-        auditId: auditId,
-        time: time,
-      };
-      console.log(newAuditData);
-      const results = await addAuditLogsModal(newAuditData);
-      resolve(results);
-    } catch (error) {
-      console.log(error);
-      reject(new Error("Internal server error"));
+export async function getAuditLogs(auditData: { password: string; id: string; endpoint: string }): Promise<any> {
+  try {
+    console.log("audit", auditData);
+    const time = new Date();
+    const adminData = await fetchAdminByPassword(auditData.password);
+    if (adminData.length === 0) {
+      throw new Error("Invalid password");
     }
+    const auditId = uuidv4();
+    const user = adminData[0].email;
+    let newAuditData: any = { ...auditData, user, auditId, time, name: "", phone: "" };
+
+    if (auditData.endpoint === "api/admin/deleteBooking") {
+      const bookingData = await fetchBookingDetails(auditData.id);
+      newAuditData.name = bookingData[0].name;
+      newAuditData.phone = bookingData[0].phone;
+    } else if (auditData.endpoint === "/api/movement/deletePassengerFromMovement") {
+      const passengerData = await fetchPassengerDetails(auditData.id);
+      if (passengerData[0].booking_id === null) {
+        const externalPassengerData = await fetchExternalPassengerDetails(auditData.id);
+        newAuditData.name = externalPassengerData[0].name;
+        newAuditData.phone = externalPassengerData[0].phone;
+      } else {
+        const bookingData = await fetchBookingDetails(passengerData[0].booking_id);
+        newAuditData.name = bookingData[0].name;
+        newAuditData.phone = bookingData[0].phone;
+      }
+    } else if (auditData.endpoint === "/api/movement/deleteMovementFromMovementId") {
+      const movementData = await fetchMovementDetails(auditData.id);
+      newAuditData.name = movementData.map((row: any) => row.passenger_name).join(", ");
+      newAuditData.phone = movementData.map((row: any) => row.phone).join(", ");
+    }
+
+    console.log(newAuditData);
+    const results = await addAuditLogsModal(newAuditData);
+    return results;
+  } catch (error) {
+    console.error(error);
+    throw new Error("Internal server error");
+  }
+}
+export function getAuditLogsService(): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    getAuditLogsServiceModel()
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log(error);
+        reject("internal server error");
+      });
   });
 }
-  export function getAuditLogsService(): Promise<any> {
-    return new Promise(async (resolve, reject) => {
-      getAuditLogsServiceModel()
-        .then((results) => {
-          
-          resolve(results);
-        })
-        .catch((error) => {
-          console.log(error);
-          reject("internal server error");
-        });
-    });
-  }

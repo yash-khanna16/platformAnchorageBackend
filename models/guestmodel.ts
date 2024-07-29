@@ -32,8 +32,14 @@ import {
   fetchBookingLogsQuery,
   addToAuditLogs,
   fetchAdminByPass,
-  getAuditLogsServiceQuery
+  getAuditLogsServiceQuery,
+  fetchBookingDetailsQuery,
+  fetchPassengerDetailsQuery,
+  fetchExternalPassengerDetailsQuery,
 } from "./queries";
+import {fetchMovementQueryByMovementId} from "./movementqueries"
+
+
 
 export async function fetchGuests(): Promise<QueryResult<any>> {
   try {
@@ -460,9 +466,9 @@ export async function fetchBookingLogsModel() {
     throw error;
   }
 }
-export async function addAuditLogsModal(newAuditData:{user:string,endpoint:string,time:Date,auditId:string}) {
+export async function addAuditLogsModal(newAuditData:{user:string,endpoint:string,time:Date,auditId:string,name:string,phone:string}) {
   try {
-    const result = await pool.query(addToAuditLogs,[newAuditData.auditId,newAuditData.time,newAuditData.user,newAuditData.endpoint]);
+    const result = await pool.query(addToAuditLogs,[newAuditData.auditId,newAuditData.time,newAuditData.user,newAuditData.endpoint,newAuditData.name,newAuditData.phone]);
     return result;
   } catch (error) {
     throw error;
@@ -484,3 +490,36 @@ export async function getAuditLogsServiceModel() {
     throw error;
   }
 }
+export async function fetchBookingDetails(bookingId:string) {
+  try {
+    const result = await pool.query(fetchBookingDetailsQuery,[bookingId]);
+    return result.rows;
+  } catch (error) {
+    throw error;
+  }
+}
+export async function fetchPassengerDetails(passengerId:string) {
+  try {
+    const result = await pool.query(fetchPassengerDetailsQuery,[passengerId]);
+    return result.rows;
+  } catch (error) {
+    throw error;
+  }
+}
+export async function fetchExternalPassengerDetails(passengerId:string) {
+  try {
+    const result = await pool.query(fetchExternalPassengerDetailsQuery,[passengerId]);
+    return result.rows;
+  } catch (error) {
+    throw error;
+  }
+}
+export async function fetchMovementDetails(movementId:string) {
+  try {
+    const result = await pool.query(fetchMovementQueryByMovementId,[movementId]);
+    return result.rows;
+  } catch (error) {
+    throw error;
+  }
+}
+

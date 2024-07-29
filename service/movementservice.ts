@@ -274,7 +274,6 @@ export async function fetchMovementByBookingIdService(bookingId: string) {
 }
 export async function deleteMovementByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
-    console.log("Hello");
     deleteMovementByBookingIdModel(bookingId).then((results) => {
       resolve(results)
     }).catch((error)=>{

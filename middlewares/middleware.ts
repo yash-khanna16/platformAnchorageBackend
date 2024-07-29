@@ -49,13 +49,27 @@ export async function verifyAdmin(req: Request, res: Response, next: NextFunctio
             endpoint: req.originalUrl,
           });
         } else {
-          // if (req.url === "/deleteBooking") {
+          if (req.url === "/deleteBooking") {
           await getAuditLogs({
-            user: decoded.email,
             password: req.headers.password as string,
+            id:req.headers.bookingid as string,
             endpoint: req.originalUrl,
           });
-          // }
+          }
+          else if (req.url === "/deletePassengerFromMovement") {
+          await getAuditLogs({
+            password: req.headers.password as string,
+            id:req.headers.passengerid as string,
+            endpoint: req.originalUrl,
+          });
+          }
+          else {
+          await getAuditLogs({
+            password: req.headers.password as string,
+            id:req.headers.movementid as string,
+            endpoint: req.originalUrl,
+          });
+          }
         }
       }
     } catch (error) {

@@ -155,10 +155,19 @@ export const fetchBookingLogsQuery =
 
 
 export const addToAuditLogs =
-  "insert into audit_logs(audit_id,time,author,api_call)values($1,$2,$3,$4)";
+  "insert into audit_logs(audit_id,time,author,api_call,name,phone)values($1,$2,$3,$4,$5,$6)";
 
 export const fetchAdminByPass =
   "select * from admin where delete_password=$1";
 
 export const getAuditLogsServiceQuery =
   "select * from audit_logs ";
+
+export const fetchBookingDetailsQuery =
+  "SELECT * FROM bookings JOIN guests ON guests.email=bookings.guest_email where bookings.booking_id=$1";
+
+export const fetchPassengerDetailsQuery =
+  "SELECT * FROM passengers where passenger_id=$1";
+
+export const fetchExternalPassengerDetailsQuery =
+  "SELECT * FROM external_passenger where passenger_id=$1";
