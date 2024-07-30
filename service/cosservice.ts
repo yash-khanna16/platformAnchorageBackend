@@ -63,7 +63,7 @@ export async function sendOTPByEmailService(email: string) {
     throw new Error("Error sending OTP");
   }
 }
-
+// reset tries after verifying
 export async function verifyOTPService(email: string, otp: string) {
   try {
     const otpInfo = await fetchOTP(email);
