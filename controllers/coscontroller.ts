@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import {
   addOrderService,
+  deleteItemService,
   deleteOrderService,
   fetchAllItemsService,
   fetchAllOrdersService,
@@ -8,6 +9,8 @@ import {
   fetchOrderByBookingIdService,
   putItemService,
   sendOTPByEmailService,
+  updateItemStatusService,
+  updateOrderStatusService,
   verifyOTPService,
 } from "../service/cosservice";
 import { itemDetailsType, orderType } from "../types/cos";
@@ -99,3 +102,37 @@ export const fetchAllOrders = async (req: Request, res: Response) => {
     res.status(500).send({ message: "Something went wrong, please try again!" });
   }
 };
+
+export const updateOrderStatus = async (req: Request, res: Response) => {
+  try {
+    const orderid = req.headers.orderid as string;
+    const status = req.headers.status as string;
+    const result = await updateOrderStatusService(orderid, status);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+
+export const updateItemStatus = async (req: Request, res: Response) => {
+  try {
+    const itemid = req.headers.itemid as string;
+    const available = req.headers.available === 'true';
+    const result = await updateItemStatusService(itemid, available);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+
+
+export const deleteItem = async (req: Request, res: Response) => {
+  try {
+    const itemid = req.headers.itemid as string;
+    const result = await deleteItemService(itemid);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+

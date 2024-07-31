@@ -1,5 +1,6 @@
 import {
   addOrderModel,
+  deleteItemModel,
   deleteOrderModel,
   fetchAllItemsModel,
   fetchAllOrdersModel,
@@ -7,6 +8,8 @@ import {
   fetchOrderByBookingIdModel,
   fetchOTP,
   putItemModel,
+  updateItemStatusModel,
+  updateOrderStatusModel,
   updateOTP,
 } from "../models/cosmodel";
 import nodemailer from "nodemailer";
@@ -174,6 +177,45 @@ export async function fetchAllOrdersService() {
       .catch((error) => {
         console.log("error fetching all orders", error);
         reject("Error fetching all orders!");
+      });
+  });
+}
+
+export async function updateOrderStatusService(orderid: string, status: string) {
+  return new Promise((resolve, reject) => {
+    updateOrderStatusModel(orderid, status)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error updating order status", error);
+        reject("Error update order status!");
+      });
+  });
+}
+
+export async function updateItemStatusService(itemid: string, available: boolean) {
+  return new Promise((resolve, reject) => {
+    updateItemStatusModel(itemid, available)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error updating item status", error);
+        reject("Error update item status!");
+      });
+  });
+}
+
+export async function deleteItemService(itemid: string) {
+  return new Promise((resolve, reject) => {
+    deleteItemModel(itemid)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error deleting item", error);
+        reject("Error deleting item!");
       });
   });
 }

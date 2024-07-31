@@ -5,6 +5,7 @@ export type itemDetailsType = {
   price: number;
   type: string;
   category: string;
+  time_to_prepare: number;
 };
 
 export type orderType = {
