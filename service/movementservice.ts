@@ -1,5 +1,22 @@
 import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
-import { addCarModel, addDriverModel, addMovementModel, checkConflict, deleteCarModel,deleteMovementByBookingIdModel, deleteDriverModel, deleteMovementModel, deletePassengerFromMovementModel, editMovementModel, fetchAllCarsModel, fetchAllDriversModel, fetchAvailableCarsModel, fetchAvailableDriversModel, fetchMovementByBookingIdModel, fetchMovementModel } from "../models/movementmodel";
+import {
+  addCarModel,
+  addDriverModel,
+  addMovementModel,
+  checkConflict,
+  deleteCarModel,
+  deleteMovementByBookingIdModel,
+  deleteDriverModel,
+  deleteMovementModel,
+  deletePassengerFromMovementModel,
+  editMovementModel,
+  fetchAllCarsModel,
+  fetchAllDriversModel,
+  fetchAvailableCarsModel,
+  fetchAvailableDriversModel,
+  fetchMovementByBookingIdModel,
+  fetchMovementModel,
+} from "../models/movementmodel";
 import { convertUTCToIST } from "./guestservice";
 
 export async function fetchMovementService() {
@@ -8,7 +25,7 @@ export async function fetchMovementService() {
       .then((results) => {
         // console.log("first ", results)
         const movements: { [key: string]: any } = {};
-        console.log(results.rows)
+        console.log(results.rows);
         results.rows.forEach((row: any) => {
           const movement_id = row.movement_id;
 
@@ -22,7 +39,7 @@ export async function fetchMovementService() {
               driver: row.driver,
               car_name: row.car_name,
               drop_location: row.drop_location,
-              passengers: []
+              passengers: [],
             };
           }
 
@@ -33,7 +50,7 @@ export async function fetchMovementService() {
             company: row.company,
             remark: row.remark,
             external_booking: row.external_booking,
-            booking_id: row.booking_id
+            booking_id: row.booking_id,
           };
 
           movements[movement_id].passengers.push(passenger);
@@ -66,7 +83,7 @@ export async function addMovementService(details: movementDetailsType) {
   return new Promise((resolve, reject) => {
     details.pickup_time = new Date(details.pickup_time).toISOString();
     details.return_time = new Date(details.return_time).toISOString();
-    console.log("details: ", details)
+    console.log("details: ", details);
     if (!(details.driver === "default" || details.car_number === "default")) {
       checkConflict(details.driver, details.car_number, details.pickup_time, details.return_time)
         .then((conflict) => {
@@ -109,10 +126,12 @@ export async function editMovementService(details: editMovementDetailsType) {
     if (!(details.driver === "default" || details.car_number === "default")) {
       checkConflict(details.driver, details.car_number, details.pickup_time, details.return_time)
         .then((conflict) => {
-          let conflicts = conflict.rows.filter((row:any)=> (row.movement_id !== details.movement_id))
+          let conflicts = conflict.rows.filter(
+            (row: any) => row.movement_id !== details.movement_id
+          );
           console.log("conflicts: ", conflicts);
           if (conflicts.length > 0) {
-            resolve({message: "Conflicting Movements!", conflicts: conflicts});
+            resolve({ message: "Conflicting Movements!", conflicts: conflicts });
           } else {
             editMovementModel(details)
               .then((results) => {
@@ -138,151 +157,166 @@ export async function editMovementService(details: editMovementDetailsType) {
           reject("Internal Server Error");
         });
     }
-  })
+  });
 }
 export async function fetchAvailableCarsService(pickup_time: string, return_time: string) {
   return new Promise((resolve, reject) => {
     pickup_time = new Date(pickup_time).toISOString();
     return_time = new Date(return_time).toISOString();
 
-    fetchAvailableCarsModel(pickup_time, return_time) .then((results) => {
-      resolve(results.rows)
-    }).catch((error)=>{
-      console.log("error editing movement details: ", error)
-      reject("Error editing movement details")
-    })
-  })
+    fetchAvailableCarsModel(pickup_time, return_time)
+      .then((results) => {
+        resolve(results.rows);
+      })
+      .catch((error) => {
+        console.log("error editing movement details: ", error);
+        reject("Error editing movement details");
+      });
+  });
 }
 export async function fetchAvailableDriversService(pickup_time: string, return_time: string) {
   return new Promise((resolve, reject) => {
     pickup_time = new Date(pickup_time).toISOString();
     return_time = new Date(return_time).toISOString();
 
-    fetchAvailableDriversModel(pickup_time, return_time) .then((results) => {
-      resolve(results.rows)
-    }).catch((error)=>{
-      console.log("error editing movement details: ", error)
-      reject("Error editing movement details")
-    })
-  })
+    fetchAvailableDriversModel(pickup_time, return_time)
+      .then((results) => {
+        resolve(results.rows);
+      })
+      .catch((error) => {
+        console.log("error editing movement details: ", error);
+        reject("Error editing movement details");
+      });
+  });
 }
 
 export async function addCarService(name: string, number: string) {
   return new Promise((resolve, reject) => {
-
-    addCarModel(name, number) .then((results) => {
-      resolve(results)
-    }).catch((error)=>{
-      console.log("error adding car", error)
-      reject("Error adding car!")
-    })
-  })
+    addCarModel(name, number)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error adding car", error);
+        reject("Error adding car!");
+      });
+  });
 }
 export async function deleteCarService(number: string) {
   return new Promise((resolve, reject) => {
-
-    deleteCarModel(number) .then((results) => {
-      resolve(results)
-    }).catch((error)=>{
-      console.log("error deleting car", error)
-      reject("Error deleting car!")
-    })
-  })
+    deleteCarModel(number)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error deleting car", error);
+        reject("Error deleting car!");
+      });
+  });
 }
 export async function addDriverService(name: string, number: string) {
   return new Promise((resolve, reject) => {
-
-    addDriverModel(name, number) .then((results) => {
-      resolve(results)
-    }).catch((error)=>{
-      console.log("error adding Driver", error)
-      reject("Error adding Driver!")
-    })
-  })
+    addDriverModel(name, number)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error adding Driver", error);
+        reject("Error adding Driver!");
+      });
+  });
 }
 export async function deleteDriverService(name: string) {
   return new Promise((resolve, reject) => {
-
-    deleteDriverModel(name) .then((results) => {
-      resolve(results)
-    }).catch((error)=>{
-      console.log("error deleting car", error)
-      reject("Error deleting car!")
-    })
-  })
+    deleteDriverModel(name)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error deleting car", error);
+        reject("Error deleting car!");
+      });
+  });
 }
-export async function deletePassengerFromMovementService(movement_id: string, passenger_id: string) {
+export async function deletePassengerFromMovementService(
+  movement_id: string,
+  passenger_id: string
+) {
   return new Promise((resolve, reject) => {
-
-    deletePassengerFromMovementModel(movement_id, passenger_id) .then((results) => {
-      resolve(results)
-    }).catch((error)=>{
-      console.log("error deleting movement", error)
-      reject("Error deleting movement!")
-    })
-  })
+    deletePassengerFromMovementModel(movement_id, passenger_id)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error deleting movement", error);
+        reject("Error deleting movement!");
+      });
+  });
 }
 
 export async function fetchAllCarsService() {
   return new Promise((resolve, reject) => {
-
-    fetchAllCarsModel().then((results) => {
-      resolve(results)
-    }).catch((error)=>{
-      console.log("error deleting movement", error)
-      reject("Error deleting movement!")
-    })
-  })
+    fetchAllCarsModel()
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error deleting movement", error);
+        reject("Error deleting movement!");
+      });
+  });
 }
 
 export async function fetchAllDriversService() {
   return new Promise((resolve, reject) => {
-
-    fetchAllDriversModel() .then((results) => {
-      resolve(results)
-    }).catch((error)=>{
-      console.log("error deleting movement", error)
-      reject("Error deleting movement!")
-    })
-  })
+    fetchAllDriversModel()
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error deleting movement", error);
+        reject("Error deleting movement!");
+      });
+  });
 }
 export async function deleteMovementService(movementId: string) {
   return new Promise((resolve, reject) => {
-
-    deleteMovementModel(movementId).then((results) => {
-      resolve(results)
-    }).catch((error)=>{
-      console.log("error deleting movement", error)
-      reject("Error deleting movement!")
-    })
-  })
+    deleteMovementModel(movementId)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error deleting movement", error);
+        reject("Error deleting movement!");
+      });
+  });
 }
 export async function fetchMovementByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
-    fetchMovementByBookingIdModel(bookingId).then((results) => {
-      results.forEach((result:any) => {
-        result.pickup_time = convertUTCToIST(new Date(result.pickup_time))
-        result.return_time = convertUTCToIST(new Date(result.return_time))
+    fetchMovementByBookingIdModel(bookingId)
+      .then((results) => {
+        results.forEach((result: any) => {
+          result.pickup_time = convertUTCToIST(new Date(result.pickup_time));
+          result.return_time = convertUTCToIST(new Date(result.return_time));
+        });
+        console.log("results: ", results);
+        resolve(results);
       })
-      console.log("results: ",  results)
-      resolve(results)
-    }).catch((error)=>{
-      console.log("error fetching movement by booking id", error)
-      reject("error fetching movement by booking id")
-    })
-  })
+      .catch((error) => {
+        console.log("error fetching movement by booking id", error);
+        reject("error fetching movement by booking id");
+      });
+  });
 }
 export async function deleteMovementByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
-    deleteMovementByBookingIdModel(bookingId).then((results) => {
-      resolve(results)
-    }).catch((error)=>{
-      console.log("error fetching movement by booking id", error)
-      reject("error fetching movement by booking id")
-    })
-  })
+    deleteMovementByBookingIdModel(bookingId)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error fetching movement by booking id", error);
+        reject("error fetching movement by booking id");
+      });
+  });
 }
-
-
-
-

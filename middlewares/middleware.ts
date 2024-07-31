@@ -9,6 +9,7 @@ dotenv.config();
 
 export async function verifyAdmin(req: Request, res: Response, next: NextFunction) {
   const token = req.headers.token as string;
+  console.log(token);
   if (!token) {
     console.log("no token");
     return res.status(401).send({ message: "Access Denied" });
@@ -33,7 +34,7 @@ export async function verifyAdmin(req: Request, res: Response, next: NextFunctio
       "/fetchAllDrivers",
       "/fetchEachPassenger",
       "/fetchMovementByBookingId",
-      "/fetchEachPassenger"
+      "/fetchEachPassenger",
     ];
     const skipAuditLogUrls = [
       "/deleteBooking",
@@ -41,40 +42,33 @@ export async function verifyAdmin(req: Request, res: Response, next: NextFunctio
       "/deletePassengerFromMovement",
     ];
 
-    try {
-      if (!skipAuditLog.includes(req.url)) {
-        if (!skipAuditLogUrls.includes(req.url)) {
-          await addAuditLogs({
-            user: decoded.email,
+    if (!skipAuditLog.includes(req.url)) {
+      if (!skipAuditLogUrls.includes(req.url)) {
+        await addAuditLogs({
+          user: decoded.email,
+          endpoint: req.originalUrl,
+        });
+      } else {
+        if (req.url === "/deleteBooking") {
+          await getAuditLogs({
+            password: req.headers.password as string,
+            id: req.headers.bookingid as string,
+            endpoint: req.originalUrl,
+          });
+        } else if (req.url === "/deletePassengerFromMovement") {
+          await getAuditLogs({
+            password: req.headers.password as string,
+            id: req.headers.passengerid as string,
             endpoint: req.originalUrl,
           });
         } else {
-          if (req.url === "/deleteBooking") {
           await getAuditLogs({
             password: req.headers.password as string,
-            id:req.headers.bookingid as string,
+            id: req.headers.movementid as string,
             endpoint: req.originalUrl,
           });
-          }
-          else if (req.url === "/deletePassengerFromMovement") {
-          await getAuditLogs({
-            password: req.headers.password as string,
-            id:req.headers.passengerid as string,
-            endpoint: req.originalUrl,
-          });
-          }
-          else {
-          await getAuditLogs({
-            password: req.headers.password as string,
-            id:req.headers.movementid as string,
-            endpoint: req.originalUrl,
-          });
-          }
         }
       }
-    } catch (error) {
-      console.error("Error processing audit log:", error);
-      return res.status(500).send({ message: "Password may be incorrect can't delete" });
     }
     next();
   } catch (error) {

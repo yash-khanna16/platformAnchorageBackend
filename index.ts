@@ -190,7 +190,7 @@ cron.schedule("0 0 * */2 *", () => {
   moveExpiredData(); 
 });
 
-// Schedule the job to run at 12:00 AM every 2 months
+
 cron.schedule("0 0 * * *", () => {
   console.log("Moving expired booking and movements to logs...");
   moveExpiredAuditLogs();
