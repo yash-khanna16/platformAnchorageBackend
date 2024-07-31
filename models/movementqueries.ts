@@ -14,6 +14,7 @@ export const fetchMovementQuery = `SELECT
     CASE
         WHEN b.booking_id IS NOT NULL THEN g.name
         WHEN l.booking_id IS NOT NULL THEN lg.name
+        WHEN l.booking_id IS NOT NULL THEN lg.name
         ELSE ep.name
     END AS passenger_name,
     CASE
@@ -42,6 +43,8 @@ LEFT JOIN
     logs l ON p.passenger_id = l.booking_id
 LEFT JOIN 
     guests g ON b.guest_email = g.email
+LEFT JOIN 
+    guests lg ON l.guest_email = lg.email
 LEFT JOIN 
     guests lg ON l.guest_email = lg.email
 LEFT JOIN 
