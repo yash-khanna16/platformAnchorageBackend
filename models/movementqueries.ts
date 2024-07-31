@@ -8,12 +8,10 @@ export const fetchMovementQuery = `SELECT
     c.name AS car_name,
     CASE
         WHEN b.booking_id IS NOT NULL OR l.booking_id IS NOT NULL THEN FALSE
-        WHEN b.booking_id IS NOT NULL OR l.booking_id IS NOT NULL THEN FALSE
         ELSE TRUE
     END AS external_booking,
     CASE
         WHEN b.booking_id IS NOT NULL THEN g.name
-        WHEN l.booking_id IS NOT NULL THEN lg.name
         WHEN l.booking_id IS NOT NULL THEN lg.name
         ELSE ep.name
     END AS passenger_name,
@@ -46,13 +44,10 @@ LEFT JOIN
 LEFT JOIN 
     guests lg ON l.guest_email = lg.email
 LEFT JOIN 
-    guests lg ON l.guest_email = lg.email
-LEFT JOIN 
     public.external_passenger ep ON p.passenger_id = ep.passenger_id
 WHERE 
     (b.booking_id IS NULL AND l.booking_id IS NULL AND p.passenger_id IS NOT NULL)
     OR (b.booking_id IS NOT NULL)
-    OR (l.booking_id IS NOT NULL)
 ORDER BY m.movement_id, passenger_name;
 
 `;
