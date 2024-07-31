@@ -1,4 +1,4 @@
-import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
+import { editMovementDetailsType, movementDetailsType } from "../types/movement";
 import pool from "../db";
 import {
   addCarQuery,

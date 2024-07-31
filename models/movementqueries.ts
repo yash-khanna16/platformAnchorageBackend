@@ -48,7 +48,6 @@ LEFT JOIN
 WHERE 
     (b.booking_id IS NULL AND l.booking_id IS NULL AND p.passenger_id IS NOT NULL)
     OR (b.booking_id IS NOT NULL)
-    OR (l.booking_id IS NOT NULL)
 ORDER BY m.movement_id, passenger_name;
 
 `;
