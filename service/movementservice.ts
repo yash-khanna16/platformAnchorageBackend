@@ -1,4 +1,4 @@
-import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
+import { editMovementDetailsType, movementDetailsType } from "../types/movement";
 import { addCarModel, addDriverModel, addMovementModel, checkConflict, deleteCarModel,deleteMovementByBookingIdModel, deleteDriverModel, deleteMovementModel, deletePassengerFromMovementModel, editMovementModel, fetchAllCarsModel, fetchAllDriversModel, fetchAvailableCarsModel, fetchAvailableDriversModel, fetchMovementByBookingIdModel, fetchMovementModel } from "../models/movementmodel";
 import { convertUTCToIST } from "./guestservice";
 

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { addCarService, addDriverService, addMovementService, deleteCarService,fetchEachPassengerService, deleteDriverService, deleteMovementService, deletePassengerFromMovementService, editMovementService, fetchAllCarsService, fetchAllDriversService, fetchAvailableCarsService, fetchAvailableDriversService, fetchMovementService, fetchMovementByBookingIdService } from "../service/movementservice";
-import { editMovementDetailsType, movementDetailsType } from "../constants/movement";
+import { editMovementDetailsType, movementDetailsType } from "../types/movement";
 
 export const fetchMovevment=async(req: Request, res: Response) => {
     try {        
