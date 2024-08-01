@@ -187,7 +187,7 @@ cron.schedule("0 0 * */2 *", () => {
 });
 
 // Schedule the job to run at 12:00 AM every 2 months
-cron.schedule("0 59 18 * * *", () => {
+cron.schedule("0 0 * * *", () => {
   console.log("Deleting logs..");
   moveExpiredAuditLogs();
 });
