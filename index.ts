@@ -170,8 +170,6 @@ const moveExpiredAuditLogs = async () => {
     console.log(`Deleted ${result.rowCount} old audit log(s)`);
   } catch (error) {
     console.error('Error deleting old audit logs:', error);
-  } finally {
-    await pool.end();
   }
 };
 
@@ -192,7 +190,7 @@ cron.schedule("0 0 * */2 *", () => {
 
 
 cron.schedule("0 0 * * *", () => {
-  console.log("Moving expired booking and movements to logs...");
+  console.log("Deleting logs..");
   moveExpiredAuditLogs();
 });
 app.get("/", (req: Request, res: Response) => {
