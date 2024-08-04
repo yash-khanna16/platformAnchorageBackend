@@ -77,7 +77,9 @@ export const addOrder = async (req: Request, res: Response) => {
 export const deleteOrder = async (req: Request, res: Response) => {
   try {
     const orderid: string = req.headers.orderid as string;
-    const result = await deleteOrderService(orderid);
+    const reason: string = req.headers.reason as string;
+    const result = await deleteOrderService(orderid, reason);
+    console.log(`Order deleted with order id: ${orderid}`)
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });

@@ -4,8 +4,10 @@ import {
   deleteOrderModel,
   fetchAllItemsModel,
   fetchAllOrdersModel,
+  fetchBookingByEmailId,
   fetchBookingByRoomModel,
   fetchOrderByBookingIdModel,
+  fetchOrderDetailsByOrderId,
   fetchOTP,
   putItemModel,
   updateItemStatusModel,
@@ -17,8 +19,12 @@ import dotenv from "dotenv";
 import otpGenerator from "otp-generator";
 import { itemDetailsType, orderType } from "../types/cos";
 import { v4 as uuidv4 } from "uuid";
+import { convertUTCToIST } from "./guestservice";
+import { getIO } from "../socket";
+import jwt from "jsonwebtoken"
 
 dotenv.config();
+const { ROOM_CODE } = process.env;
 
 const maxTries = 10;
 
@@ -92,7 +98,15 @@ export async function verifyOTPService(email: string, otp: string) {
     }
     await updateOTP(email, otpInfo[0].otp, otpInfo[0].expiry, otpInfo[0].tries + 1);
     if (otpInfo[0].otp === otp) {
-      return { message: "Verified" };
+      const booking = await fetchBookingByEmailId(email);
+      console.log(booking);
+      const token = jwt.sign(
+        {
+          bookingId:booking[0].booking_id,
+        },
+        process.env.JWT_SECRET_KEY as string
+      );
+      return { token: token };
     } else {
       return { message: "Invalid OTP" };
     }
@@ -130,10 +144,19 @@ export async function putItemService(itemDetails: itemDetailsType) {
 
 export async function addOrderService(order: orderType) {
   return new Promise((resolve, reject) => {
-    order.created_at = new Date();
+    order.created_at = new Date().getTime().toString();
     addOrderModel(order)
-      .then((results) => {
-        resolve(results);
+      .then(async (results) => {
+        try {
+          const io = getIO();
+          let details = await fetchAllOrdersService();
+          if (ROOM_CODE) {
+            io.to(ROOM_CODE).emit("order_received", details);
+          }
+          resolve({ message: "Order received successfully", details: details });
+        } catch (error) {
+          console.log("error fetching order details");
+        }
       })
       .catch((error) => {
         console.log("error adding order", error);
@@ -142,11 +165,20 @@ export async function addOrderService(order: orderType) {
   });
 }
 
-export async function deleteOrderService(orderId: string) {
+export async function deleteOrderService(orderId: string, reason: string) {
   return new Promise((resolve, reject) => {
     deleteOrderModel(orderId)
-      .then((results) => {
-        resolve(results);
+      .then(async (results) => {
+        try {
+          const io = getIO();
+          let details = await fetchAllOrdersService();
+          if (ROOM_CODE) {
+            io.to(ROOM_CODE).emit("order_deleted", details);
+          }
+          resolve({details: details});
+        } catch (error) {
+          console.log("error fetching order details");
+        }
       })
       .catch((error) => {
         console.log("error deleting order", error);
@@ -168,11 +200,59 @@ export async function fetchOrderByBookingIdService(bookingId: string) {
   });
 }
 
+function convertOrders(results: any) {
+  const transformedResults = results.reduce((acc: any, curr: any) => {
+    const {
+      order_id,
+      booking_id,
+      room,
+      remarks,
+      created_at,
+      status,
+      guest_name,
+      item_id,
+      name,
+      description,
+      price,
+      qty,
+      type,
+      category,
+      available,
+      time_to_prepare,
+    } = curr;
+
+    const item = { item_id, name, description, price, qty, type, category, available, time_to_prepare };
+
+    if (!acc[order_id]) {
+      acc[order_id] = {
+        order_id,
+        booking_id,
+        room,
+        remarks,
+        created_at,
+        status,
+        guest_name,
+        items: [],
+      };
+    }
+
+    acc[order_id].items.push(item);
+
+    return acc;
+  }, {});
+
+  return transformedResults;
+}
+
 export async function fetchAllOrdersService() {
   return new Promise((resolve, reject) => {
     fetchAllOrdersModel()
       .then((results) => {
-        resolve(results);
+        const transformedResults = convertOrders(results);
+        const sortedResults = Object.values(transformedResults).sort((a: any, b: any) => {
+          return Number(b.created_at) - Number(a.created_at);
+        });
+        resolve(Object.values(sortedResults));
       })
       .catch((error) => {
         console.log("error fetching all orders", error);

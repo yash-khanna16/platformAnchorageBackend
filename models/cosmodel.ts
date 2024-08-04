@@ -7,8 +7,10 @@ import {
   deleteOrderQuery,
   fetchAllItemsQuery,
   fetchAllOrdersQuery,
+  fetchBookingByEmailIdQuery,
   fetchBookingFromRoomQuery,
   fetchOrderByBookingIdQuery,
+  fetchOrderDetailsByOrderIdQuery,
   fetchOTPQuery,
   putItemQuery,
   updateItemStatusQuery,
@@ -98,7 +100,7 @@ export async function addOrderModel(orderDetails: orderType) {
 
     await pool.query(addOrderDetailsQuery, queryValues);
 
-    return { message: "Order added successfully!" };
+    return { message: "Order added successfully!", order_id: orderDetails.order_id };
   } catch (error) {
     console.error("Error adding order", error);
     throw new Error("Error adding order");
@@ -167,4 +169,23 @@ export async function deleteItemModel(itemid: string) {
   }
 }
 
+export async function fetchOrderDetailsByOrderId(orderid: string) {
+  try {
+    const result = await pool.query(fetchOrderDetailsByOrderIdQuery, [orderid]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching order", error); 
+    throw new Error("Error fetching order");
+  }
+}
+
+export async function fetchBookingByEmailId(emailId: string) {
+  try {
+    const  result = await pool.query(fetchBookingByEmailIdQuery, [emailId]);
+    return (result.rows);
+  } catch (error) {
+    console.error("Error updating item status", error); 
+    throw new Error("Error updating item status");
+  }
+}
 

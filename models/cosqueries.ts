@@ -20,10 +20,45 @@ export const deleteOrderDetailsQuery = `DELETE FROM order_details WHERE order_id
 
 export const fetchOrderByBookingIdQuery = `SELECT * FROM orders JOIN order_details ON orders.order_id = order_details.order_id JOIN items ON order_details.item_id = items.item_id WHERE orders.booking_id = $1 `
 
-export const fetchAllOrdersQuery = `SELECT * FROM orders JOIN order_details ON orders.order_id = order_details.order_id JOIN items ON order_details.item_id = items.item_id `
+export const fetchAllOrdersQuery = `
+  SELECT 
+    orders.*,
+    order_details.*,
+    items.*,
+    guests.name AS guest_name
+  FROM orders 
+  JOIN order_details ON orders.order_id = order_details.order_id 
+  JOIN items ON order_details.item_id = items.item_id 
+  JOIN (
+    SELECT * FROM bookings 
+    UNION ALL 
+    SELECT * FROM logs
+  ) AS all_bookings ON orders.booking_id = all_bookings.booking_id 
+  JOIN guests ON all_bookings.guest_email = guests.email;
+`;
+
 
 export const updateOrderStatusQuery = `UPDATE orders SET status = $1 WHERE order_id = $2; `
 
 export const updateItemStatusQuery = `UPDATE items SET available = $1 WHERE item_id = $2;`
 
 export const deleteItemQuery = `DELETE FROM items WHERE item_id=$1`;
+
+export const fetchOrderDetailsByOrderIdQuery = `  
+SELECT 
+    orders.*,
+    order_details.*,
+    items.*,
+    guests.name AS guest_name
+  FROM orders 
+  JOIN order_details ON orders.order_id = order_details.order_id 
+  JOIN items ON order_details.item_id = items.item_id 
+  JOIN (
+    SELECT * FROM bookings 
+    UNION ALL 
+    SELECT * FROM logs
+  ) AS all_bookings ON orders.booking_id = all_bookings.booking_id 
+  JOIN guests ON all_bookings.guest_email = guests.email
+  WHERE orders.order_id = $1;`
+
+  export const fetchBookingByEmailIdQuery = `SELECT * FROM guests JOIN bookings ON bookings.guest_email = guests.email where guests.email=$1`;

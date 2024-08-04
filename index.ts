@@ -8,9 +8,15 @@ import { loginAdmin } from "./controllers/guestcontroller";
 import { verifyAdmin } from "./middlewares/middleware";
 import analyticsroutes from "./routes/analyticroutes";
 import movementroutes from "./routes/movementroutes";
-import cosroutes from "./routes/cosroutes"
+import cosAdminRoutes from "./routes/cosAdminRoutes"
+import cosRoutes from "./routes/cosRoutes"
 import cron from "node-cron";
 import pool from "./db";
+import http from "http";
+import dotenv from "dotenv"
+import { initializeSocket } from "./socket";
+dotenv.config()
+const {ROOM_CODE} = process.env;
 
 const app = express();
 const port = 8000;
@@ -19,7 +25,12 @@ app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
 
-app.listen(port, () => {
+
+const server = http.createServer(app);
+
+initializeSocket(server); // Initialize Socket.IO with the server
+
+server.listen(port, () => {
   console.log(`Server is running on port: http://localhost:${port}`);
 });
 // app.get("/abc",async function(req:Request,res:Response){
@@ -55,7 +66,8 @@ app.get("/loginAdmin", loginAdmin);
 app.use("/api/admin", guestRoutes);
 app.use("/api/analytics", analyticsroutes);
 app.use("/api/movement", movementroutes);
-app.use("/api/cos", cosroutes);
+app.use("/api/admin/cos",verifyAdmin, cosAdminRoutes);
+app.use("/api/cos", cosRoutes);
 
 // app.get("/test", (req:Request, res:Response)=>{
 //     pool.query("SELECT *FROM guests").then((results:any)=>{

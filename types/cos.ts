@@ -13,7 +13,7 @@ export type orderType = {
   booking_id: string;
   room: string;
   remarks: string;
-  created_at: Date;
+  created_at: string;
   status: string;
   items: {item_id: string; qty: number }[];
 };
