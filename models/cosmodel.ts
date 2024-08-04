@@ -79,6 +79,7 @@ export async function putItemModel(itemDetails: itemDetailsType) {
 
 export async function addOrderModel(orderDetails: orderType) {
   try {
+    console.log("hello")
     const result = await pool.query(addOrderQuery, [
       orderDetails.booking_id,
       orderDetails.room,

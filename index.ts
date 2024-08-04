@@ -9,7 +9,7 @@ import { verifyAdmin } from "./middlewares/middleware";
 import analyticsroutes from "./routes/analyticroutes";
 import movementroutes from "./routes/movementroutes";
 import cosAdminRoutes from "./routes/cosAdminRoutes"
-import cosRoutes from "./routes/cosRoutes"
+import cosRoutes from "./routes/cosroutes"
 import cron from "node-cron";
 import pool from "./db";
 import http from "http";

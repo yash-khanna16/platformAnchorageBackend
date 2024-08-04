@@ -67,7 +67,9 @@ export const putItem = async (req: Request, res: Response) => {
 export const addOrder = async (req: Request, res: Response) => {
   try {
     const orderDetails: orderType = req.body.orderDetails;
+    console.log(orderDetails)
     const result = await addOrderService(orderDetails);
+    console.log(result);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });

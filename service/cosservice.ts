@@ -149,11 +149,11 @@ export async function addOrderService(order: orderType) {
       .then(async (results) => {
         try {
           const io = getIO();
-          let details = await fetchAllOrdersService();
+          let details:[] = await fetchAllOrdersService();
           if (ROOM_CODE) {
             io.to(ROOM_CODE).emit("order_received", details);
           }
-          resolve({ message: "Order received successfully", details: details });
+          resolve({ message: "Order received successfully", details: details[0] });
         } catch (error) {
           console.log("error fetching order details");
         }
