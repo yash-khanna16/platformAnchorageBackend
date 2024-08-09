@@ -9,7 +9,7 @@ import {
   fetchOrderByBookingIdService,
   putItemService,
   sendOTPByEmailService,
-  updateItemStatusService,
+  updateItemService,
   updateOrderStatusService,
   verifyOTPService,
   fetchBookingByBookingIdService,
@@ -68,12 +68,16 @@ export const putItem = async (req: Request, res: Response) => {
 export const addOrder = async (req: Request, res: Response) => {
   try {
     const orderDetails: orderType = req.body.orderDetails;
-    console.log(orderDetails)
+    console.log(orderDetails);
     const result = await addOrderService(orderDetails);
     console.log(result);
     res.status(200).send(result);
-  } catch (error) {
-    res.status(500).send({ message: "Something went wrong, please try again!" });
+  } catch (error: any) {
+    if (error.notAvailable) {
+      res.status(401).send(error);
+    } else {
+      res.status(500).send("Something went wrong!");
+    }
   }
 };
 
@@ -82,7 +86,7 @@ export const deleteOrder = async (req: Request, res: Response) => {
     const orderid: string = req.headers.orderid as string;
     const reason: string = req.headers.reason as string;
     const result = await deleteOrderService(orderid, reason);
-    console.log(`Order deleted with order id: ${orderid}`)
+    console.log(`Order deleted with order id: ${orderid}`);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
@@ -119,17 +123,16 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
   }
 };
 
-export const updateItemStatus = async (req: Request, res: Response) => {
+export const updateItem = async (req: Request, res: Response) => {
   try {
-    const itemid = req.headers.itemid as string;
-    const available = req.headers.available === 'true';
-    const result = await updateItemStatusService(itemid, available);
+    const itemdetails: itemDetailsType = req.body.itemDetails as itemDetailsType;
+    console.log("body: ", req.body);
+    const result = await updateItemService(itemdetails);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
   }
 };
-
 
 export const deleteItem = async (req: Request, res: Response) => {
   try {

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addOrder, fetchAllItems,  fetchBookingByRoom, fetchOrdersByBookingId,  sendOTPByEmail, verifyOTP,fetchBookingByBookingId } from "../controllers/coscontroller";
+import { addOrder, deleteItem, deleteOrder, fetchAllItems, fetchAllOrders,fetchBookingByBookingId, fetchBookingByRoom, fetchOrdersByBookingId, putItem, sendOTPByEmail, updateItem, updateOrderStatus, verifyOTP } from "../controllers/coscontroller";
 const router = Router();
 
 router.get("/fetchBookingByRoom", fetchBookingByRoom)
