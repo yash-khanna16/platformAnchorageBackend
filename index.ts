@@ -9,7 +9,7 @@ import { verifyAdmin } from "./middlewares/middleware";
 import analyticsroutes from "./routes/analyticroutes";
 import movementroutes from "./routes/movementroutes";
 import cosAdminRoutes from "./routes/cosAdminRoutes"
-import cosRoutes from "./routes/cosroutes"
+import cosroutes from "./routes/cosRoutes"
 import cron from "node-cron";
 import pool from "./db";
 import http from "http";
@@ -66,8 +66,8 @@ app.get("/loginAdmin", loginAdmin);
 app.use("/api/admin", guestRoutes);
 app.use("/api/analytics", analyticsroutes);
 app.use("/api/movement", movementroutes);
-app.use("/api/admin/cos",verifyAdmin, cosAdminRoutes);
-app.use("/api/cos", cosRoutes);
+app.use("/api/admin/cos",cosAdminRoutes);
+app.use("/api/cos", cosroutes);
 
 // app.get("/test", (req:Request, res:Response)=>{
 //     pool.query("SELECT *FROM guests").then((results:any)=>{

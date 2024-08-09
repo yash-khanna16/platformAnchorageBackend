@@ -4,13 +4,14 @@ import {
   deleteOrderModel,
   fetchAllItemsModel,
   fetchAllOrdersModel,
+  fetchAvailabilityOfItems,
   fetchBookingByEmailId,
   fetchBookingByRoomModel,
   fetchOrderByBookingIdModel,
   fetchOrderDetailsByOrderId,
   fetchOTP,
   putItemModel,
-  updateItemStatusModel,
+  updateItemModel,
   updateOrderStatusModel,
   updateOTP,
 } from "../models/cosmodel";
@@ -21,7 +22,7 @@ import { itemDetailsType, orderType } from "../types/cos";
 import { v4 as uuidv4 } from "uuid";
 import { convertUTCToIST } from "./guestservice";
 import { getIO } from "../socket";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 const { ROOM_CODE } = process.env;
@@ -102,7 +103,7 @@ export async function verifyOTPService(email: string, otp: string) {
       console.log(booking);
       const token = jwt.sign(
         {
-          bookingId:booking[0].booking_id,
+          bookingId: booking[0].booking_id,
         },
         process.env.JWT_SECRET_KEY as string
       );
@@ -145,22 +146,40 @@ export async function putItemService(itemDetails: itemDetailsType) {
 export async function addOrderService(order: orderType) {
   return new Promise((resolve, reject) => {
     order.created_at = new Date().getTime().toString();
-    addOrderModel(order)
-      .then(async (results) => {
-        try {
-          const io = getIO();
-          let details:[] = await fetchAllOrdersService();
-          if (ROOM_CODE) {
-            io.to(ROOM_CODE).emit("order_received", details);
-          }
-          resolve({ message: "Order received successfully", details: details[0] });
-        } catch (error) {
-          console.log("error fetching order details");
+    fetchAvailabilityOfItems(order.items.map((item) => item.item_id))
+      .then((availability) => {
+        let notAvailable: { item_id: string; name: string; available: boolean }[] = [];
+        availability.map((item: { item_id: string; name: string; available: boolean }) => {
+          if (!item.available) notAvailable.push(item);
+        });
+        console.log("availability: ", availability)
+        console.log("not available: ", notAvailable)
+        if (notAvailable.length === 0) {
+          addOrderModel(order)
+            .then(async (results) => {
+              try {
+                const io = getIO();
+                let details: any = await fetchAllOrdersService();
+                if (ROOM_CODE) {
+                  io.to(ROOM_CODE).emit("order_received", details);
+                }
+                resolve({ message: "Order received successfully", details: details[0] });
+              } catch (error) {
+                console.log("error fetching order details");
+              }
+            })
+            .catch((error) => {
+              console.log("error adding order", error);
+              reject("Error adding order");
+            });
+        } else {
+          console.log("error adding order, following items not available now: ", notAvailable);
+          reject({notAvailable: notAvailable})
         }
       })
       .catch((error) => {
-        console.log("error adding order", error);
-        reject("Error adding order");
+        console.log("error fetching availability of items in order", error);
+        reject("error fetching availability of items in order");
       });
   });
 }
@@ -175,7 +194,7 @@ export async function deleteOrderService(orderId: string, reason: string) {
           if (ROOM_CODE) {
             io.to(ROOM_CODE).emit("order_deleted", details);
           }
-          resolve({details: details});
+          resolve({ details: details });
         } catch (error) {
           console.log("error fetching order details");
         }
@@ -274,9 +293,9 @@ export async function updateOrderStatusService(orderid: string, status: string) 
   });
 }
 
-export async function updateItemStatusService(itemid: string, available: boolean) {
+export async function updateItemService(itemDetails: itemDetailsType) {
   return new Promise((resolve, reject) => {
-    updateItemStatusModel(itemid, available)
+    updateItemModel(itemDetails)
       .then((results) => {
         resolve(results);
       })

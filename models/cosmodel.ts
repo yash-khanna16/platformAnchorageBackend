@@ -7,13 +7,14 @@ import {
   deleteOrderQuery,
   fetchAllItemsQuery,
   fetchAllOrdersQuery,
+  fetchAvailabilityOfItemsQuery,
   fetchBookingByEmailIdQuery,
   fetchBookingFromRoomQuery,
   fetchOrderByBookingIdQuery,
   fetchOrderDetailsByOrderIdQuery,
   fetchOTPQuery,
   putItemQuery,
-  updateItemStatusQuery,
+  updateItemQuery,
   updateOrderStatusQuery,
   updateOTPQuery,
 } from "./cosqueries";
@@ -68,7 +69,8 @@ export async function putItemModel(itemDetails: itemDetailsType) {
       itemDetails.type,
       itemDetails.category,
       true,
-      itemDetails.time_to_prepare
+      itemDetails.time_to_prepare,
+      itemDetails.base_price
     ]);
     return { message: "Item inserted successfully!" };
   } catch (error) {
@@ -79,7 +81,7 @@ export async function putItemModel(itemDetails: itemDetailsType) {
 
 export async function addOrderModel(orderDetails: orderType) {
   try {
-    console.log("hello")
+    console.log("hello");
     const result = await pool.query(addOrderQuery, [
       orderDetails.booking_id,
       orderDetails.room,
@@ -143,29 +145,41 @@ export async function fetchAllOrdersModel() {
 export async function updateOrderStatusModel(orderid: string, status: string) {
   try {
     await pool.query(updateOrderStatusQuery, [status, orderid]);
-    return {message: "Order status updated successfully"};
+    return { message: "Order status updated successfully" };
   } catch (error) {
     console.error("Error updating order status", error);
     throw new Error("Error updating order status");
   }
 }
 
-export async function updateItemStatusModel(itemid: string, available: boolean) {
+export async function updateItemModel(itemDetails: itemDetailsType) {
   try {
-    await pool.query(updateItemStatusQuery, [available, itemid]);
-    return {message: "Item status updated successfully"};
+    console.log("itemDetails: ", itemDetails)
+    await pool.query(updateItemQuery, [
+      itemDetails.name,
+      itemDetails.description,
+      itemDetails.price,
+      itemDetails.type,
+      itemDetails.category,
+      itemDetails.available,
+      itemDetails.time_to_prepare,
+      itemDetails.item_id,
+      itemDetails.base_price
+    ]);
+    console.log("item Details: ", itemDetails)
+    return { message: "Item updated successfully" };
   } catch (error) {
-    console.error("Error updating item status", error); 
-    throw new Error("Error updating item status");
+    console.error("Error updating item", error);
+    throw new Error("Error updating item");
   }
 }
 
 export async function deleteItemModel(itemid: string) {
   try {
     await pool.query(deleteItemQuery, [itemid]);
-    return {message: "Item deleted successfully"};
+    return { message: "Item deleted successfully" };
   } catch (error) {
-    console.error("Error updating item status", error); 
+    console.error("Error updating item status", error);
     throw new Error("Error updating item status");
   }
 }
@@ -175,18 +189,27 @@ export async function fetchOrderDetailsByOrderId(orderid: string) {
     const result = await pool.query(fetchOrderDetailsByOrderIdQuery, [orderid]);
     return result.rows;
   } catch (error) {
-    console.error("Error fetching order", error); 
+    console.error("Error fetching order", error);
     throw new Error("Error fetching order");
   }
 }
 
 export async function fetchBookingByEmailId(emailId: string) {
   try {
-    const  result = await pool.query(fetchBookingByEmailIdQuery, [emailId]);
-    return (result.rows);
+    const result = await pool.query(fetchBookingByEmailIdQuery, [emailId]);
+    return result.rows;
   } catch (error) {
-    console.error("Error updating item status", error); 
+    console.error("Error updating item status", error);
     throw new Error("Error updating item status");
   }
 }
 
+export async function fetchAvailabilityOfItems(items: string[]) {
+  try {
+    const result = await pool.query(fetchAvailabilityOfItemsQuery, [items]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating item status", error);
+    throw new Error("Error updating item status");
+  }
+}

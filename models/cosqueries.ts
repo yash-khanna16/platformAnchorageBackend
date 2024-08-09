@@ -10,7 +10,7 @@ export const fetchOTPQuery = `SELECT otp, expiry, tries FROM guests where email=
 
 export const fetchAllItemsQuery = `SELECT * FROM items;`
 
-export const putItemQuery = `INSERT INTO items (item_id,name,description, price, type, category, available, time_to_prepare) VALUES ($1,$2,$3,$4,$5,$6,$7,$8);`
+export const putItemQuery = `INSERT INTO items (item_id,name,description, price, type, category, available, time_to_prepare, base_price) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);`
 
 export const addOrderQuery = `INSERT INTO orders (booking_id, room, remarks, created_at, status) VALUES ($1,$2,$3,$4,$5) RETURNING order_id;`
 
@@ -40,7 +40,7 @@ export const fetchAllOrdersQuery = `
 
 export const updateOrderStatusQuery = `UPDATE orders SET status = $1 WHERE order_id = $2; `
 
-export const updateItemStatusQuery = `UPDATE items SET available = $1 WHERE item_id = $2;`
+export const updateItemQuery = `UPDATE items SET name = $1, description = $2, price = $3, type = $4, category = $5, available = $6, time_to_prepare = $7, base_price = $9 WHERE item_id = $8;`
 
 export const deleteItemQuery = `DELETE FROM items WHERE item_id=$1`;
 
@@ -62,3 +62,5 @@ SELECT
   WHERE orders.order_id = $1;`
 
   export const fetchBookingByEmailIdQuery = `SELECT * FROM guests JOIN bookings ON bookings.guest_email = guests.email where guests.email=$1`;
+
+  export const fetchAvailabilityOfItemsQuery = "SELECT item_id,name, available FROM items WHERE item_id = ANY($1::text[])"
