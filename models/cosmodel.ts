@@ -16,6 +16,7 @@ import {
   updateItemStatusQuery,
   updateOrderStatusQuery,
   updateOTPQuery,
+  fetchBookingByBookingIdQuery,
 } from "./cosqueries";
 
 export async function fetchBookingByRoomModel(room: string) {
@@ -123,10 +124,47 @@ export async function deleteOrderModel(orderid: string) {
 export async function fetchOrderByBookingIdModel(bookingId: string) {
   try {
     const result = await pool.query(fetchOrderByBookingIdQuery, [bookingId]);
-    return result.rows;
+
+    if (result.rows.length === 0) {
+      return [];
+    }
+
+    const orders : {[key:string]:any} = {};
+
+    result.rows.forEach((row:{order_id:Number,booking_id:string, item_id:string, name:string, description:string, qty:Number, created_at:Number,price:Number}) => {
+      const { order_id,booking_id, item_id, name, description, qty, created_at,price } = row;
+
+      const orderIdKey=order_id.toString();
+      if (!orders[orderIdKey]) {
+        orders[orderIdKey] = {
+          orderId: order_id,
+          bookingId: booking_id,
+          orderedOn: created_at,
+          items: [],
+        };
+      }
+
+      orders[orderIdKey].items.push({
+        itemId: item_id,
+        itemName: name,
+        itemDescription: description,
+        itemQty: qty,
+        itemPrice:price,
+      });
+    });
+
+
+    const ordersArray = Object.values(orders);
+
+
+    ordersArray.sort((a, b) => b.orderId - a.orderId);
+
+    console.log(ordersArray);
+
+    return ordersArray;
   } catch (error) {
-    console.error("Error fetching order", error);
-    throw new Error("Error fetching order");
+    console.error("Error fetching orders", error);
+    throw new Error("Error fetching orders");
   }
 }
 
@@ -184,6 +222,17 @@ export async function fetchBookingByEmailId(emailId: string) {
   try {
     const  result = await pool.query(fetchBookingByEmailIdQuery, [emailId]);
     return (result.rows);
+  } catch (error) {
+    console.error("Error updating item status", error); 
+    throw new Error("Error updating item status");
+  }
+}
+
+export async function fetchBookingByBookingIdModel(bookingId: string) {
+  try {
+    console.log(bookingId);
+    const  result = await pool.query(fetchBookingByBookingIdQuery, [bookingId]);
+    return (result.rows[0]);
   } catch (error) {
     console.error("Error updating item status", error); 
     throw new Error("Error updating item status");

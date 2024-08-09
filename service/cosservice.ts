@@ -7,7 +7,7 @@ import {
   fetchBookingByEmailId,
   fetchBookingByRoomModel,
   fetchOrderByBookingIdModel,
-  fetchOrderDetailsByOrderId,
+  fetchBookingByBookingIdModel,
   fetchOTP,
   putItemModel,
   updateItemStatusModel,
@@ -19,7 +19,6 @@ import dotenv from "dotenv";
 import otpGenerator from "otp-generator";
 import { itemDetailsType, orderType } from "../types/cos";
 import { v4 as uuidv4 } from "uuid";
-import { convertUTCToIST } from "./guestservice";
 import { getIO } from "../socket";
 import jwt from "jsonwebtoken"
 
@@ -191,6 +190,7 @@ export async function fetchOrderByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
     fetchOrderByBookingIdModel(bookingId)
       .then((results) => {
+        console.log(results);
         resolve(results);
       })
       .catch((error) => {
@@ -290,6 +290,19 @@ export async function updateItemStatusService(itemid: string, available: boolean
 export async function deleteItemService(itemid: string) {
   return new Promise((resolve, reject) => {
     deleteItemModel(itemid)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error deleting item", error);
+        reject("Error deleting item!");
+      });
+  });
+}
+export async function fetchBookingByBookingIdService(bookingId: string) {
+  return new Promise((resolve, reject) => {
+    
+    fetchBookingByBookingIdModel(bookingId)
       .then((results) => {
         resolve(results);
       })

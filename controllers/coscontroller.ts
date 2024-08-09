@@ -12,6 +12,7 @@ import {
   updateItemStatusService,
   updateOrderStatusService,
   verifyOTPService,
+  fetchBookingByBookingIdService,
 } from "../service/cosservice";
 import { itemDetailsType, orderType } from "../types/cos";
 
@@ -139,4 +140,17 @@ export const deleteItem = async (req: Request, res: Response) => {
     res.status(500).send({ message: "Something went wrong, please try again!" });
   }
 };
+export const fetchBookingByBookingId = async (req: Request, res: Response) => {
+  try {
+    const bookingId = req.headers.bookingid as string;
+    
+    const result = await fetchBookingByBookingIdService(bookingId);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+
+
+
 
