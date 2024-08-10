@@ -8,7 +8,7 @@ import { loginAdmin } from "./controllers/guestcontroller";
 import { verifyAdmin } from "./middlewares/middleware";
 import analyticsroutes from "./routes/analyticroutes";
 import movementroutes from "./routes/movementroutes";
-import cosAdminRoutes from "./routes/cosAdminRoutes"
+import cosAdminRoutes from "./routes/cosadminroutes"
 import cosroutes from "./routes/cosroutes"
 import cron from "node-cron";
 import pool from "./db";
