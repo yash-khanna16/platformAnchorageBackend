@@ -24,9 +24,11 @@ export const fetchOrderByBookingIdQuery = `
     orders.booking_id, 
     orders.created_at, 
     order_details.item_id, 
+    orders.status,
     items.name, 
     items.description, 
     order_details.qty,
+    items.type,
     items.price
   FROM 
     orders 

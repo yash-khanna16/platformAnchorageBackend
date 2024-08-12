@@ -75,6 +75,8 @@ export const addOrder = async (req: Request, res: Response) => {
   } catch (error: any) {
     if (error.notAvailable) {
       res.status(401).send(error);
+    } else if (error.booking_expired) {
+      res.status(415).send(error)
     } else {
       res.status(500).send("Something went wrong!");
     }

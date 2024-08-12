@@ -38,6 +38,28 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+type OrderDetails = {
+  order_id: string;
+  booking_id: string;
+  room: string;
+  remarks: string;
+  created_at: string; // Consider changing to number if you want it as a timestamp in milliseconds
+  status: string;
+  guest_name: string;
+  items: Array<{
+    item_id: string;
+    name: string;
+    description: string;
+    price: number;
+    qty: number;
+    type: string;
+    category: string;
+    available: boolean;
+    time_to_prepare: number;
+  }>;
+};
+
+
 export async function fetchBookingFromRoomService(room: string) {
   return new Promise((resolve, reject) => {
     fetchBookingByRoomModel(room)
@@ -145,40 +167,109 @@ export async function putItemService(itemDetails: itemDetailsType) {
 export async function addOrderService(order: orderType) {
   return new Promise((resolve, reject) => {
     order.created_at = new Date().getTime().toString();
-    fetchAvailabilityOfItems(order.items.map((item) => item.item_id))
-      .then((availability) => {
-        let notAvailable: { item_id: string; name: string; available: boolean }[] = [];
-        availability.map((item: { item_id: string; name: string; available: boolean }) => {
-          if (!item.available) notAvailable.push(item);
-        });
-        console.log("availability: ", availability)
-        console.log("not available: ", notAvailable)
-        if (notAvailable.length === 0) {
-          addOrderModel(order)
-            .then(async (results) => {
-              try {
-                const io = getIO();
-                let details: any = await fetchAllOrdersService();
-                if (ROOM_CODE) {
-                  io.to(ROOM_CODE).emit("order_received", details);
-                }
-                resolve({ message: "Order received successfully", details: details[0] });
-              } catch (error) {
-                console.log("error fetching order details");
+    fetchBookingByBookingIdModel(order.booking_id)
+      .then((booking) => {
+        console.log("booking: ", booking)
+        const checkin = new Date(booking.checkin).getTime();
+        const checkout = new Date(booking.checkout).getTime();
+        const currentTime = new Date().getTime();
+        if (currentTime < checkout && currentTime > checkin) {
+          fetchAvailabilityOfItems(order.items.map((item) => item.item_id))
+            .then((availability) => {
+              let notAvailable: { item_id: string; name: string; available: boolean }[] = [];
+              availability.map((item: { item_id: string; name: string; available: boolean }) => {
+                if (!item.available) notAvailable.push(item);
+              });
+              if (notAvailable.length === 0) {
+                addOrderModel(order)
+                  .then(async (results) => {
+                    try {
+                      const io = getIO();
+                      let details: OrderDetails[] = await fetchAllOrdersService() as OrderDetails[];
+                      if (ROOM_CODE) {
+                        io.to(ROOM_CODE).emit("order_received", details);
+                      }
+                      console.log("details: ", details[0])
+                      const mailOptions = {
+                        from: process.env.NODE_MAIL_FROM_EMAIL,
+                        to: booking.email,
+                        subject: `Order Confirmation - [Order #${details[0].order_id}]`,
+                        html: `
+                          <p>Dear ${details[0].guest_name},</p>
+                          <p>Thank you for your purchase! We are pleased to confirm your order #${details[0].order_id}.</p>
+                      
+                          <h2>Order Summary</h2>
+                          <p>
+                            <strong>Order Number:</strong> ${details[0].order_id} <br>
+                            <strong>Order Date:</strong> ${new Date(parseInt(details[0].created_at)).toLocaleDateString()} <br>
+                            <strong>Room No:</strong> ${booking.room} <br>
+                            <strong>Total Items:</strong> ${details[0].items.length} <br>
+                            <strong>Order Total:</strong> ₹${details[0].items.reduce((total, item) => total + item.price * item.qty, 0)}
+                          </p>
+                      
+                          <h3>Items Ordered:</h3>
+                          <ul>
+                            ${details[0].items.map((item) => `
+                              <li>
+                                <strong>${item.name}</strong> - Quantity: ${item.qty} - Price: ₹${item.price}
+                                <br>
+                                <em>${item.description}</em>
+                              </li>
+                            `).join('')}
+                          </ul>
+                      
+                          <h2>Expected Waiting Time</h2>
+                          <p>
+                            <strong>Preparation Time:</strong> ${details[0].items.reduce((max, item) => item.time_to_prepare > max ? item.time_to_prepare : max, 0)} minutes <br>
+                            <strong>Estimated Delivery/Pickup Time:</strong> ${new Date(parseInt(details[0].created_at) + details[0].items.reduce((max, item) => item.time_to_prepare > max ? item.time_to_prepare : max, 0) * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                      
+                          <p>We are currently processing your order, and you can expect it to be ready in approximately <strong>${details[0].items.reduce((max, item) => item.time_to_prepare > max ? item.time_to_prepare : max, 0)} minutes</strong>.</p>
+                          <p>If you have any questions or need to make changes to your order, please feel free to contact us at <a href="mailto:admin@platformanchorage.com">admin@platformanchorage.com</a>.</p>
+                          <p>For any complaints or queries, you can reach our front desk at: <a href="tel:+91123456789">+91123456789</a></p>
+                      
+                          <p>Thank you again for choosing Anchorage. We look forward to serving you!</p>
+                      
+                          <p style="color: #777; text-align: center;">
+                            Anchorage | <a href="tel:+91123456789">+91123456789</a> | <a href="mailto:admin@platformanchorage.com">admin@platformanchorage.com</a>
+                          </p>
+                        `,
+                      };
+                      
+                      transporter.sendMail(mailOptions, (error, info) => {
+                        if (error) {
+                          console.log("Error sending email:", error);
+                        } else {
+                          console.log("Email sent to: ", booking.email, " response: ", info.response);
+                        }
+                      });
+                      
+                      resolve({ message: "Order received successfully", details: details[0] });
+                    } catch (error) {
+                      console.log("error fetching order details");
+                    }
+                  })
+                  .catch((error) => {
+                    console.log("error adding order", error);
+                    reject("Error adding order");
+                  });
+              } else {
+                console.log("error adding order, following items not available now: ", notAvailable);
+                reject({ notAvailable: notAvailable });
               }
             })
             .catch((error) => {
-              console.log("error adding order", error);
-              reject("Error adding order");
+              console.log("error fetching availability of items in order", error);
+              reject("error fetching availability of items in order");
             });
-        } else {
-          console.log("error adding order, following items not available now: ", notAvailable);
-          reject({notAvailable: notAvailable})
+          } else {
+            console.log("booking expired")
+          reject({booking_expired:"Booking expired"})
         }
       })
       .catch((error) => {
-        console.log("error fetching availability of items in order", error);
-        reject("error fetching availability of items in order");
+        console.log("Error fetching booking");
+        reject("Error Fetching Booking");
       });
   });
 }
@@ -320,7 +411,6 @@ export async function deleteItemService(itemid: string) {
 }
 export async function fetchBookingByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
-    
     fetchBookingByBookingIdModel(bookingId)
       .then((results) => {
         resolve(results);
