@@ -20,6 +20,8 @@ import {
   fetchBookingByBookingIdQuery,
 } from "./cosqueries";
 
+
+
 export async function fetchBookingByRoomModel(room: string) {
   try {
     const result = await pool.query(fetchBookingFromRoomQuery, [room]);
@@ -263,3 +265,4 @@ export async function fetchAvailabilityOfItems(items: string[]) {
     throw new Error("Error updating item status");
   }
 }
+

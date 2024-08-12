@@ -14,7 +14,9 @@ import {
   updateItemModel,
   updateOrderStatusModel,
   updateOTP,
+  
 } from "../models/cosmodel";
+import {fetchMovementByBookingIdModel} from "../models/movementmodel"
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import otpGenerator from "otp-generator";
@@ -322,6 +324,18 @@ export async function fetchBookingByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
     
     fetchBookingByBookingIdModel(bookingId)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error deleting item", error);
+        reject("Error deleting item!");
+      });
+  });
+}
+export async function fetchScheduleByBookingIdService(bookingId: string) {
+  return new Promise((resolve, reject) => {
+    fetchMovementByBookingIdModel(bookingId)
       .then((results) => {
         resolve(results);
       })

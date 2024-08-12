@@ -13,6 +13,7 @@ import {
   updateOrderStatusService,
   verifyOTPService,
   fetchBookingByBookingIdService,
+  fetchScheduleByBookingIdService,
 } from "../service/cosservice";
 import { itemDetailsType, orderType } from "../types/cos";
 
@@ -148,6 +149,15 @@ export const fetchBookingByBookingId = async (req: Request, res: Response) => {
     const bookingId = req.headers.bookingid as string;
     
     const result = await fetchBookingByBookingIdService(bookingId);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+export const fetchSchedule = async (req: Request, res: Response) => {
+  try {
+    const bookingId = req.headers.bookingid as string;
+    const result = await fetchScheduleByBookingIdService(bookingId);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
