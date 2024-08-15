@@ -16,6 +16,7 @@ export type orderType = {
   room: string;
   remarks: string;
   created_at: string;
+  delay: number;
   status: string;
   items: {item_id: string; qty: number }[];
 };

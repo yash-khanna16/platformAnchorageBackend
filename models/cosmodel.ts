@@ -18,6 +18,7 @@ import {
   updateOrderStatusQuery,
   updateOTPQuery,
   fetchBookingByBookingIdQuery,
+  setDelayQuery as updateDelayQuery,
 } from "./cosqueries";
 
 export async function fetchBookingByRoomModel(room: string) {
@@ -163,7 +164,7 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
 
     ordersArray.sort((a, b) => b.orderId - a.orderId);
 
-    console.log(ordersArray);
+    // console.log(ordersArray);
 
     return ordersArray;
   } catch (error) {
@@ -263,5 +264,14 @@ export async function fetchAvailabilityOfItems(items: string[]) {
   } catch (error) {
     console.error("Error updating item status", error);
     throw new Error("Error updating item status");
+  }
+}
+export async function updateDelayModel(delay: string, order_id: string) {
+  try {
+    const result = await pool.query(updateDelayQuery, [delay, order_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating delay", error);
+    throw new Error("Error updating delay");
   }
 }

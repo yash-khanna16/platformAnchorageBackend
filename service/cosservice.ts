@@ -14,6 +14,8 @@ import {
   updateItemModel,
   updateOrderStatusModel,
   updateOTP,
+  fetchOrderDetailsByOrderId,
+  updateDelayModel,
 } from "../models/cosmodel";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
@@ -46,6 +48,7 @@ type OrderDetails = {
   created_at: string; // Consider changing to number if you want it as a timestamp in milliseconds
   status: string;
   guest_name: string;
+  guest_email: string;
   items: Array<{
     item_id: string;
     name: string;
@@ -58,7 +61,6 @@ type OrderDetails = {
     time_to_prepare: number;
   }>;
 };
-
 
 export async function fetchBookingFromRoomService(room: string) {
   return new Promise((resolve, reject) => {
@@ -169,7 +171,7 @@ export async function addOrderService(order: orderType) {
     order.created_at = new Date().getTime().toString();
     fetchBookingByBookingIdModel(order.booking_id)
       .then((booking) => {
-        console.log("booking: ", booking)
+        console.log("booking: ", booking);
         const checkin = new Date(booking.checkin).getTime();
         const checkout = new Date(booking.checkout).getTime();
         const currentTime = new Date().getTime();
@@ -185,54 +187,104 @@ export async function addOrderService(order: orderType) {
                   .then(async (results) => {
                     try {
                       const io = getIO();
-                      let details: OrderDetails[] = await fetchAllOrdersService() as OrderDetails[];
+                      let details: OrderDetails[] = (await fetchAllOrdersService()) as OrderDetails[];
                       if (ROOM_CODE) {
                         io.to(ROOM_CODE).emit("order_received", details);
                       }
-                      console.log("details: ", details[0])
+                      console.log("details: ", details[0]);
                       const mailOptions = {
                         from: process.env.NODE_MAIL_FROM_EMAIL,
                         to: booking.email,
                         subject: `Order Confirmation - [Order #${details[0].order_id}]`,
                         html: `
-                          <p>Dear ${details[0].guest_name},</p>
-                          <p>Thank you for your purchase! We are pleased to confirm your order #${details[0].order_id}.</p>
-                      
-                          <h2>Order Summary</h2>
-                          <p>
-                            <strong>Order Number:</strong> ${details[0].order_id} <br>
-                            <strong>Order Date:</strong> ${new Date(parseInt(details[0].created_at)).toLocaleDateString()} <br>
-                            <strong>Room No:</strong> ${booking.room} <br>
-                            <strong>Total Items:</strong> ${details[0].items.length} <br>
-                            <strong>Order Total:</strong> ₹${details[0].items.reduce((total, item) => total + item.price * item.qty, 0)}
-                          </p>
-                      
-                          <h3>Items Ordered:</h3>
-                          <ul>
-                            ${details[0].items.map((item) => `
-                              <li>
-                                <strong>${item.name}</strong> - Quantity: ${item.qty} - Price: ₹${item.price}
-                                <br>
-                                <em>${item.description}</em>
-                              </li>
-                            `).join('')}
-                          </ul>
-                      
-                          <h2>Expected Waiting Time</h2>
-                          <p>
-                            <strong>Preparation Time:</strong> ${details[0].items.reduce((max, item) => item.time_to_prepare > max ? item.time_to_prepare : max, 0)} minutes <br>
-                            <strong>Estimated Delivery/Pickup Time:</strong> ${new Date(parseInt(details[0].created_at) + details[0].items.reduce((max, item) => item.time_to_prepare > max ? item.time_to_prepare : max, 0) * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                      
-                          <p>We are currently processing your order, and you can expect it to be ready in approximately <strong>${details[0].items.reduce((max, item) => item.time_to_prepare > max ? item.time_to_prepare : max, 0)} minutes</strong>.</p>
-                          <p>If you have any questions or need to make changes to your order, please feel free to contact us at <a href="mailto:admin@platformanchorage.com">admin@platformanchorage.com</a>.</p>
-                          <p>For any complaints or queries, you can reach our front desk at: <a href="tel:+91123456789">+91123456789</a></p>
-                      
-                          <p>Thank you again for choosing Anchorage. We look forward to serving you!</p>
-                      
-                          <p style="color: #777; text-align: center;">
-                            Anchorage | <a href="tel:+91123456789">+91123456789</a> | <a href="mailto:admin@platformanchorage.com">admin@platformanchorage.com</a>
-                          </p>
+                          <!DOCTYPE html>
+                          <html lang="en">
+                          <head>
+                              <meta charset="UTF-8">
+                              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                              <title>Order Confirmation</title>
+                          </head>
+                          <body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0;">
+                              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                  <tr>
+                                      <td align="center" style="padding: 20px;">
+                                          <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #ddd;">
+                                              <tr>
+                                                  <td style="padding: 20px; text-align: center;">
+                                                      <img src="https://drive.usercontent.google.com/download?id=10uMrHQslBy2zOrWxaQ03nAvSbwTQZiQZ" alt="Anchorage" style="max-width: 80px; height: auto; margin-bottom: 20px;">
+                                                      <h1 style="margin: 0; color: #333;">Order Confirmation</h1>
+                                                      <p style="margin: 10px 0 20px; color: #777;">Order #${details[0].order_id}</p>
+                                                  </td>
+                                              </tr>
+                                              <tr>
+                                                  <td style="padding: 20px;">
+                                                      <p style="margin: 10px 0; color: #555;">Dear ${details[0].guest_name},</p>
+                                                      <p style="margin: 10px 0; color: #555;">Thank you for your purchase! We are pleased to confirm your order <strong>#${details[0].order_id}</strong>.</p>
+                                                  </td>
+                                              </tr>
+                                              <tr>
+                                                  <td style="padding: 20px 20px 20px 20px;">
+                                                      <h3 style="color: #333; margin-top: 0;">Order Summary</h3>
+                                                      <p style="margin-top: 0;">
+                                                          <strong>Order Number:</strong> ${details[0].order_id} <br>
+                                                          <strong>Order Date:</strong> ${new Date(parseInt(details[0].created_at)).toLocaleDateString()} <br>
+                                                          <strong>Room No:</strong> ${booking.room} <br>
+                                                          <strong>Total Items:</strong> ${details[0].items.length} <br>
+                                                          <strong>Order Total:</strong> ₹${details[0].items.reduce(
+                                                            (total, item) => total + item.price * item.qty, 0
+                                                          )}
+                                                      </p>
+                                                  </td>
+                                              </tr>
+                                              <tr>
+                                                  <td style="padding: 20px 20px 20px 20px;">
+                                                      <h3 style="color: #333; margin-top: 0;">Items Ordered</h3>
+                                                      <ul style="margin: 0; padding: 0; list-style-type: none;">
+                                                          ${details[0].items.map(item => `
+                                                              <li style="margin: 10px 0;">
+                                                                  <strong>${item.name}</strong> - Quantity: ${item.qty} - Price: ₹${item.price}
+                                                                  <br>
+                                                                  <em>${item.description}</em>
+                                                              </li>
+                                                          `).join('')}
+                                                      </ul>
+                                                  </td>
+                                              </tr>
+                                              <tr>
+                                                  <td style="padding: 20px 20px 20px 20px;">
+                                                      <h3 style="color: #333; margin-top: 0;">Expected Waiting Time</h3>
+                                                      <p style="margin-top: 0;">
+                                                          <strong>Preparation Time:</strong> ${details[0].items.reduce(
+                                                            (max, item) => item.time_to_prepare > max ? item.time_to_prepare : max, 0
+                                                          )} minutes <br>
+                                                          <strong>Estimated Delivery/Pickup Time:</strong> ${new Date(
+                                                            parseInt(details[0].created_at) + details[0].items.reduce(
+                                                              (max, item) => item.time_to_prepare > max ? item.time_to_prepare : max, 0
+                                                            ) * 60000
+                                                          ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                      </p>
+                                                  </td>
+                                              </tr>
+                                              <tr>
+                                                  <td style="padding: 20px;">
+                                                      <p style="margin: 10px 0; color: #555;">We are currently processing your order, and you can expect it to be ready in approximately <strong>${details[0].items.reduce(
+                                                          (max, item) => item.time_to_prepare > max ? item.time_to_prepare : max, 0
+                                                        )} minutes</strong>.</p>
+                                                      <p style="margin: 10px 0; color: #555;">If you have any questions or need to make changes to your order, please feel free to contact us at <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a>.</p>
+                                                      <p style="margin: 10px 0; color: #555;">For any complaints or queries, you can reach our front desk at: <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a></p>
+                                                  </td>
+                                              </tr>
+                                              <tr>
+                                                  <td style="padding: 20px; text-align: center; background-color: #f4f4f4;">
+                                                      <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a> | <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a></p>
+                                                  </td>
+                                              </tr>
+                                          </table>
+                                      </td>
+                                  </tr>
+                              </table>
+                          </body>
+                          </html>
                         `,
                       };
                       
@@ -243,7 +295,7 @@ export async function addOrderService(order: orderType) {
                           console.log("Email sent to: ", booking.email, " response: ", info.response);
                         }
                       });
-                      
+
                       resolve({ message: "Order received successfully", details: details[0] });
                     } catch (error) {
                       console.log("error fetching order details");
@@ -262,9 +314,9 @@ export async function addOrderService(order: orderType) {
               console.log("error fetching availability of items in order", error);
               reject("error fetching availability of items in order");
             });
-          } else {
-            console.log("booking expired")
-          reject({booking_expired:"Booking expired"})
+        } else {
+          console.log("booking expired");
+          reject({ booking_expired: "Booking expired" });
         }
       })
       .catch((error) => {
@@ -300,7 +352,7 @@ export async function fetchOrderByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
     fetchOrderByBookingIdModel(bookingId)
       .then((results) => {
-        console.log(results);
+        // console.log(results);
         resolve(results);
       })
       .catch((error) => {
@@ -329,6 +381,8 @@ function convertOrders(results: any) {
       category,
       available,
       time_to_prepare,
+      delay,
+      guest_email
     } = curr;
 
     const item = { item_id, name, description, price, qty, type, category, available, time_to_prepare };
@@ -342,6 +396,8 @@ function convertOrders(results: any) {
         created_at,
         status,
         guest_name,
+        guest_email,
+        delay,
         items: [],
       };
     }
@@ -374,8 +430,100 @@ export async function fetchAllOrdersService() {
 export async function updateOrderStatusService(orderid: string, status: string) {
   return new Promise((resolve, reject) => {
     updateOrderStatusModel(orderid, status)
-      .then((results) => {
-        resolve(results);
+      .then(async (results) => {
+        try {
+          const res = (await fetchOrderDetailsByOrderId(orderid)) ;
+          const transformedResults = convertOrders(res);
+          const details:OrderDetails[] = Object.values(transformedResults)
+          console.log("details: ", details)
+          const mailOptions = {
+            from: process.env.NODE_MAIL_FROM_EMAIL,
+            to: details[0].guest_email,
+            subject: `Order Delivered - [Order #${details[0].order_id}]`,
+            html: `
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>Order Delivered</title>
+              </head>
+              <body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                          <td align="center" style="padding: 20px;">
+                              <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #ddd;">
+                                  <tr>
+                                      <td style="padding: 20px; text-align: center;">
+                                          <img src="https://drive.usercontent.google.com/download?id=10uMrHQslBy2zOrWxaQ03nAvSbwTQZiQZ" alt="Anchorage" style="max-width: 80px; height: auto; margin-bottom: 20px;">
+                                          <h1 style="margin: 0; color: #333;">Your Order has been Delivered!</h1>
+                                          <p style="margin: 10px 0 20px; color: #777;">Order #${details[0].order_id}</p>
+                                      </td>
+                                  </tr>
+                                  <tr>
+                                      <td style="padding: 20px;">
+                                          <p style="margin: 10px 0; color: #555;">Dear ${details[0].guest_name},</p>
+                                          <p style="margin: 10px 0; color: #555;">We are happy to inform you that your order has been successfully delivered to your room <strong>${
+                                            details[0].room
+                                          }</strong>.</p>
+                                          <p style="margin: 10px 0; color: #555;">We hope you enjoy your meal! Here is a summary of your order:</p>
+                                      </td>
+                                  </tr>
+                                  <tr>
+                                      <td style="padding: 20px;">
+                                          <h3 style="color: #333;">Order Summary</h3>
+                                          <ul style="margin: 0; padding: 0; list-style-type: none;">
+                                              ${details[0].items
+                                                .map(
+                                                  (item) => `
+                                                  <li style="margin: 10px 0;">
+                                                      <strong>${item.name}</strong> - Quantity: ${item.qty} - Price: ₹${item.price}
+                                                      <br>
+                                                      <em>${item.description}</em>
+                                                  </li>
+                                              `
+                                                )
+                                                .join("")}
+                                          </ul>
+                                      </td>
+                                  </tr>
+                                  <tr>
+                                      <td style="padding: 20px;">
+                                          <p style="margin: 10px 0; color: #555;">If your order has not been delivered, please contact the front desk immediately at <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a> or email us at <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a>.</p>
+                                          <p style="margin: 10px 0; color: #555;">For any other questions or issues, feel free to reach out to us as well:</p>
+                                          <p style="margin: 10px 0; color: #555;">
+                                              <strong>Customer Support:</strong> <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a><br>
+                                              <strong>Email:</strong> <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a>
+                                          </p>
+                                          <p style="margin: 10px 0; color: #555;">Thank you for choosing Anchorage. We look forward to serving you again!</p>
+                                      </td>
+                                  </tr>
+                                  <tr>
+                                      <td style="padding: 20px; text-align: center; background-color: #f4f4f4;">
+                                          <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a> | <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a></p>
+                                      </td>
+                                  </tr>
+                              </table>
+                          </td>
+                      </tr>
+                  </table>
+              </body>
+              </html>
+            `,
+          };
+
+          transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+              console.log("Error sending email:", error);
+            } else {
+              console.log("Email sent to: ", details[0].guest_email, " response: ", info.response);
+            }
+          });
+        } catch (error) {
+          console.log("Error sending mail: ", error);
+        } finally {
+          resolve(results);
+        }
       })
       .catch((error) => {
         console.log("error updating order status", error);
@@ -418,6 +566,18 @@ export async function fetchBookingByBookingIdService(bookingId: string) {
       .catch((error) => {
         console.log("error deleting item", error);
         reject("Error deleting item!");
+      });
+  });
+}
+export async function updateDelayService(delay: string, order_id: string) {
+  return new Promise((resolve, reject) => {
+    updateDelayModel(delay, order_id)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error updating delay", error);
+        reject("Error updating delay!");
       });
   });
 }

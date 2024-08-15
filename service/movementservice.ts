@@ -40,6 +40,7 @@ export async function fetchMovementService() {
         });
 
         const movementsArray = Object.values(movements);
+        console.log("movementArray: ", movementsArray)
         resolve(movementsArray);
       })
       .catch((error) => {
