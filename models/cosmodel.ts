@@ -19,6 +19,7 @@ import {
   updateOTPQuery,
   fetchBookingByBookingIdQuery,
   setDelayQuery as updateDelayQuery,
+  updateFeedbackQuery,
 } from "./cosqueries";
 
 
@@ -135,9 +136,10 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
     }
 
     const orders: { [key: string]: any } = {};
+    console.log("results", result.rows)
 
-    result.rows.forEach((row:{order_id:Number,booking_id:string, item_id:string, name:string, description:string, qty:Number, created_at:Number,price:Number, type: string,status:string}) => {
-      const { order_id,booking_id, item_id, name, description, qty, created_at,price, type,status } = row;
+    result.rows.forEach((row:{order_id:Number,booking_id:string, item_id:string, name:string, description:string, qty:Number, created_at:Number,price:Number, type: string,status:string, rating: Number, feedback: string}) => {
+      const { order_id,booking_id, item_id, name, description, qty, created_at,price, type,status, rating, feedback } = row;
 
       const orderIdKey = order_id.toString();
       if (!orders[orderIdKey]) {
@@ -146,6 +148,8 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
           bookingId: booking_id,
           orderedOn: created_at,
           orderStatus: status,
+          rating: rating,
+          feedback: feedback,
           items: [],
         };
       }
@@ -164,7 +168,7 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
     const ordersArray = Object.values(orders);
 
 
-    ordersArray.sort((a, b) => a.orderId - b.orderId);
+    ordersArray.sort((a, b) => b.orderId - a.orderId);
 
     // console.log(ordersArray);
 
@@ -275,5 +279,14 @@ export async function updateDelayModel(delay: string, order_id: string) {
   } catch (error) {
     console.error("Error updating delay", error);
     throw new Error("Error updating delay");
+  }
+}
+export async function updateFeedbackModel(rating: number, feedback: string, order_id: string) {
+  try {
+    const result = await pool.query(updateFeedbackQuery, [rating, feedback, order_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback", error);
+    throw new Error("Error updating feedback");
   }
 }

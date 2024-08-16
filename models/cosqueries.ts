@@ -29,13 +29,16 @@ export const fetchOrderByBookingIdQuery = `
     items.description, 
     order_details.qty,
     items.type,
-    items.price
+    items.price,
+    orders.rating,
+    orders.feedback
   FROM 
     orders 
     JOIN order_details ON orders.order_id = order_details.order_id 
     JOIN items ON order_details.item_id = items.item_id 
   WHERE 
-    orders.booking_id = $1 
+    orders.booking_id = $1
+    ORDER BY created_at DESC;
 `;
 
 export const fetchAllOrdersQuery = `
@@ -87,3 +90,5 @@ export const fetchBookingByBookingIdQuery = `SELECT * FROM guests JOIN bookings 
 export const fetchAvailabilityOfItemsQuery = "SELECT item_id,name, available FROM items WHERE item_id = ANY($1::text[])";
 
 export const setDelayQuery = 'UPDATE orders SET delay=$1 WHERE order_id=$2;'
+
+export const updateFeedbackQuery = 'UPDATE orders SET rating = $1, feedback = $2 WHERE order_id=$3;'

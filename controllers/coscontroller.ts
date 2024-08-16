@@ -15,6 +15,7 @@ import {
   fetchBookingByBookingIdService,
   updateDelayService,
   fetchScheduleByBookingIdService,
+  updateFeedbackService,
 } from "../service/cosservice";
 import { itemDetailsType, orderType } from "../types/cos";
 
@@ -87,9 +88,11 @@ export const addOrder = async (req: Request, res: Response) => {
 
 export const deleteOrder = async (req: Request, res: Response) => {
   try {
+    console.log("reject: ", req.headers.reject)
     const orderid: string = req.headers.orderid as string;
     const reason: string = req.headers.reason as string;
-    const result = await deleteOrderService(orderid, reason);
+    const reject: boolean = req.headers.reject === "true";
+    const result = await deleteOrderService(orderid, reason, reject);
     console.log(`Order deleted with order id: ${orderid}`);
     res.status(200).send(result);
   } catch (error) {
@@ -172,6 +175,18 @@ export const updateDelay = async (req: Request, res: Response) => {
     const order_id = req.headers.orderid as string
     
     const result = await updateDelayService(delay, order_id);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+export const updateFeedback = async (req: Request, res: Response) => {
+  try {
+    const rating = Number(req.headers.rating);
+    const order_id = req.headers.orderid as string
+    const feedback = req.headers.feedback as string;
+    
+    const result = await updateFeedbackService(rating, feedback, order_id);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });

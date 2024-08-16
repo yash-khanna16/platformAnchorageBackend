@@ -16,6 +16,7 @@ import {
   updateOTP,
   fetchOrderDetailsByOrderId,
   updateDelayModel,
+  updateFeedbackModel,
 } from "../models/cosmodel";
 import { fetchMovementByBookingIdModel } from "../models/movementmodel"
 import nodemailer from "nodemailer";
@@ -327,28 +328,83 @@ export async function addOrderService(order: orderType) {
   });
 }
 
-export async function deleteOrderService(orderId: string, reason: string) {
-  return new Promise((resolve, reject) => {
-    deleteOrderModel(orderId)
-      .then(async (results) => {
-        try {
-          const io = getIO();
-          let details = await fetchAllOrdersService();
-          if (ROOM_CODE) {
-            io.to(ROOM_CODE).emit("order_deleted", details);
+export async function deleteOrderService(orderId: string, reason: string, reject: boolean) {
+  return new Promise(async (resolve, rejectFn) => {
+    try {
+      const orderDetails = await fetchOrderDetailsByOrderId(orderId);
+      await deleteOrderModel(orderId);
+
+      const io = getIO();
+      let details = await fetchAllOrdersService();
+      if (ROOM_CODE) {
+        io.to(ROOM_CODE).emit("order_deleted", details);
+      }
+
+      if (reject) {
+        console.log("order details: ", orderDetails)
+        const mailOptions = {
+          from: process.env.NODE_MAIL_FROM_EMAIL,
+          to: orderDetails[0].guest_email,
+          subject: `Order Cancellation - [Order #${orderDetails[0].order_id}]`,
+          html: `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Order Update</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <td align="center" style="padding: 20px;">
+                            <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #ddd;">
+                                <tr>
+                                    <td style="padding: 20px; text-align: center;">
+                                        <img src="https://drive.usercontent.google.com/download?id=10uMrHQslBy2zOrWxaQ03nAvSbwTQZiQZ" alt="Anchorage" style="max-width: 80px; height: auto; margin-bottom: 20px;">
+                                        <h1 style="margin: 0; color: #333;">Order Cancellation</h1>
+                                        <p style="margin: 10px 0 20px; color: #777;">Order #${orderDetails[0].order_id}</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <p style="margin: 10px 0; color: #555;">Dear ${orderDetails[0].guest_name},</p>
+                                        <p style="margin: 10px 0; color: #555;">We regret to inform you that we are unable to process your order at this time</p>
+                                        <p style="margin: 10px 0; color: #555;">We apologize for any inconvenience this may cause. Please feel free to reach out to us if you have any questions or need further assistance.</p>
+                                        <p style="margin: 10px 0; color: #555;">You can contact us at <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a>.</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 20px; text-align: center; background-color: #f4f4f4;">
+                                        <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a> | <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a></p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+          `,
+        };
+        
+
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.log("Error sending email:", error);
+          } else {
+            console.log("Rejection email sent to:", orderDetails[0].guest_email, "response:", info.response);
           }
-          resolve({ details: details });
-        } catch (error) {
-          console.log("error fetching order details");
-        }
-      })
-      .catch((error) => {
-        console.log("error deleting order", error);
-        reject("Error deleting order");
-      });
+        });
+      }
+
+      resolve({ details: details });
+    } catch (error) {
+      console.log("Error processing order deletion:", error);
+      rejectFn("Error deleting order");
+    }
   });
 }
-
 export async function fetchOrderByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
     fetchOrderByBookingIdModel(bookingId)
@@ -634,6 +690,18 @@ export async function updateDelayService(delay: string, order_id: string) {
       .catch((error) => {
         console.log("error updating delay", error);
         reject("Error updating delay!");
+      });
+  });
+}
+export async function updateFeedbackService(rating: number, feedback: string, order_id: string) {
+  return new Promise((resolve, reject) => {
+    updateFeedbackModel(rating, feedback, order_id)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error updating feedback", error);
+        reject("Error updating feedback!");
       });
   });
 }
