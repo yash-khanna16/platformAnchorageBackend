@@ -21,6 +21,8 @@ import {
   setDelayQuery as updateDelayQuery,
 } from "./cosqueries";
 
+
+
 export async function fetchBookingByRoomModel(room: string) {
   try {
     const result = await pool.query(fetchBookingFromRoomQuery, [room]);
@@ -132,12 +134,12 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
       return [];
     }
 
-    const orders : {[key:string]:any} = {};
+    const orders: { [key: string]: any } = {};
 
     result.rows.forEach((row:{order_id:Number,booking_id:string, item_id:string, name:string, description:string, qty:Number, created_at:Number,price:Number, type: string,status:string}) => {
       const { order_id,booking_id, item_id, name, description, qty, created_at,price, type,status } = row;
 
-      const orderIdKey=order_id.toString();
+      const orderIdKey = order_id.toString();
       if (!orders[orderIdKey]) {
         orders[orderIdKey] = {
           orderId: order_id,
@@ -162,7 +164,7 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
     const ordersArray = Object.values(orders);
 
 
-    ordersArray.sort((a, b) => b.orderId - a.orderId);
+    ordersArray.sort((a, b) => a.orderId - b.orderId);
 
     // console.log(ordersArray);
 
@@ -248,10 +250,10 @@ export async function fetchBookingByEmailId(emailId: string) {
 export async function fetchBookingByBookingIdModel(bookingId: string) {
   try {
     console.log(bookingId);
-    const  result = await pool.query(fetchBookingByBookingIdQuery, [bookingId]);
+    const result = await pool.query(fetchBookingByBookingIdQuery, [bookingId]);
     return (result.rows[0]);
   } catch (error) {
-    console.error("Error updating item status", error); 
+    console.error("Error updating item status", error);
     throw new Error("Error updating item status");
   }
 }

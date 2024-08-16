@@ -17,6 +17,7 @@ import {
   fetchOrderDetailsByOrderId,
   updateDelayModel,
 } from "../models/cosmodel";
+import { fetchMovementByBookingIdModel } from "../models/movementmodel"
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import otpGenerator from "otp-generator";
@@ -567,6 +568,61 @@ export async function fetchBookingByBookingIdService(bookingId: string) {
         console.log("error deleting item", error);
         reject("Error deleting item!");
       });
+  });
+}
+export async function fetchScheduleByBookingIdService(bookingId: string) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const movements = await fetchMovementByBookingIdModel(bookingId);
+      const booking = await fetchBookingByBookingIdModel(bookingId);
+      const schedule: { [key: string]: any } = {};
+
+      movements.forEach((movementData: {
+        movement_id: string,
+        booking_id: string,
+        car_number: string,
+        driver: string,
+        pickup_location: string,
+        pickup_time: Date,
+        return_time: Date,
+        drop_location: string
+      }) => {
+        if (!schedule[movementData.movement_id]) {
+          schedule[movementData.movement_id] = {
+            type: "Movement",
+            dateTime: movementData.pickup_time,
+            pickUpLocation: movementData.pickup_location,
+            dropLocation: movementData.drop_location,
+          };
+        }
+      });
+
+      schedule[booking.checkin] = {
+        type: "Checkin",
+        dateTime: booking.checkin,
+        pickUpLocation: "",
+        dropLocation: "",
+      };
+      schedule[booking.checkout] = {
+        type: "Checkout",
+        dateTime: booking.checkout,
+        pickUpLocation: "",
+        dropLocation: "",
+      };
+
+      const ordersArray = Object.values(schedule);
+      // Sort the array in ascending order by dateTime
+      ordersArray.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+
+      console.log(ordersArray);
+      console.log("movement", movements);
+      console.log("booking", booking);
+      resolve(ordersArray);
+    }
+    catch (error) {
+      console.log("error fetching schedule", error);
+      reject("Something went wrong");
+    }
   });
 }
 export async function updateDelayService(delay: string, order_id: string) {
