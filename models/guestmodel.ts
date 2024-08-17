@@ -52,7 +52,7 @@ export async function fetchGuests(): Promise<QueryResult<any>> {
 
 export async function fetchAllGuests(): Promise<QueryResult<any>> {
   try {
-    // console.log(guestName);
+    
     const result = await pool.query(getNamedGuests);
     return result;
   } catch (error) {
@@ -64,7 +64,7 @@ export async function fetchAllGuests(): Promise<QueryResult<any>> {
 export async function fetchAdmin(adminId: string): Promise<QueryResult<any>> {
   try {
     const result = await pool.query(getAdmin, [adminId]);
-    // console.log(result.rows);
+    
     return result;
   } catch (error) {
     throw error;
@@ -193,7 +193,7 @@ export async function fetchThisRooms(checkData: {
   checkout: Date;
   room: string;
 }): Promise<QueryResult<any>> {
-  console.log(checkData);
+  
   try {
     const result = await pool.query(fetchThisRoom, [
       checkData.checkin,
@@ -292,7 +292,7 @@ export async function updateGuestEmail(guestData: {
   guestOrgEmail: string;
 }): Promise<QueryResult<any>> {
   try {
-    console.log(guestData);
+    
     const result = await pool.query(editGuestEmail, [
       guestData.guestEmail,
       guestData.guestName,
@@ -427,7 +427,7 @@ export async function updateMealsModel(mealDetailsList: MealDetails[]) {
       mealDetails.dinner_nonveg,
     ]);
 
-    console.log("query: ", upsertQuery, "params: ", params);
+    
 
     await pool.query(upsertQuery, params);
 
@@ -450,7 +450,6 @@ export async function fetchMealsByDateModel(date: string) {
 
 export async function fetchMealsByBookingIdModel(bookingId: string) {
   try {
-    console.log("bookingId ", bookingId);
     const result = await pool.query(fetchMealsByBookingIdQuery, [bookingId]);
     return result;
   } catch (error) {

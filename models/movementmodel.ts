@@ -40,7 +40,7 @@ export async function addMovementModel(details: movementDetailsType) {
 
   const movement_id = uuidv4();
 
-  console.log("details: ", details);
+ 
 
   try {
     // First query: Insert into movement table
@@ -106,7 +106,7 @@ export async function checkConflict(
   return_time: string
 ) {
   try {
-    console.log("pickup ", pickup_time, "return ", return_time);
+    
     const result = await pool.query(checkConflictQuery, [driver, car, pickup_time, return_time]);
     return result;
   } catch (error) {
@@ -200,7 +200,7 @@ export async function editMovementModel(details: editMovementDetailsType) {
 
 export async function fetchAvailableCarsModel(pickup_time: string, return_time: string) {
   try {
-    // console.log("first ", pickup_time, return_time);
+    
     const result = await pool.query(fetchAvailableCarsQuery, [pickup_time, return_time]);
     return result;
   } catch (error) {
@@ -209,7 +209,7 @@ export async function fetchAvailableCarsModel(pickup_time: string, return_time: 
 }
 export async function fetchAvailableDriversModel(pickup_time: string, return_time: string) {
   try {
-    // console.log("first ", pickup_time, return_time);
+    
     const result = await pool.query(fetchAvailableDriversQuery, [pickup_time, return_time]);
     return result;
   } catch (error) {
@@ -256,7 +256,7 @@ export async function deletePassengerFromMovementModel(movementId: string, passe
     // await client.query('BEGIN');
 
     // Fetch booking_id and check passenger count in the same query
-    console.log("data: ", movementId, passengerId);
+    
     // const result = await pool.query(`
     //     WITH passenger_info AS (
     //         SELECT
@@ -274,10 +274,10 @@ export async function deletePassengerFromMovementModel(movementId: string, passe
     //     FROM passenger_info
     //     LEFT JOIN delete_passenger ON true
     // `, [passengerId, movementId]);
-    // console.log(result.rows)
+    // 
 
     // const { booking_id: bookingId, passenger_count: passengerCount } = result.rows[0];
-    // console.log("booking id", bookingId, "passenger count ", passengerCount)
+    // 
 
     // If booking_id is not null, delete from external_passenger table
     // if (!bookingId) {
@@ -377,8 +377,7 @@ export async function deleteMovementByBookingIdModel(bookingId: string) {
     await pool.query(deleteMovementByBookingIdQueryFromPassengers, [bookingId]);
     await pool.query(deleteMovementByBookingIdQueryFromPassengersLog, [bookingId]);
 
-    console.log("data", data.rows);
-    console.log("required data", data.rows[0]);
+    
 
     for (const movement of data.rows) {
       const movementId = movement.movement_id;

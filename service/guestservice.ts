@@ -94,7 +94,7 @@ export function searchGuests(): Promise<any> {
   return new Promise((resolve, reject) => {
     fetchAllGuests()
       .then((results) => {
-        // console.log(results.rows);
+        
         if (results.rows.length === 0) {
           reject("No such guest present");
         } else {
@@ -242,7 +242,7 @@ export function addBookingData(bookingData: {
       addBooking(bookingDataWithId)
         .then((results) => {
           priorityQueue.enqueue(bookingDataWithId);
-          // console.log("booking ho gyi");
+          
           resolve("Booking added suceessfull");
         })
         .catch((error) => {
@@ -250,7 +250,7 @@ export function addBookingData(bookingData: {
           reject("internal server error");
         });
     } else {
-      console.log("here");
+      
       reject("room unavailable");
       return;
     }
@@ -285,7 +285,7 @@ export function editBookingData(bookingData: {
       checkout: bookingData.checkout,
     };
     const conflicts = await findConflict(checkData);
-    console.log("hello", conflicts.rows);
+    
     if (conflicts.rows.length <= 4) {
       const originalCheckin = await fetchBookingByBookingId(bookingData.bookingId);
       editBooking(bookingData)
@@ -303,8 +303,7 @@ export function editBookingData(bookingData: {
               };
               await editGuest(guestData);
               const newOriginalCheckin = new Date(originalCheckin.rows[0].checkin);
-              console.log(newOriginalCheckin);
-              console.log(bookingData.checkin);
+              
               if (newOriginalCheckin.toISOString() !== bookingData.checkin.toISOString()) {
                 const queueBooking = {
                   checkin: bookingData.checkin,
@@ -413,16 +412,15 @@ export async function fetchAvailableRooms(checkData: {
   checkin: Date;
   checkout: Date;
 }): Promise<any> {
-  console.log("hello");
+  
   checkData.checkin = new Date(checkData.checkin);
   checkData.checkout = new Date(checkData.checkout);
-  console.log(checkData.checkin);
-  console.log(checkData.checkout);
+  
   try {
     const allRooms = await fetchAllRooms();
-    console.log("here 1", allRooms);
+    
     const result = await fetchAvailRooms(checkData);
-    console.log("here 2", result);
+    
     const conditionMap = new Map(
       result.rows.map((room: { room: string; condition_met: string }) => [
         room.room,
@@ -432,9 +430,7 @@ export async function fetchAvailableRooms(checkData: {
     const availableRooms = allRooms.rows.filter(
       (room: { room: string }) => conditionMap.get(room.room) !== "false"
     );
-    console.log(allRooms.rows);
-    console.log(result.rows);
-    console.log(availableRooms);
+    
     return availableRooms;
   } catch (error) {
     console.error(error);
@@ -481,7 +477,7 @@ export async function triggerBooking(booking: BookingData) {
       }
     });
   } else {
-    console.log("temp email found!");
+    
   }
 }
 
@@ -511,7 +507,7 @@ export function deleteThisBooking(bookingId: string): Promise<any> {
           const data = await deleteMovementByBookingIdService(bookingId);
           resolve(data);
         } catch {
-          console.log("inside catch 2");
+          
           reject("Some problem occured");
         }
       })
@@ -545,7 +541,7 @@ export function getInstantRoom(): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
       const newDate = new Date();
-      console.log("here: ", newDate);
+      
       const bookingData = { checkin: newDate, checkout: newDate };
 
       const result = await findInstantRoom(newDate);
@@ -640,7 +636,7 @@ export function fetchEmailTemplate(template_name: string): Promise<any> {
 export function updateMealsService(mealDetails: MealDetails[]): Promise<any> {
   return new Promise(async (resolve, reject) => {
     mealDetails.map((meal) => {
-      console.log("date ", meal.date);
+      
       meal.date = new Date(meal.date);
     });
     updateMealsModel(mealDetails)
@@ -659,7 +655,7 @@ export function fetchMealsByDateService(date: string): Promise<any> {
     const newDate = new Date(new Date(date).getTime() + 5.5 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
-    console.log("new date: ", newDate);
+    
     fetchMealsByDateModel(newDate)
       .then((results) => {
         results.rows.map((row: any) => {
@@ -733,7 +729,7 @@ export async function fetchOccupancyByBookingService(bookingId: string): Promise
         room: bookingData.room,
       });
 
-      console.log("before conflicts: ", conflicts);
+      
 
       conflicts.forEach((conflict) => {
         conflict.checkin = convertUTCToIST(conflict.checkin);
@@ -743,7 +739,7 @@ export async function fetchOccupancyByBookingService(bookingId: string): Promise
       bookingData.checkin = convertUTCToIST(bookingData.checkin);
       bookingData.checkout = convertUTCToIST(bookingData.checkout);
 
-      console.log("conflicts: ", conflicts);
+      
 
       const timeline = generateTimeline(bookingData, conflicts);
       resolve(timeline);
@@ -856,7 +852,7 @@ export function fetchBookingLogsService(): Promise<any> {
 export function addAuditLogs(auditData: { user: string; endpoint: string }): Promise<any> {
   return new Promise(async (resolve, reject) => {
     const time = new Date();
-    console.log(time);
+    
     const auditId = uuidv4();
     const newAuditData = {
       ...auditData,
@@ -876,7 +872,7 @@ export function addAuditLogs(auditData: { user: string; endpoint: string }): Pro
 }
 export async function getAuditLogs(auditData: { password: string; id: string; endpoint: string }): Promise<any> {
   try {
-    console.log("audit", auditData);
+    
     const time = new Date();
     const adminData = await fetchAdminByPassword(auditData.password);
     if (adminData.length === 0) {
@@ -907,7 +903,7 @@ export async function getAuditLogs(auditData: { password: string; id: string; en
       newAuditData.phone = movementData.map((row: any) => row.phone).join(", ");
     }
 
-    console.log(newAuditData);
+    
     const results = await addAuditLogsModal(newAuditData);
     return results;
   } catch (error) {

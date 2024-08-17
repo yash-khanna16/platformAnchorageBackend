@@ -37,7 +37,7 @@ export async function getAverageBreakfastBoughtPerDay(year:number, month:number)
 }
 export async function getRoomsBookedPerDayQuarter(year:string,quarter:string) {
     try {
-      console.log(year, quarter)
+      
         const result = await pool.query(RoomsBookedPerQuarter,[year,quarter]);
         return result;
       } catch (error) {

@@ -58,7 +58,7 @@ export const getRoomsBookedPerDayQuarter=async(req: Request, res: Response) => {
     try {        
         const year = (req.headers.year as string);
         const quarter = (req.headers.quarter as string);
-        // console.log(year, quarter)
+        
         fetchRoomsBookedPerDayQuarter(year,quarter).then(result=>{
             res.status(200).send(result);
         }).catch(error=>{

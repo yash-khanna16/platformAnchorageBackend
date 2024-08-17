@@ -52,7 +52,7 @@ export async function fetchAverageMealsBoughtPerDay(year: number, month: number)
           row.average_meals_per_day = row.average_meals_per_day ? row.average_meals_per_day : "0";
           row.booking_date = toLocalISOString(new Date(row.booking_date));
         });
-        console.log("results: ", results.rows);
+        
         resolve(results.rows);
       })
       .catch((error) => {
