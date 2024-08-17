@@ -7,7 +7,7 @@ let io: SocketIOServer;
 const initializeSocket = (server: HttpServer) => {
   io = new SocketIOServer(server, {
     cors: {
-      origin: "*",
+      origin: "https://www.platformanchorage.com/",
       methods: ["GET", "POST"],
     },
   });
