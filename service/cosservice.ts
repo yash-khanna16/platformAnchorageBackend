@@ -189,8 +189,9 @@ export async function addOrderService(order: orderType) {
                   .then(async (results) => {
                     try {
                       const io = getIO();
-                      console.log(io);
+                      
                       let details: OrderDetails[] = (await fetchAllOrdersService()) as OrderDetails[];
+                      console.log(ROOM_CODE);
                       if (ROOM_CODE) {
                         io.to(ROOM_CODE).emit("order_received", details);
                       }
