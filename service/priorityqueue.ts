@@ -51,7 +51,6 @@ class PriorityQueue {
         return this.queue.splice(index, 1)[0];
     }
     public getAllEntries(): BookingData[] {
-        console.log(this.queue,"this is queue");
         return this.queue;
     }
 }

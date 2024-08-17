@@ -61,12 +61,9 @@ export const searchAllGuests = (req: Request, res: Response): void => {
 export const loginAdmin = (req: Request, res: Response): void => {
   const adminId = req.headers["email"] as string;
   const password = req.headers["password"] as string;
-  console.log(adminId);
-  console.log(password);
   try {
     getAdmin(adminId, password)
       .then((token) => {
-        console.log(token);
         res.status(200).send({ token: token });
       })
       .catch((error) => {
@@ -121,7 +118,7 @@ export const getReserv = (req: Request, res: Response): void => {
 };
 
 export const addBooking = (req: Request, res: Response): void => {
-  // console.log(req.body)
+
   const { bookingData } = req.body;
   try {
     addBookingData(bookingData)
@@ -145,7 +142,7 @@ export const addBooking = (req: Request, res: Response): void => {
 
 export const editBooking = (req: Request, res: Response): void => {
   const { bookingData } = req.body;
-  console.log("body: ", req.body);
+ 
   try {
     editBookingData(bookingData)
       .then((results) => {
@@ -167,7 +164,7 @@ export const editBooking = (req: Request, res: Response): void => {
 };
 
 export const getAvailableRooms = (req: Request, res: Response): void => {
-  console.log(req.body);
+  
   const { checkData } = req.body;
   try {
     fetchAvailableRooms(checkData)
@@ -233,7 +230,7 @@ export const instantAvailableRooms = (req: Request, res: Response): void => {
   try {
     getInstantRoom()
       .then((results) => {
-        console.log(results);
+        
         res.status(200).send(results);
       })
       .catch((error) => {
@@ -314,7 +311,7 @@ export const getEmailTemplate = async (req: Request, res: Response) => {
 export const updateMeals = async (req: Request, res: Response) => {
   try {
     const mealDetails: MealDetails[] = req.body;
-    console.log("first ", mealDetails);
+    
     updateMealsService(mealDetails)
       .then((result) => {
         res.status(200).send(result);
@@ -359,7 +356,7 @@ export const fetchMealsByBookingId = async (req: Request, res: Response) => {
 export const fetchOccupancyByBookingId = async (req: Request, res: Response) => {
   try {
     const bookingId: string = req.headers.bookingid as string;
-    console.log(bookingId);
+    
     fetchOccupancyByBookingService(bookingId)
       .then((result) => {
         res.status(200).send(result);

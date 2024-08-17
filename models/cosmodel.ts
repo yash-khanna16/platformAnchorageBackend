@@ -86,7 +86,7 @@ export async function putItemModel(itemDetails: itemDetailsType) {
 
 export async function addOrderModel(orderDetails: orderType) {
   try {
-    console.log("hello");
+    
     const result = await pool.query(addOrderQuery, [
       orderDetails.booking_id,
       orderDetails.room,
@@ -136,7 +136,7 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
     }
 
     const orders: { [key: string]: any } = {};
-    console.log("results", result.rows)
+    
 
     result.rows.forEach((row:{order_id:Number,booking_id:string, item_id:string, name:string, description:string, qty:Number, created_at:Number,price:Number, type: string,status:string, rating: Number, feedback: string}) => {
       const { order_id,booking_id, item_id, name, description, qty, created_at,price, type,status, rating, feedback } = row;
@@ -170,7 +170,7 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
 
     ordersArray.sort((a, b) => b.orderId - a.orderId);
 
-    // console.log(ordersArray);
+    
 
     return ordersArray;
   } catch (error) {
@@ -201,7 +201,7 @@ export async function updateOrderStatusModel(orderid: string, status: string) {
 
 export async function updateItemModel(itemDetails: itemDetailsType) {
   try {
-    console.log("itemDetails: ", itemDetails)
+    
     await pool.query(updateItemQuery, [
       itemDetails.name,
       itemDetails.description,
@@ -213,7 +213,7 @@ export async function updateItemModel(itemDetails: itemDetailsType) {
       itemDetails.item_id,
       itemDetails.base_price
     ]);
-    console.log("item Details: ", itemDetails)
+    
     return { message: "Item updated successfully" };
   } catch (error) {
     console.error("Error updating item", error);
@@ -253,7 +253,7 @@ export async function fetchBookingByEmailId(emailId: string) {
 
 export async function fetchBookingByBookingIdModel(bookingId: string) {
   try {
-    console.log(bookingId);
+    
     const result = await pool.query(fetchBookingByBookingIdQuery, [bookingId]);
     return (result.rows[0]);
   } catch (error) {

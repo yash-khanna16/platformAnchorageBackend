@@ -30,7 +30,7 @@ export const fetchBookingByRoom = async (req: Request, res: Response) => {
 };
 export const sendOTPByEmail = async (req: Request, res: Response) => {
   const email = req.headers.email as string;
-  console.log("email: ", email);
+
   try {
     const result = await sendOTPByEmailService(email);
     res.status(200).send(result);
@@ -71,9 +71,8 @@ export const putItem = async (req: Request, res: Response) => {
 export const addOrder = async (req: Request, res: Response) => {
   try {
     const orderDetails: orderType = req.body.orderDetails;
-    console.log(orderDetails);
     const result = await addOrderService(orderDetails);
-    console.log(result);
+
     res.status(200).send(result);
   } catch (error: any) {
     if (error.notAvailable) {
@@ -88,12 +87,12 @@ export const addOrder = async (req: Request, res: Response) => {
 
 export const deleteOrder = async (req: Request, res: Response) => {
   try {
-    console.log("reject: ", req.headers.reject)
+    
     const orderid: string = req.headers.orderid as string;
     const reason: string = req.headers.reason as string;
     const reject: boolean = req.headers.reject === "true";
     const result = await deleteOrderService(orderid, reason, reject);
-    console.log(`Order deleted with order id: ${orderid}`);
+    
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
@@ -133,7 +132,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 export const updateItem = async (req: Request, res: Response) => {
   try {
     const itemdetails: itemDetailsType = req.body.itemDetails as itemDetailsType;
-    console.log("body: ", req.body);
+    
     const result = await updateItemService(itemdetails);
     res.status(200).send(result);
   } catch (error) {

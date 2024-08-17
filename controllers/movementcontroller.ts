@@ -41,7 +41,7 @@ export const addMovement=async(req: Request, res: Response) => {
 }
 export const editMovement=async(req: Request, res: Response) => {
     const details:editMovementDetailsType = req.body;
-    console.log("hello");
+    
     try {        
         editMovementService(details).then(result=>{
             res.status(200).send(result);
@@ -55,7 +55,7 @@ export const editMovement=async(req: Request, res: Response) => {
 export const fetchavailableCars=async(req: Request, res: Response) => {
     const pickup_time = req.headers.pickuptime as string;
     const return_time = req.headers.returntime as string;
-    console.log("pickup time, ", pickup_time, "return time: ", return_time)
+    
     try {        
         fetchAvailableCarsService(pickup_time, return_time).then(result=>{
             res.status(200).send(result);
@@ -69,7 +69,7 @@ export const fetchavailableCars=async(req: Request, res: Response) => {
 export const fetchavailableDrivers=async(req: Request, res: Response) => {
     const pickup_time = req.headers.pickuptime as string;
     const return_time = req.headers.returntime as string;
-    console.log("pickup time, ", pickup_time, "return time: ", return_time)
+    
     try {        
         fetchAvailableDriversService(pickup_time, return_time).then(result=>{
             res.status(200).send(result);
@@ -121,7 +121,7 @@ export const addDriver=async(req: Request, res: Response) => {
 }
 export const deleteDriver=async(req: Request, res: Response) => {
     const name = req.headers.name as string;
-    console.log("first: ", name)
+    
     try {        
         deleteDriverService(name).then(result=>{
             res.status(200).send(result);

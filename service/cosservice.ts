@@ -125,7 +125,7 @@ export async function verifyOTPService(email: string, otp: string) {
     await updateOTP(email, otpInfo[0].otp, otpInfo[0].expiry, otpInfo[0].tries + 1);
     if (otpInfo[0].otp === otp) {
       const booking = await fetchBookingByEmailId(email);
-      console.log(booking);
+     
       const token = jwt.sign(
         {
           bookingId: booking[0].booking_id,
@@ -173,7 +173,7 @@ export async function addOrderService(order: orderType) {
     order.created_at = new Date().getTime().toString();
     fetchBookingByBookingIdModel(order.booking_id)
       .then((booking) => {
-        console.log("booking: ", booking);
+        
         const checkin = new Date(booking.checkin).getTime();
         const checkout = new Date(booking.checkout).getTime();
         const currentTime = new Date().getTime();
@@ -189,11 +189,12 @@ export async function addOrderService(order: orderType) {
                   .then(async (results) => {
                     try {
                       const io = getIO();
+                      console.log(io);
                       let details: OrderDetails[] = (await fetchAllOrdersService()) as OrderDetails[];
                       if (ROOM_CODE) {
                         io.to(ROOM_CODE).emit("order_received", details);
                       }
-                      console.log("details: ", details[0]);
+                      
                       const mailOptions = {
                         from: process.env.NODE_MAIL_FROM_EMAIL,
                         to: booking.email,
@@ -335,13 +336,14 @@ export async function deleteOrderService(orderId: string, reason: string, reject
       await deleteOrderModel(orderId);
 
       const io = getIO();
+      console.log(io);
       let details = await fetchAllOrdersService();
       if (ROOM_CODE) {
         io.to(ROOM_CODE).emit("order_deleted", details);
       }
 
       if (reject) {
-        console.log("order details: ", orderDetails)
+        
         const mailOptions = {
           from: process.env.NODE_MAIL_FROM_EMAIL,
           to: orderDetails[0].guest_email,
@@ -409,7 +411,7 @@ export async function fetchOrderByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
     fetchOrderByBookingIdModel(bookingId)
       .then((results) => {
-        // console.log(results);
+        
         resolve(results);
       })
       .catch((error) => {
@@ -492,7 +494,7 @@ export async function updateOrderStatusService(orderid: string, status: string) 
           const res = (await fetchOrderDetailsByOrderId(orderid)) ;
           const transformedResults = convertOrders(res);
           const details:OrderDetails[] = Object.values(transformedResults)
-          console.log("details: ", details)
+          
           const mailOptions = {
             from: process.env.NODE_MAIL_FROM_EMAIL,
             to: details[0].guest_email,
@@ -670,9 +672,6 @@ export async function fetchScheduleByBookingIdService(bookingId: string) {
       // Sort the array in ascending order by dateTime
       ordersArray.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
-      console.log(ordersArray);
-      console.log("movement", movements);
-      console.log("booking", booking);
       resolve(ordersArray);
     }
     catch (error) {
