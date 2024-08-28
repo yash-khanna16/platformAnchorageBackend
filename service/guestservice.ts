@@ -94,19 +94,20 @@ export function searchGuests(): Promise<any> {
   return new Promise((resolve, reject) => {
     fetchAllGuests()
       .then((results) => {
-        
         if (results.rows.length === 0) {
           reject("No such guest present");
         } else {
-          resolve(results.rows);
+          const sortedResults = results.rows.sort((a, b) => new Date(a.checkin).getTime() - new Date(b.checkin).getTime());
+          resolve(sortedResults);
         }
       })
       .catch((error) => {
         console.log(error);
-        reject("internal server error");
+        reject("Internal server error");
       });
   });
 }
+
 
 export function getAdmin(adminId: string, password: string): Promise<any> {
   return new Promise((resolve, reject) => {
@@ -173,7 +174,8 @@ export function getRoomResv(roomNo: string): Promise<any> {
   return new Promise((resolve, reject) => {
     fetchRoomResv(roomNo)
       .then((results) => {
-        resolve(results.rows);
+        const sortedResults = results.rows.sort((a, b) => new Date(a.checkin).getTime() - new Date(b.checkin).getTime());
+          resolve(sortedResults);
       })
       .catch((error) => {
         console.log(error);
@@ -212,9 +214,34 @@ export function addBookingData(bookingData: {
       checkout: bookingData.checkout,
       room: bookingData.room,
     };
-    const go_on = await fetchThisRooms(checkData);
-    const output = Number(go_on.rows[0].conflict_count);
-    if (output <= 3) {
+    const booking_id = uuidv4();
+    const conflicts:BookingData[] = await findConflictEntries(checkData);
+    const newBookingData = {...bookingData ,booking_id:booking_id}
+    conflicts.forEach((conflict) => {
+      conflict.checkin = convertUTCToIST(conflict.checkin);
+      conflict.checkout = convertUTCToIST(conflict.checkout);
+    });
+
+    newBookingData.checkin = convertUTCToIST(bookingData.checkin);
+    newBookingData.checkout = convertUTCToIST(bookingData.checkout);
+
+
+    const timeline = generateTimeline(newBookingData, conflicts);
+    // console.log("timeline",timeline);
+    let overBooking=0;
+    timeline.forEach((entry) => {
+      console.log(entry);
+      if (
+        entry.occupancy !== '0-PLE OCCUPANCY' &&
+        entry.occupancy !== 'SINGLE OCCUPANCY' &&
+        entry.occupancy !== 'DOUBLE OCCUPANCY' &&
+        entry.occupancy !== 'TRIPLE OCCUPANCY' &&
+        entry.occupancy !== 'QUADRUPLE OCCUPANCY'
+      ) {
+        overBooking++;
+      }
+    });
+    if (overBooking===0) {
       const isGuest = await findGuest(bookingData.email);
       const guestData = {
         guestEmail: bookingData.email,
@@ -236,7 +263,6 @@ export function addBookingData(bookingData: {
       } else {
         const updateGuest = editGuest(guestData);
       }
-      const booking_id = uuidv4();
       const bookingDataWithId = { ...bookingData, booking_id };
 
       addBooking(bookingDataWithId)
@@ -277,6 +303,7 @@ export function editBookingData(bookingData: {
   guestId: string;
 }): Promise<any> {
   return new Promise(async (resolve, reject) => {
+    console.log("edit");
     bookingData.checkin = new Date(bookingData.checkin);
     bookingData.checkout = new Date(bookingData.checkout);
     const checkData = {
@@ -284,10 +311,34 @@ export function editBookingData(bookingData: {
       checkin: bookingData.checkin,
       checkout: bookingData.checkout,
     };
-    const conflicts = await findConflict(checkData);
-    
-    if (conflicts.rows.length <= 4) {
-      const originalCheckin = await fetchBookingByBookingId(bookingData.bookingId);
+    const conflicts:BookingData[] = await findConflictEntries(checkData);
+    const originalCheckin = await fetchBookingByBookingId(bookingData.bookingId);
+    const newBookingData = {...originalCheckin.rows[0] ,booking_id:bookingData.bookingId}
+    conflicts.forEach((conflict) => {
+      conflict.checkin = convertUTCToIST(conflict.checkin);
+      conflict.checkout = convertUTCToIST(conflict.checkout);
+    });
+
+    newBookingData.checkin = convertUTCToIST(bookingData.checkin);
+    newBookingData.checkout = convertUTCToIST(bookingData.checkout);
+
+
+    const timeline = generateTimeline(newBookingData, conflicts);
+    let overBooking=0;
+    timeline.forEach((entry) => {
+      if (
+        entry.occupancy !== '0-PLE OCCUPANCY' &&
+        entry.occupancy !== 'SINGLE OCCUPANCY' &&
+        entry.occupancy !== 'DOUBLE OCCUPANCY' &&
+        entry.occupancy !== 'TRIPLE OCCUPANCY' &&
+        entry.occupancy !== 'QUADRUPLE OCCUPANCY'
+      ) {
+        overBooking++;
+      }
+    });
+    console.log(overBooking);
+    if (overBooking===0) {
+      
       editBooking(bookingData)
         .then(async (results) => {
           try {
