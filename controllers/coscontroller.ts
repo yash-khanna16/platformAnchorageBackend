@@ -16,6 +16,8 @@ import {
   updateDelayService,
   fetchScheduleByBookingIdService,
   updateFeedbackService,
+  fetchFeedBackCOSService,
+  insertFeedBackCOSService,
 } from "../service/cosservice";
 import { itemDetailsType, orderType } from "../types/cos";
 
@@ -186,6 +188,29 @@ export const updateFeedback = async (req: Request, res: Response) => {
     const feedback = req.headers.feedback as string;
     
     const result = await updateFeedbackService(rating, feedback, order_id);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+export const fetchFeedbackCOS = async (req: Request, res: Response) => {
+  try {
+    const booking_id = req.headers.bookingid as string;
+    
+    const result = await fetchFeedBackCOSService(booking_id);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+export const insertFeedbackCOS = async (req: Request, res: Response) => {
+  try {
+    const booking_id = req.body.bookingid as string;
+    const type = req.body.type as string;
+    const rating = Number(req.body.rating as string);
+    const comment = req.body.comment as string
+    
+    const result = await insertFeedBackCOSService(type, booking_id, rating, comment);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });

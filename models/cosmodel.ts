@@ -20,6 +20,8 @@ import {
   fetchBookingByBookingIdQuery,
   setDelayQuery as updateDelayQuery,
   updateFeedbackQuery,
+  fetchFeedbackCOSQuery,
+  insertFeedbackCOSQuery,
 } from "./cosqueries";
 
 
@@ -288,5 +290,24 @@ export async function updateFeedbackModel(rating: number, feedback: string, orde
   } catch (error) {
     console.error("Error updating feedback", error);
     throw new Error("Error updating feedback");
+  }
+}
+
+export async function fetchFeedbackCOSModel(booking_id: string) {
+  try {
+    const result = await pool.query(fetchFeedbackCOSQuery, [booking_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching feedback cos", error);
+    throw new Error("Error fetching feedback cos");
+  }
+}
+export async function insertFeedbackCOSModel(type: string, booking_id: string, rating: number, comment: string, last_modified: Date) {
+  try {
+    const result = await pool.query(insertFeedbackCOSQuery, [type, booking_id, rating, comment, last_modified]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
   }
 }
