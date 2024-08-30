@@ -44,6 +44,16 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+const transporterCOS = nodemailer.createTransport({
+  // service: "gmail", // You can use any email service
+  host: "us3.smtp.mailhostbox.com",
+  port: 587,
+  auth: {
+    user: process.env.COS_EMAIL_USER,
+    pass: process.env.COS_EMAIL_PASSWORD,
+  },
+});
+
 type OrderDetails = {
   order_id: string;
   booking_id: string;
@@ -196,7 +206,7 @@ export async function addOrderService(order: orderType) {
                       }
 
                       const mailOptions = {
-                        from: process.env.NODE_MAIL_FROM_EMAIL,
+                        from: process.env.COS_EMAIL,
                         to: booking.email,
                         bcc: process.env.ADMIN_EMAIL,
                         subject: `Items Confirmation - [Order #${details[0].order_id}]`,
@@ -308,8 +318,8 @@ export async function addOrderService(order: orderType) {
                           </html>
                         `,
                       };
-
-                      transporter.sendMail(mailOptions, (error, info) => {
+                      
+                      transporterCOS.sendMail(mailOptions, (error, info) => {
                         if (error) {
                           console.log("Error sending email:", error);
                         } else {
@@ -406,7 +416,7 @@ export async function deleteOrderService(orderId: string, reason: string, reject
           `,
         };
 
-        transporter.sendMail(mailOptions, (error, info) => {
+        transporterCOS.sendMail(mailOptions, (error, info) => {
           if (error) {
             console.log("Error sending email:", error);
           } else {
@@ -586,7 +596,7 @@ export async function updateOrderStatusService(orderid: string, status: string) 
               `,
             };
 
-            transporter.sendMail(mailOptions, (error, info) => {
+            transporterCOS.sendMail(mailOptions, (error, info) => {
               if (error) {
                 console.log("Error sending email:", error);
               } else {
