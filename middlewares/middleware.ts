@@ -9,6 +9,7 @@ dotenv.config();
 
 export async function verifyAdmin(req: Request, res: Response, next: NextFunction) {
   const token = req.headers.token as string;
+  console.log("token: ", token)
   if (!token) {
     console.log("no token");
     return res.status(401).send({ message: "Access Denied" });
