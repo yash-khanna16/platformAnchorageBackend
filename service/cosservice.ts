@@ -416,7 +416,7 @@ export async function deleteOrderService(orderId: string, reason: string, reject
           `,
         };
 
-        transporter.sendMail(mailOptions, (error, info) => {
+        transporterCOS.sendMail(mailOptions, (error, info) => {
           if (error) {
             console.log("Error sending email:", error);
           } else {
@@ -596,7 +596,7 @@ export async function updateOrderStatusService(orderid: string, status: string) 
               `,
             };
 
-            transporter.sendMail(mailOptions, (error, info) => {
+            transporterCOS.sendMail(mailOptions, (error, info) => {
               if (error) {
                 console.log("Error sending email:", error);
               } else {
