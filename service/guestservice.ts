@@ -94,19 +94,20 @@ export function searchGuests(): Promise<any> {
   return new Promise((resolve, reject) => {
     fetchAllGuests()
       .then((results) => {
-        
         if (results.rows.length === 0) {
           reject("No such guest present");
         } else {
-          resolve(results.rows);
+          const sortedResults = results.rows.sort((a, b) => new Date(a.checkin).getTime() - new Date(b.checkin).getTime());
+          resolve(sortedResults);
         }
       })
       .catch((error) => {
         console.log(error);
-        reject("internal server error");
+        reject("Internal server error");
       });
   });
 }
+
 
 export function getAdmin(adminId: string, password: string): Promise<any> {
   return new Promise((resolve, reject) => {
@@ -173,7 +174,8 @@ export function getRoomResv(roomNo: string): Promise<any> {
   return new Promise((resolve, reject) => {
     fetchRoomResv(roomNo)
       .then((results) => {
-        resolve(results.rows);
+        const sortedResults = results.rows.sort((a, b) => new Date(a.checkin).getTime() - new Date(b.checkin).getTime());
+        resolve(sortedResults);
       })
       .catch((error) => {
         console.log(error);
@@ -212,9 +214,34 @@ export function addBookingData(bookingData: {
       checkout: bookingData.checkout,
       room: bookingData.room,
     };
-    const go_on = await fetchThisRooms(checkData);
-    const output = Number(go_on.rows[0].conflict_count);
-    if (output <= 3) {
+    const booking_id = uuidv4();
+    const conflicts: BookingData[] = await findConflictEntries(checkData);
+    const newBookingData = { ...bookingData, booking_id: booking_id }
+    conflicts.forEach((conflict) => {
+      conflict.checkin = convertUTCToIST(conflict.checkin);
+      conflict.checkout = convertUTCToIST(conflict.checkout);
+    });
+
+    newBookingData.checkin = convertUTCToIST(bookingData.checkin);
+    newBookingData.checkout = convertUTCToIST(bookingData.checkout);
+
+
+    const timeline = generateTimeline(newBookingData, conflicts);
+    // console.log("timeline",timeline);
+    let overBooking = 0;
+    timeline.forEach((entry) => {
+      console.log(entry);
+      if (
+        entry.occupancy !== '0-PLE OCCUPANCY' &&
+        entry.occupancy !== 'SINGLE OCCUPANCY' &&
+        entry.occupancy !== 'DOUBLE OCCUPANCY' &&
+        entry.occupancy !== 'TRIPLE OCCUPANCY' &&
+        entry.occupancy !== 'QUADRUPLE OCCUPANCY'
+      ) {
+        overBooking++;
+      }
+    });
+    if (overBooking === 0) {
       const isGuest = await findGuest(bookingData.email);
       const guestData = {
         guestEmail: bookingData.email,
@@ -236,13 +263,12 @@ export function addBookingData(bookingData: {
       } else {
         const updateGuest = editGuest(guestData);
       }
-      const booking_id = uuidv4();
       const bookingDataWithId = { ...bookingData, booking_id };
 
       addBooking(bookingDataWithId)
         .then((results) => {
           priorityQueue.enqueue(bookingDataWithId);
-          
+
           resolve("Booking added suceessfull");
         })
         .catch((error) => {
@@ -250,7 +276,7 @@ export function addBookingData(bookingData: {
           reject("internal server error");
         });
     } else {
-      
+
       reject("room unavailable");
       return;
     }
@@ -277,6 +303,7 @@ export function editBookingData(bookingData: {
   guestId: string;
 }): Promise<any> {
   return new Promise(async (resolve, reject) => {
+    console.log("edit");
     bookingData.checkin = new Date(bookingData.checkin);
     bookingData.checkout = new Date(bookingData.checkout);
     const checkData = {
@@ -284,10 +311,34 @@ export function editBookingData(bookingData: {
       checkin: bookingData.checkin,
       checkout: bookingData.checkout,
     };
-    const conflicts = await findConflict(checkData);
-    
-    if (conflicts.rows.length <= 4) {
-      const originalCheckin = await fetchBookingByBookingId(bookingData.bookingId);
+    const conflicts: BookingData[] = await findConflictEntries(checkData);
+    const originalCheckin = await fetchBookingByBookingId(bookingData.bookingId);
+    const newBookingData = { ...originalCheckin.rows[0], booking_id: bookingData.bookingId }
+    conflicts.forEach((conflict) => {
+      conflict.checkin = convertUTCToIST(conflict.checkin);
+      conflict.checkout = convertUTCToIST(conflict.checkout);
+    });
+
+    newBookingData.checkin = convertUTCToIST(bookingData.checkin);
+    newBookingData.checkout = convertUTCToIST(bookingData.checkout);
+
+
+    const timeline = generateTimeline(newBookingData, conflicts);
+    let overBooking = 0;
+    timeline.forEach((entry) => {
+      if (
+        entry.occupancy !== '0-PLE OCCUPANCY' &&
+        entry.occupancy !== 'SINGLE OCCUPANCY' &&
+        entry.occupancy !== 'DOUBLE OCCUPANCY' &&
+        entry.occupancy !== 'TRIPLE OCCUPANCY' &&
+        entry.occupancy !== 'QUADRUPLE OCCUPANCY'
+      ) {
+        overBooking++;
+      }
+    });
+    console.log(overBooking);
+    if (overBooking === 0) {
+
       editBooking(bookingData)
         .then(async (results) => {
           try {
@@ -303,7 +354,7 @@ export function editBookingData(bookingData: {
               };
               await editGuest(guestData);
               const newOriginalCheckin = new Date(originalCheckin.rows[0].checkin);
-              
+
               if (newOriginalCheckin.toISOString() !== bookingData.checkin.toISOString()) {
                 const queueBooking = {
                   checkin: bookingData.checkin,
@@ -322,15 +373,9 @@ export function editBookingData(bookingData: {
                   breakfast: bookingData.breakfast,
                   booking_id: bookingData.bookingId,
                 };
-                try {
-                  priorityQueue.removeById(bookingData.bookingId);
-                  priorityQueue.enqueue(queueBooking);
-                  priorityQueue.getAllEntries();
-                  resolve("Edit booking successfull");
-                } catch {
-                  priorityQueue.getAllEntries();
-                  resolve("Edit booking successfull");
-                }
+                priorityQueue.removeById(bookingData.bookingId);
+                priorityQueue.enqueue(queueBooking);
+                priorityQueue.getAllEntries();
               }
               resolve("successfully editted");
             } else {
@@ -351,7 +396,6 @@ export function editBookingData(bookingData: {
                 } catch (error) {
                   console.log(error);
                   reject("internal server error");
-                  return;
                 }
               } else {
                 const guestData = {
@@ -412,15 +456,15 @@ export async function fetchAvailableRooms(checkData: {
   checkin: Date;
   checkout: Date;
 }): Promise<any> {
-  
+
   checkData.checkin = new Date(checkData.checkin);
   checkData.checkout = new Date(checkData.checkout);
-  
+
   try {
     const allRooms = await fetchAllRooms();
-    
+
     const result = await fetchAvailRooms(checkData);
-    
+
     const conditionMap = new Map(
       result.rows.map((room: { room: string; condition_met: string }) => [
         room.room,
@@ -430,7 +474,7 @@ export async function fetchAvailableRooms(checkData: {
     const availableRooms = allRooms.rows.filter(
       (room: { room: string }) => conditionMap.get(room.room) !== "false"
     );
-    
+
     return availableRooms;
   } catch (error) {
     console.error(error);
@@ -477,7 +521,7 @@ export async function triggerBooking(booking: BookingData) {
       }
     });
   } else {
-    
+
   }
 }
 
@@ -507,7 +551,7 @@ export function deleteThisBooking(bookingId: string): Promise<any> {
           const data = await deleteMovementByBookingIdService(bookingId);
           resolve(data);
         } catch {
-          
+
           reject("Some problem occured");
         }
       })
@@ -541,7 +585,7 @@ export function getInstantRoom(): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
       const newDate = new Date();
-      
+
       const bookingData = { checkin: newDate, checkout: newDate };
 
       const result = await findInstantRoom(newDate);
@@ -636,7 +680,7 @@ export function fetchEmailTemplate(template_name: string): Promise<any> {
 export function updateMealsService(mealDetails: MealDetails[]): Promise<any> {
   return new Promise(async (resolve, reject) => {
     mealDetails.map((meal) => {
-      
+
       meal.date = new Date(meal.date);
     });
     updateMealsModel(mealDetails)
@@ -655,7 +699,7 @@ export function fetchMealsByDateService(date: string): Promise<any> {
     const newDate = new Date(new Date(date).getTime() + 5.5 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
-    
+
     fetchMealsByDateModel(newDate)
       .then((results) => {
         results.rows.map((row: any) => {
@@ -729,7 +773,7 @@ export async function fetchOccupancyByBookingService(bookingId: string): Promise
         room: bookingData.room,
       });
 
-      
+
 
       conflicts.forEach((conflict) => {
         conflict.checkin = convertUTCToIST(conflict.checkin);
@@ -739,7 +783,7 @@ export async function fetchOccupancyByBookingService(bookingId: string): Promise
       bookingData.checkin = convertUTCToIST(bookingData.checkin);
       bookingData.checkout = convertUTCToIST(bookingData.checkout);
 
-      
+
 
       const timeline = generateTimeline(bookingData, conflicts);
       resolve(timeline);
@@ -837,10 +881,8 @@ export function fetchBookingLogsService(): Promise<any> {
   return new Promise(async (resolve, reject) => {
     fetchBookingLogsModel()
       .then((results) => {
-        results.rows.map((row: any) => {
-          row.date = new Date(new Date(row.date).getTime() + 5.5 * 60 * 60 * 1000);
-        });
-        resolve(results.rows);
+        const sortedResults = results.rows.sort((a: any, b: any) => new Date(b.checkin).getTime() - new Date(a.checkin).getTime());
+        resolve(sortedResults);
       })
       .catch((error) => {
         console.log(error);
@@ -852,7 +894,7 @@ export function fetchBookingLogsService(): Promise<any> {
 export function addAuditLogs(auditData: { user: string; endpoint: string }): Promise<any> {
   return new Promise(async (resolve, reject) => {
     const time = new Date();
-    
+
     const auditId = uuidv4();
     const newAuditData = {
       ...auditData,
@@ -872,7 +914,7 @@ export function addAuditLogs(auditData: { user: string; endpoint: string }): Pro
 }
 export async function getAuditLogs(auditData: { password: string; id: string; endpoint: string }): Promise<any> {
   try {
-    
+
     const time = new Date();
     const adminData = await fetchAdminByPassword(auditData.password);
     if (adminData.length === 0) {
@@ -903,7 +945,7 @@ export async function getAuditLogs(auditData: { password: string; id: string; en
       newAuditData.phone = movementData.map((row: any) => row.phone).join(", ");
     }
 
-    
+
     const results = await addAuditLogsModal(newAuditData);
     return results;
   } catch (error) {
@@ -915,7 +957,8 @@ export function getAuditLogsService(): Promise<any> {
   return new Promise(async (resolve, reject) => {
     getAuditLogsServiceModel()
       .then((results) => {
-        resolve(results);
+        const sortedResults = results.rows.sort((a: any, b: any) => new Date(b.time).getTime() - new Date(a.time).getTime());
+        resolve(sortedResults);
       })
       .catch((error) => {
         console.log(error);

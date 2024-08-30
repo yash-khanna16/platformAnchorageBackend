@@ -63,8 +63,8 @@ export async function fetchAllGuests(): Promise<QueryResult<any>> {
 
 export async function fetchAdmin(adminId: string): Promise<QueryResult<any>> {
   try {
+    console.log("hello")
     const result = await pool.query(getAdmin, [adminId]);
-    
     return result;
   } catch (error) {
     throw error;
@@ -484,7 +484,7 @@ export async function fetchAdminByPassword(password:string) {
 export async function getAuditLogsServiceModel() {
   try {
     const result = await pool.query(getAuditLogsServiceQuery);
-    return result.rows;
+    return result;
   } catch (error) {
     throw error;
   }

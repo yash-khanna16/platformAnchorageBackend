@@ -189,9 +189,7 @@ export async function addOrderService(order: orderType) {
                   .then(async (results) => {
                     try {
                       const io = getIO();
-                      
                       let details: OrderDetails[] = (await fetchAllOrdersService()) as OrderDetails[];
-                      console.log(ROOM_CODE);
                       if (ROOM_CODE) {
                         io.to(ROOM_CODE).emit("order_received", details);
                       }
@@ -274,13 +272,13 @@ export async function addOrderService(order: orderType) {
                                                       <p style="margin: 10px 0; color: #555;">We are currently processing your order, and you can expect it to be ready in approximately <strong>${details[0].items.reduce(
                                                           (max, item) => item.time_to_prepare > max ? item.time_to_prepare : max, 0
                                                         )} minutes</strong>.</p>
-                                                      <p style="margin: 10px 0; color: #555;">If you have any questions or need to make changes to your order, please feel free to contact us at <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a>.</p>
+                                                      <p style="margin: 10px 0; color: #555;">If you have any questions or need to make changes to your order, please feel free to contact us  <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a></p>
                                                       <p style="margin: 10px 0; color: #555;">For any complaints or queries, you can reach our front desk at: <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a></p>
                                                   </td>
                                               </tr>
                                               <tr>
                                                   <td style="padding: 20px; text-align: center; background-color: #f4f4f4;">
-                                                      <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a> | <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a></p>
+                                                      <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a></p>
                                                   </td>
                                               </tr>
                                           </table>
@@ -337,7 +335,6 @@ export async function deleteOrderService(orderId: string, reason: string, reject
       await deleteOrderModel(orderId);
 
       const io = getIO();
-      console.log(io);
       let details = await fetchAllOrdersService();
       if (ROOM_CODE) {
         io.to(ROOM_CODE).emit("order_deleted", details);
@@ -374,12 +371,12 @@ export async function deleteOrderService(orderId: string, reason: string, reject
                                         <p style="margin: 10px 0; color: #555;">Dear ${orderDetails[0].guest_name},</p>
                                         <p style="margin: 10px 0; color: #555;">We regret to inform you that we are unable to process your order at this time</p>
                                         <p style="margin: 10px 0; color: #555;">We apologize for any inconvenience this may cause. Please feel free to reach out to us if you have any questions or need further assistance.</p>
-                                        <p style="margin: 10px 0; color: #555;">You can contact us at <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a>.</p>
+                                        <p style="margin: 10px 0; color: #555;">You can contact us at  <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a>.</p>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 20px; text-align: center; background-color: #f4f4f4;">
-                                        <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a> | <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a></p>
+                                        <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a></p>
                                     </td>
                                 </tr>
                             </table>
@@ -412,7 +409,6 @@ export async function fetchOrderByBookingIdService(bookingId: string) {
   return new Promise((resolve, reject) => {
     fetchOrderByBookingIdModel(bookingId)
       .then((results) => {
-        
         resolve(results);
       })
       .catch((error) => {
@@ -553,14 +549,14 @@ export async function updateOrderStatusService(orderid: string, status: string) 
                                           <p style="margin: 10px 0; color: #555;">For any other questions or issues, feel free to reach out to us as well:</p>
                                           <p style="margin: 10px 0; color: #555;">
                                               <strong>Customer Support:</strong> <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a><br>
-                                              <strong>Email:</strong> <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a>
+                                              
                                           </p>
                                           <p style="margin: 10px 0; color: #555;">Thank you for choosing Anchorage. We look forward to serving you again!</p>
                                       </td>
                                   </tr>
                                   <tr>
                                       <td style="padding: 20px; text-align: center; background-color: #f4f4f4;">
-                                          <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a> | <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a></p>
+                                          <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a> </p>
                                       </td>
                                   </tr>
                               </table>

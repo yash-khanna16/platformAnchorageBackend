@@ -40,8 +40,8 @@ export async function fetchMovementService() {
         });
 
         const movementsArray = Object.values(movements);
-        
-        resolve(movementsArray);
+        const sortedResults = movementsArray.sort((a, b) => new Date(a.pickup_time).getTime() - new Date(b.pickup_time).getTime());
+          resolve(sortedResults);
       })
       .catch((error) => {
         console.log(error);

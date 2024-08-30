@@ -138,8 +138,8 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
     const orders: { [key: string]: any } = {};
     
 
-    result.rows.forEach((row:{order_id:Number,booking_id:string, item_id:string, name:string, description:string, qty:Number, created_at:Number,price:Number, type: string,status:string, rating: Number, feedback: string}) => {
-      const { order_id,booking_id, item_id, name, description, qty, created_at,price, type,status, rating, feedback } = row;
+    result.rows.forEach((row:{order_id:Number,booking_id:string, item_id:string, name:string, description:string, qty:Number, created_at:Number,price:Number, type: string,status:string, rating: Number, feedback: string,category:string}) => {
+      const { order_id,booking_id, item_id, name, description, qty, created_at,price, type,status, rating, feedback,category } = row;
 
       const orderIdKey = order_id.toString();
       if (!orders[orderIdKey]) {
@@ -160,7 +160,8 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
         itemDescription: description,
         itemQty: qty,
         itemPrice:price,
-        itemType: type
+        itemType: type,
+        itemCategory:category
       });
     });
 
