@@ -36,27 +36,127 @@ import {
   fetchBookingDetailsQuery,
   fetchPassengerDetailsQuery,
   fetchExternalPassengerDetailsQuery,
+  fetchAllFeedbackQuery,
+  fetchAllOrderFeedbackQuery,
+  fetchAllOrders,
 } from "./queries";
 import {fetchMovementQueryByMovementId} from "./movementqueries"
 
+type Item = {
+  name: string;
+  qty: number;
+  price: number;
+};
 
+type OrderDataType = {
+  order_id: number;
+  booking_id: string;
+  room: string;
+  created_at: string;
+  status: string;
+  remarks: string;
+  items: Item[]; // Updated to include an array of items
+  name: string;
+  email: string;
+  phone: string;
+};
+
+interface OrderData {
+  order_id: number;
+  booking_id: string;
+  room: string;
+  created_at: string;
+  status: string;
+  order_remarks: string;
+  name: string;
+  email: string;
+  phone: string;
+  item_name: string;
+  qty: number;
+  price: number;
+}
+
+interface GuestData {
+  email: string;
+  name: string;
+  phone: string;
+  company: string;
+  vessel: string;
+  rank: string;
+  id: string;
+  booking_id: string;
+  checkin: string;
+  checkout: string;
+  meal_veg: number;
+  meal_non_veg: number;
+  booking_remarks: string;
+  additional_info: string;
+  room: string;
+  breakfast: number;
+  orders: OrderDataType[];
+}
+
+export async function fetchAllGuests(): Promise<GuestData[]> {
+  try {
+    const guestsResult = await pool.query(getNamedGuests);
+    const guests = guestsResult.rows;
+
+    // Fetch all orders
+    const ordersResult = await pool.query(fetchAllOrders);
+    const orders = ordersResult.rows;
+
+    // Create a map to aggregate orders by order_id
+    const ordersMap: Record<string, OrderDataType> = {};
+
+    orders.forEach((order:any) => {
+      const orderId = order.order_id;
+
+      // Check if the order already exists in the ordersMap
+      if (!ordersMap[orderId]) {
+        // Initialize the order with guest details and an empty items array
+        ordersMap[orderId] = {
+          order_id: orderId,
+          booking_id: order.booking_id,
+          room: order.room,
+          created_at: order.created_at,
+          status: order.status,
+          remarks: order.order_remarks,
+          items: [], // Initialize an empty items array
+          name: order.name,
+          email: order.email,
+          phone: order.phone,
+        };
+      }
+
+      // Add item details to the items array for the corresponding order
+      ordersMap[orderId].items.push({
+        name: order.item_name,
+        qty: order.qty,
+        price: order.price,
+      });
+    });
+
+    // Convert the ordersMap to an array
+    const combinedOrders = Object.values(ordersMap);
+
+    // Merge orders into guests
+    const guestsWithOrders = guests.map((guest: GuestData) => ({
+      ...guest,
+      orders: combinedOrders.filter(order => order.booking_id === guest.booking_id) || [],
+    }));
+
+    return guestsWithOrders;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
 
 export async function fetchGuests(): Promise<QueryResult<any>> {
   try {
     const result = await pool.query(getAllGuests);
     return result;
   } catch (error) {
-    throw error;
-  }
-}
-
-export async function fetchAllGuests(): Promise<QueryResult<any>> {
-  try {
-    
-    const result = await pool.query(getNamedGuests);
-    return result;
-  } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -521,4 +621,19 @@ export async function fetchMovementDetails(movementId:string) {
     throw error;
   }
 }
+export async function fetchAllFeedbackModel() {
+  try {
+    const resultFeedback = await pool.query(fetchAllFeedbackQuery);
+    const resultsOrderFeedback = await pool.query(fetchAllOrderFeedbackQuery);
+    
+    // Combine both results
+    const combinedResults = [
+      ...resultFeedback.rows,
+      ...resultsOrderFeedback.rows,
+    ];
 
+    return combinedResults;
+  } catch (error) {
+    throw error;
+  }
+}

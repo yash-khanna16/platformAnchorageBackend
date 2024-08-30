@@ -35,6 +35,7 @@ import {
   fetchPassengerDetails,
   fetchExternalPassengerDetails,
   fetchMovementDetails,
+  fetchAllFeedbackModel,
 } from "../models/guestmodel";
 import { deleteMovementByBookingIdService } from "./movementservice";
 import bcrypt from "bcrypt";
@@ -79,10 +80,10 @@ type BookingData = {
 export function getGuests(): Promise<any> {
   return new Promise((resolve, reject) => {
     fetchGuests()
-      .then((results) => {
-        resolve(results.rows);
+      .then((results:any) => {
+        resolve(results);
       })
-      .catch((error) => {
+      .catch((error:any) => {
         console.log(error);
 
         reject("internal server error");
@@ -93,15 +94,15 @@ export function getGuests(): Promise<any> {
 export function searchGuests(): Promise<any> {
   return new Promise((resolve, reject) => {
     fetchAllGuests()
-      .then((results) => {
-        if (results.rows.length === 0) {
+      .then((results:any) => {
+        if (results.length === 0) {
           reject("No such guest present");
         } else {
-          const sortedResults = results.rows.sort((a, b) => new Date(a.checkin).getTime() - new Date(b.checkin).getTime());
+          const sortedResults = results.sort((a:any, b:any) => new Date(a.checkin).getTime() - new Date(b.checkin).getTime());
           resolve(sortedResults);
         }
       })
-      .catch((error) => {
+      .catch((error:any) => {
         console.log(error);
         reject("Internal server error");
       });
@@ -965,6 +966,18 @@ export async function getAuditLogs(auditData: { password: string; id: string; en
 export function getAuditLogsService(): Promise<any> {
   return new Promise(async (resolve, reject) => {
     getAuditLogsServiceModel()
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log(error);
+        reject("internal server error");
+      });
+  });
+}
+export function fetchAllFeedbackService(): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    fetchAllFeedbackModel()
       .then((results) => {
         resolve(results);
       })

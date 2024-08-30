@@ -23,5 +23,6 @@ router.get("/fetchMealsByBookingId", controller.fetchMealsByBookingId);
 router.get("/fetchOccupancyByBooking", controller.fetchOccupancyByBookingId);
 router.get("/fetchBookingLogs",controller.getBookingLogs)
 router.get("/fetchAuditLog",controller.getAuditLogs)
+router.get("/fetchAllFeedback",controller.fetchAllFeedback)
 
 export default router;
