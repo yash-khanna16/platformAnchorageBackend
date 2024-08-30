@@ -216,7 +216,7 @@ export async function addOrderService(order: orderType) {
                                               <tr>
                                                   <td style="padding: 20px; text-align: center;">
                                                       <img src="https://drive.usercontent.google.com/download?id=10uMrHQslBy2zOrWxaQ03nAvSbwTQZiQZ" alt="Anchorage" style="max-width: 80px; height: auto; margin-bottom: 20px;">
-                                                      <h1 style="margin: 0; color: #333;">Item Confirmation</h1>
+                                                      <h1 style="margin: 0; color: #333;">Items Confirmation</h1>
                                                       <p style="margin: 10px 0 20px; color: #777;">Order #${
                                                         details[0].order_id
                                                       }</p>
@@ -370,7 +370,7 @@ export async function deleteOrderService(orderId: string, reason: string, reject
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Order Update</title>
+                <title>Items Update</title>
             </head>
             <body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0;">
                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -513,7 +513,7 @@ export async function updateOrderStatusService(orderid: string, status: string) 
             const mailOptions = {
               from: process.env.NODE_MAIL_FROM_EMAIL,
               to: details[0].guest_email,
-              subject: `Item Delivered - [Order #${details[0].order_id}]`,
+              subject: `Items Delivered - [Order #${details[0].order_id}]`,
               html: `
                 <!DOCTYPE html>
                 <html lang="en">
@@ -530,7 +530,7 @@ export async function updateOrderStatusService(orderid: string, status: string) 
                                     <tr>
                                         <td style="padding: 20px; text-align: center;">
                                             <img src="https://drive.usercontent.google.com/download?id=10uMrHQslBy2zOrWxaQ03nAvSbwTQZiQZ" alt="Anchorage" style="max-width: 80px; height: auto; margin-bottom: 20px;">
-                                            <h1 style="margin: 0; color: #333;">Your Order has been Delivered!</h1>
+                                            <h1 style="margin: 0; color: #333;">Your Items have been Delivered!</h1>
                                             <p style="margin: 10px 0 20px; color: #777;">Order #${details[0].order_id}</p>
                                         </td>
                                     </tr>

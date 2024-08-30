@@ -66,7 +66,7 @@ app.get("/loginAdmin", loginAdmin);
 
 app.use("/api/admin",verifyAdmin, guestRoutes);
 app.use("/api/analytics",verifyAdmin, analyticsroutes);
-app.use("/api/movement", movementroutes);
+app.use("/api/movement",verifyAdmin, movementroutes);
 app.use("/api/admin/cos",verifyAdmin,cosAdminRoutes);
 app.use("/api/cos", cosroutes);
 
