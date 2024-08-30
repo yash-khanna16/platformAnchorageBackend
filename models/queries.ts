@@ -2,13 +2,37 @@ export const getAllGuests = "SELECT * FROM guests";
 
 export const getNamedGuests = `SELECT * FROM guests JOIN bookings ON bookings.guest_email = guests.email`;
 
+export const fetchAllOrders = `
+SELECT
+    o.order_id,
+    o.booking_id,
+    o.room,
+    o.created_at,
+    o.status,
+    o.remarks,
+    g.name,
+    g.email,
+    g.phone,
+    i.name AS item_name,
+    od.qty AS qty,
+    i.price AS price
+FROM
+    orders o
+JOIN
+    bookings b ON o.booking_id = b.booking_id
+JOIN
+    guests g ON b.guest_email = g.email
+JOIN
+    order_details od ON o.order_id = od.order_id
+JOIN
+    items i ON od.item_id = i.item_id;
+`;
+
 export const getAdmin = "Select * FROM admin where email=$1";
 
-export const addGuestQuery =
-  "INSERT INTO guests (email,name,phone,company,vessel,rank, id)values($1,$2,$3,$4,$5,$6,$7)";
+export const addGuestQuery = "INSERT INTO guests (email,name,phone,company,vessel,rank, id)values($1,$2,$3,$4,$5,$6,$7)";
 
-export const fetchResv =
-  "SELECT * FROM bookings JOIN guests ON guests.email=bookings.guest_email where room=$1";
+export const fetchResv = "SELECT * FROM bookings JOIN guests ON guests.email=bookings.guest_email where room=$1";
 
 export const addBookingDetails =
   "insert into bookings(booking_id,checkin,checkout,guest_email,meal_veg,meal_non_veg,remarks,additional_info,room,breakfast)values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)";
@@ -90,11 +114,9 @@ WHERE b.room = $3
 
 `;
 
-export const editGuestQuery =
-  "Update guests set name=$2,phone=$3,company=$4,vessel=$5,rank=$6,id=$7 where email=$1";
+export const editGuestQuery = "Update guests set name=$2,phone=$3,company=$4,vessel=$5,rank=$6,id=$7 where email=$1";
 
-export const editGuestEmail =
-  "Update guests set email=$1,name=$2,phone=$3,company=$4,vessel=$5,rank=$6 where email=$7";
+export const editGuestEmail = "Update guests set email=$1,name=$2,phone=$3,company=$4,vessel=$5,rank=$6 where email=$7";
 
 export const findRoom =
   "SELECT r.room , COUNT(b.room) AS status FROM rooms r LEFT JOIN bookings b ON r.room = b.room  AND $1 BETWEEN b.checkin AND b.checkout where r.active='true' GROUP BY r.room ORDER BY room";
@@ -150,24 +172,44 @@ export const fetchMealsByDateQuery = `
 
 export const fetchMealsByBookingIdQuery = `SELECT * FROM meals where booking_id = $1 ORDER BY date`;
 
-export const fetchBookingLogsQuery =
-  "SELECT * FROM logs JOIN guests ON guests.email=logs.guest_email";
+export const fetchBookingLogsQuery = "SELECT * FROM logs JOIN guests ON guests.email=logs.guest_email";
 
+export const addToAuditLogs = "insert into audit_logs(audit_id,time,author,api_call,name,phone)values($1,$2,$3,$4,$5,$6)";
 
-export const addToAuditLogs =
-  "insert into audit_logs(audit_id,time,author,api_call,name,phone)values($1,$2,$3,$4,$5,$6)";
+export const fetchAdminByPass = "select * from admin where delete_password=$1";
 
-export const fetchAdminByPass =
-  "select * from admin where delete_password=$1";
+export const getAuditLogsServiceQuery = "select * from audit_logs ";
 
-export const getAuditLogsServiceQuery =
-  "select * from audit_logs ";
+export const fetchBookingDetailsQuery = "SELECT * FROM bookings JOIN guests ON guests.email=bookings.guest_email where bookings.booking_id=$1";
 
-export const fetchBookingDetailsQuery =
-  "SELECT * FROM bookings JOIN guests ON guests.email=bookings.guest_email where bookings.booking_id=$1";
+export const fetchPassengerDetailsQuery = "SELECT * FROM passengers where passenger_id=$1";
 
-export const fetchPassengerDetailsQuery =
-  "SELECT * FROM passengers where passenger_id=$1";
+export const fetchExternalPassengerDetailsQuery = "SELECT * FROM external_passenger where passenger_id=$1";
 
-export const fetchExternalPassengerDetailsQuery =
-  "SELECT * FROM external_passenger where passenger_id=$1";
+export const fetchAllFeedbackQuery = `
+  SELECT 
+    f.type, 
+    g.name, 
+    b.room, 
+    f.rating, 
+    f.comment, 
+    f.last_modified  
+  FROM feedback AS f 
+  JOIN bookings AS b ON f.booking_id = b.booking_id 
+  JOIN guests AS g ON b.guest_email = g.email
+`;
+
+export const fetchAllOrderFeedbackQuery = `
+  SELECT 
+    'order' AS type, 
+    g.name, 
+    o.room, 
+    o.order_id, 
+    o.rating, 
+    o.feedback AS comment, 
+    to_timestamp(o.created_at::bigint / 1000) AS last_modified 
+  FROM orders AS o 
+  JOIN bookings AS b ON b.booking_id = o.booking_id 
+  JOIN guests AS g ON b.guest_email = g.email
+  WHERE o.rating != -1
+`;

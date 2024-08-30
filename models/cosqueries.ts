@@ -31,7 +31,8 @@ export const fetchOrderByBookingIdQuery = `
     items.type,
     items.price,
     orders.rating,
-    orders.feedback
+    orders.feedback,
+    items.category
   FROM 
     orders 
     JOIN order_details ON orders.order_id = order_details.order_id 
@@ -92,3 +93,7 @@ export const fetchAvailabilityOfItemsQuery = "SELECT item_id,name, available FRO
 export const setDelayQuery = 'UPDATE orders SET delay=$1 WHERE order_id=$2;'
 
 export const updateFeedbackQuery = 'UPDATE orders SET rating = $1, feedback = $2 WHERE order_id=$3;'
+
+export const fetchFeedbackCOSQuery = `SELECT * FROM feedback where booking_id = $1;`
+
+export const insertFeedbackCOSQuery = `INSERT INTO feedback (type, booking_id, rating, comment, last_modified) VALUES ($1,$2,$3,$4,$5);`

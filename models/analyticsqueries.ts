@@ -526,3 +526,109 @@ GROUP BY
 ORDER BY
     ad.date;
 `;
+
+export const fetchTotalProfitPerDayQuery = `
+WITH date_series AS (
+    SELECT 
+        generate_series(
+            -- Start date: First day of the month
+            date_trunc('month', to_timestamp($1 || '-' || $2 || '-01', 'YYYY-MM-DD'))::date, 
+            -- End date: Minimum of last day of the month or current date
+            LEAST(
+                date_trunc('month', to_timestamp($1 || '-' || $2 || '-01', 'YYYY-MM-DD'))::date + INTERVAL '1 month' - INTERVAL '1 day',
+                CURRENT_DATE
+            ), 
+            '1 day'
+        ) AS order_date
+)
+SELECT 
+    ds.order_date,
+    COALESCE(SUM((items.price - items.base_price) * order_details.qty), 0) AS total_profit
+FROM 
+    date_series ds
+LEFT JOIN 
+    orders ON DATE(to_timestamp(orders.created_at::bigint / 1000)) = ds.order_date
+LEFT JOIN 
+    order_details ON orders.order_id = order_details.order_id
+LEFT JOIN 
+    items ON order_details.item_id = items.item_id
+GROUP BY 
+    ds.order_date
+ORDER BY 
+    ds.order_date;
+`;
+
+
+
+export const fetchTotalProfitPerDayQueryForQuarter = `
+WITH date_series AS (
+    SELECT 
+        generate_series(
+            -- Start date: First day of the quarter
+            CASE 
+                WHEN $2 IN (1, 2, 3) THEN date_trunc('quarter', to_timestamp($1 || '-01-01', 'YYYY-MM-DD'))
+                WHEN $2 IN (4, 5, 6) THEN date_trunc('quarter', to_timestamp($1 || '-04-01', 'YYYY-MM-DD'))
+                WHEN $2 IN (7, 8, 9) THEN date_trunc('quarter', to_timestamp($1 || '-07-01', 'YYYY-MM-DD'))
+                WHEN $2 IN (10, 11, 12) THEN date_trunc('quarter', to_timestamp($1 || '-10-01', 'YYYY-MM-DD'))
+            END::date, 
+            -- End date: Last day of the quarter
+            CASE 
+                WHEN $2 IN (1, 2, 3) THEN date_trunc('quarter', to_timestamp($1 || '-01-01', 'YYYY-MM-DD')) + INTERVAL '3 months - 1 day'
+                WHEN $2 IN (4, 5, 6) THEN date_trunc('quarter', to_timestamp($1 || '-04-01', 'YYYY-MM-DD')) + INTERVAL '3 months - 1 day'
+                WHEN $2 IN (7, 8, 9) THEN date_trunc('quarter', to_timestamp($1 || '-07-01', 'YYYY-MM-DD')) + INTERVAL '3 months - 1 day'
+                WHEN $2 IN (10, 11, 12) THEN date_trunc('quarter', to_timestamp($1 || '-10-01', 'YYYY-MM-DD')) + INTERVAL '3 months - 1 day'
+            END::date, 
+            '1 day'
+        ) AS order_date
+)
+SELECT 
+    ds.order_date,
+    COALESCE(SUM((items.price - items.base_price) * order_details.qty), 0) AS total_profit
+FROM 
+    date_series ds
+LEFT JOIN 
+    orders ON DATE(to_timestamp(orders.created_at::bigint / 1000)) = ds.order_date
+LEFT JOIN 
+    order_details ON orders.order_id = order_details.order_id
+LEFT JOIN 
+    items ON order_details.item_id = items.item_id
+GROUP BY 
+    ds.order_date
+ORDER BY 
+    ds.order_date;
+`;
+
+
+export const fetchTotalProfitPerDayQueryForYear = `
+WITH date_series AS (
+    SELECT 
+        generate_series(
+            -- Start date: First day of the year
+            to_date($1 || '-01-01', 'YYYY-MM-DD'), 
+            -- End date: Last day of the year
+            to_date($1 || '-12-31', 'YYYY-MM-DD'), 
+            '1 day'
+        ) AS order_date
+)
+SELECT 
+    ds.order_date,
+    COALESCE(SUM((items.price - items.base_price) * order_details.qty), 0) AS total_profit
+FROM 
+    date_series ds
+LEFT JOIN 
+    orders ON DATE(to_timestamp(orders.created_at::bigint / 1000)) = ds.order_date
+LEFT JOIN 
+    order_details ON orders.order_id = order_details.order_id
+LEFT JOIN 
+    items ON order_details.item_id = items.item_id
+GROUP BY 
+    ds.order_date
+ORDER BY 
+    ds.order_date;
+`;
+
+
+
+
+
+

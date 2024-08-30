@@ -12,6 +12,9 @@ import {
   getAverageCompanyBookingForYear,
   getAverageMealsBoughtPerDayYear,
   getAverageBreakfastBoughtPerDayYear,
+  getTotalProfitePerDay,
+  getTotalProfitPerQuarter,
+  getTotalProfitPerYear
 } from "../controllers/analyticscontroller";
 const router = Router();
 
@@ -27,5 +30,8 @@ router.get("/getRoomsBookedPerDayYear", getRoomsBookedPerDayYear);
 router.get("/getAverageCompanyBookingForYear", getAverageCompanyBookingForYear);
 router.get("/getAverageMealsBoughtPerDayYear", getAverageMealsBoughtPerDayYear);
 router.get("/getAverageBreakfastBoughtPerDayYear", getAverageBreakfastBoughtPerDayYear);
+router.get("/getTotalProfitePerDay",getTotalProfitePerDay)
+router.get("/getTotalProfitePerQuarter",getTotalProfitPerQuarter)
+router.get("/getTotalProfitPerYear",getTotalProfitPerYear)
 
 export default router;

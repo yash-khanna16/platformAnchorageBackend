@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { fetchAverageBreakfastBoughtPerDay, fetchAverageBreakfastBoughtPerDayQuarter, fetchAverageBreakfastBoughtPerDayYear, fetchAverageCompanyBookingForMonthandYear, fetchAverageCompanyBookingForQuarterandYear, fetchAverageCompanyBookingForYear, fetchAverageMealsBoughtPerDay, fetchAverageMealsBoughtPerDayQuarter, fetchAverageMealsBoughtPerDayYear, fetchRoomsBookedPerDay, fetchRoomsBookedPerDayQuarter, fetchRoomsBookedPerDayYear } from "../service/analyticsservice";
+import { fetchAverageBreakfastBoughtPerDay, fetchAverageBreakfastBoughtPerDayQuarter, fetchAverageBreakfastBoughtPerDayYear, fetchAverageCompanyBookingForMonthandYear, fetchAverageCompanyBookingForQuarterandYear, fetchAverageCompanyBookingForYear, fetchAverageMealsBoughtPerDay, fetchAverageMealsBoughtPerDayQuarter, fetchAverageMealsBoughtPerDayYear, fetchRoomsBookedPerDay, fetchRoomsBookedPerDayQuarter, fetchRoomsBookedPerDayYear,fetchTotalProfitPerDay,fetchTotalProfitPerQuarter,fetchTotalProfitPerYear } from "../service/analyticsservice";
 
 export const getRoomsBookedPerDay=async(req: Request, res: Response) => {
     try {        
@@ -149,6 +149,45 @@ export const getAverageBreakfastBoughtPerDayYear=async(req: Request, res:Respons
     try {
         const year = (req.headers.year as string);
         fetchAverageBreakfastBoughtPerDayYear(year).then(result=>{
+            res.status(200).send(result)
+        }).catch(error=>{
+            res.status(500).send({message: "Internal Server Error"})
+        })
+    } catch(error) {
+        res.status(500).send({message: "Something went wrong, Please try again!"})  
+    }
+}
+export const getTotalProfitePerDay=async(req: Request, res:Response) => {
+    try {
+        const year = parseInt(req.headers.year as string);
+        const month = parseInt(req.headers.month as string);
+        fetchTotalProfitPerDay(year,month).then(result=>{
+            res.status(200).send(result)
+        }).catch(error=>{
+            res.status(500).send({message: "Internal Server Error"})
+        })
+    } catch(error) {
+        res.status(500).send({message: "Something went wrong, Please try again!"})  
+    }
+}
+export const getTotalProfitPerQuarter=async(req: Request, res:Response) => {
+    try {
+        const year = parseInt(req.headers.year as string);
+        const month = parseInt(req.headers.month as string);
+        fetchTotalProfitPerQuarter(year,month).then(result=>{
+            res.status(200).send(result)
+        }).catch(error=>{
+            res.status(500).send({message: "Internal Server Error"})
+        })
+    } catch(error) {
+        res.status(500).send({message: "Something went wrong, Please try again!"})  
+    }
+}
+export const getTotalProfitPerYear=async(req: Request, res:Response) => {
+    try {
+        const year = parseInt(req.headers.year as string);
+        const month = parseInt(req.headers.month as string);
+        fetchTotalProfitPerYear(year,month).then(result=>{
             res.status(200).send(result)
         }).catch(error=>{
             res.status(500).send({message: "Internal Server Error"})
