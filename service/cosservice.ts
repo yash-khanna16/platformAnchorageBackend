@@ -199,14 +199,14 @@ export async function addOrderService(order: orderType) {
                         from: process.env.NODE_MAIL_FROM_EMAIL,
                         to: booking.email,
                         bcc: process.env.ADMIN_EMAIL,
-                        subject: `Order Confirmation - [Order #${details[0].order_id}]`,
+                        subject: `Items Confirmation - [Order #${details[0].order_id}]`,
                         html: `
                           <!DOCTYPE html>
                           <html lang="en">
                           <head>
                               <meta charset="UTF-8">
                               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                              <title>Order Confirmation</title>
+                              <title>Items Confirmation</title>
                           </head>
                           <body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0;">
                               <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -216,7 +216,7 @@ export async function addOrderService(order: orderType) {
                                               <tr>
                                                   <td style="padding: 20px; text-align: center;">
                                                       <img src="https://drive.usercontent.google.com/download?id=10uMrHQslBy2zOrWxaQ03nAvSbwTQZiQZ" alt="Anchorage" style="max-width: 80px; height: auto; margin-bottom: 20px;">
-                                                      <h1 style="margin: 0; color: #333;">Order Confirmation</h1>
+                                                      <h1 style="margin: 0; color: #333;">Item Confirmation</h1>
                                                       <p style="margin: 10px 0 20px; color: #777;">Order #${
                                                         details[0].order_id
                                                       }</p>
@@ -291,13 +291,13 @@ export async function addOrderService(order: orderType) {
                                                       <p style="margin: 10px 0; color: #555;">We are currently processing your order, and you can expect it to be ready in approximately <strong>${details[0].items.reduce(
                                                           (max, item) => item.time_to_prepare > max ? item.time_to_prepare : max, 0
                                                         )} minutes</strong>.</p>
-                                                      <p style="margin: 10px 0; color: #555;">If you have any questions or need to make changes to your order, please feel free to contact us  <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a></p>
-                                                      <p style="margin: 10px 0; color: #555;">For any complaints or queries, you can reach our front desk at: <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a></p>
+                                                      <p style="margin: 10px 0; color: #555;">If you have any questions or need to make changes to your order, please feel free to contact us  <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
+                                                      <p style="margin: 10px 0; color: #555;">For any complaints or queries, you can reach our front desk at: <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
                                                   </td>
                                               </tr>
                                               <tr>
                                                   <td style="padding: 20px; text-align: center; background-color: #f4f4f4;">
-                                                      <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a></p>
+                                                      <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
                                                   </td>
                                               </tr>
                                           </table>
@@ -363,7 +363,7 @@ export async function deleteOrderService(orderId: string, reason: string, reject
         const mailOptions = {
           from: process.env.NODE_MAIL_FROM_EMAIL,
           to: orderDetails[0].guest_email,
-          subject: `Order Cancellation - [Order #${orderDetails[0].order_id}]`,
+          subject: `Items Cancellation - [Order #${orderDetails[0].order_id}]`,
           html: `
             <!DOCTYPE html>
             <html lang="en">
@@ -380,7 +380,7 @@ export async function deleteOrderService(orderId: string, reason: string, reject
                                 <tr>
                                     <td style="padding: 20px; text-align: center;">
                                         <img src="https://drive.usercontent.google.com/download?id=10uMrHQslBy2zOrWxaQ03nAvSbwTQZiQZ" alt="Anchorage" style="max-width: 80px; height: auto; margin-bottom: 20px;">
-                                        <h1 style="margin: 0; color: #333;">Order Cancellation</h1>
+                                        <h1 style="margin: 0; color: #333;">Item Cancellation</h1>
                                         <p style="margin: 10px 0 20px; color: #777;">Order #${orderDetails[0].order_id}</p>
                                     </td>
                                 </tr>
@@ -389,12 +389,12 @@ export async function deleteOrderService(orderId: string, reason: string, reject
                                         <p style="margin: 10px 0; color: #555;">Dear ${orderDetails[0].guest_name},</p>
                                         <p style="margin: 10px 0; color: #555;">We regret to inform you that we are unable to process your order at this time</p>
                                         <p style="margin: 10px 0; color: #555;">We apologize for any inconvenience this may cause. Please feel free to reach out to us if you have any questions or need further assistance.</p>
-                                        <p style="margin: 10px 0; color: #555;">You can contact us at  <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a>.</p>
+                                        <p style="margin: 10px 0; color: #555;">You can contact us at  <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a>.</p>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 20px; text-align: center; background-color: #f4f4f4;">
-                                        <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a></p>
+                                        <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
                                     </td>
                                 </tr>
                             </table>
@@ -513,14 +513,14 @@ export async function updateOrderStatusService(orderid: string, status: string) 
             const mailOptions = {
               from: process.env.NODE_MAIL_FROM_EMAIL,
               to: details[0].guest_email,
-              subject: `Order Delivered - [Order #${details[0].order_id}]`,
+              subject: `Item Delivered - [Order #${details[0].order_id}]`,
               html: `
                 <!DOCTYPE html>
                 <html lang="en">
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Order Delivered</title>
+                    <title>Item Delivered</title>
                 </head>
                 <body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0;">
                     <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -563,18 +563,18 @@ export async function updateOrderStatusService(orderid: string, status: string) 
                                     </tr>
                                     <tr>
                                         <td style="padding: 20px;">
-                                            <p style="margin: 10px 0; color: #555;">If your order has not been delivered, please contact the front desk immediately at <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a> or email us at <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a>.</p>
+                                            <p style="margin: 10px 0; color: #555;">If your order has not been delivered, please contact the front desk immediately at <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a>.</p>
                                             <p style="margin: 10px 0; color: #555;">For any other questions or issues, feel free to reach out to us as well:</p>
                                             <p style="margin: 10px 0; color: #555;">
-                                                <strong>Customer Support:</strong> <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a><br>
-                                                <strong>Email:</strong> <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a>
+                                                <strong>Customer Support:</strong> <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a><br>
+                            
                                             </p>
                                             <p style="margin: 10px 0; color: #555;">Thank you for choosing Anchorage. We look forward to serving you again!</p>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td style="padding: 20px; text-align: center; background-color: #f4f4f4;">
-                                            <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91123456789" style="color: #0073e6;">+91123456789</a> | <a href="mailto:admin@platformanchorage.com" style="color: #0073e6;">admin@platformanchorage.com</a></p>
+                                            <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
                                         </td>
                                     </tr>
                                 </table>
