@@ -1,5 +1,4 @@
 import {
-  fetchGuests,
   fetchAllGuests,
   fetchAdmin,
   addGuestData,
@@ -36,6 +35,7 @@ import {
   fetchExternalPassengerDetails,
   fetchMovementDetails,
   fetchAllFeedbackModel,
+  fetchGuests,
 } from "../models/guestmodel";
 import { deleteMovementByBookingIdService } from "./movementservice";
 import bcrypt from "bcrypt";
