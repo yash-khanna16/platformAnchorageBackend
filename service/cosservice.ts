@@ -42,6 +42,16 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+const transporterCOS = nodemailer.createTransport({
+  // service: "gmail", // You can use any email service
+  host: "us3.smtp.mailhostbox.com",
+  port: 587,
+  auth: {
+    user: process.env.COS_EMAIL_USER,
+    pass: process.env.COS_EMAIL_PASSWORD,
+  },
+});
+
 type OrderDetails = {
   order_id: string;
   booking_id: string;
@@ -196,7 +206,7 @@ export async function addOrderService(order: orderType) {
                       }
                       
                       const mailOptions = {
-                        from: process.env.NODE_MAIL_FROM_EMAIL,
+                        from: process.env.COS_EMAIL,
                         to: booking.email,
                         subject: `Order Confirmation - [Order #${details[0].order_id}]`,
                         html: `
@@ -291,7 +301,7 @@ export async function addOrderService(order: orderType) {
                         `,
                       };
                       
-                      transporter.sendMail(mailOptions, (error, info) => {
+                      transporterCOS.sendMail(mailOptions, (error, info) => {
                         if (error) {
                           console.log("Error sending email:", error);
                         } else {
