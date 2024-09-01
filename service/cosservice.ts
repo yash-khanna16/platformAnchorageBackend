@@ -550,7 +550,7 @@ export async function updateOrderStatusService(orderid: string, status: string) 
                                             <p style="margin: 10px 0; color: #555;">We are happy to inform you that your order has been successfully delivered to your room <strong>${
                                               details[0].room
                                             }</strong>.</p>
-                                            <p style="margin: 10px 0; color: #555;">We hope you enjoy your meal! Here is a summary of your order:</p>
+                                            <p style="margin: 10px 0; color: #555;">Here is a summary of your order:</p>
                                         </td>
                                     </tr>
                                     <tr>
