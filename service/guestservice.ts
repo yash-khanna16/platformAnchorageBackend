@@ -175,7 +175,7 @@ export function getRoomResv(roomNo: string): Promise<any> {
   return new Promise((resolve, reject) => {
     fetchRoomResv(roomNo)
       .then((results) => {
-        const sortedResults = results.rows.sort((a, b) => new Date(a.checkin).getTime() - new Date(b.checkin).getTime());
+        const sortedResults = results.sort((a, b) => new Date(a.checkin).getTime() - new Date(b.checkin).getTime());
         resolve(sortedResults);
       })
       .catch((error) => {
@@ -634,7 +634,7 @@ export function addNewRoom(room: string): Promise<any> {
 export function removeRoom(room: string): Promise<any> {
   return new Promise(async (resolve, reject) => {
     const isRoomvalid = await fetchRoomResv(room);
-    if (isRoomvalid.rows.length >= 1) {
+    if (isRoomvalid.length >= 1) {
       reject("no change");
     } else {
       hideRoom(room)
