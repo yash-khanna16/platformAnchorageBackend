@@ -504,6 +504,7 @@ export async function triggerBooking(booking: BookingData) {
     const result = await fetchEmailTemplate("welcome");
     let content: string = result.content;
     content = content.replace("Guest", booking.name);
+    content = content.replace("bookingid", booking.booking_id);
     const subject = result.subject;
     const mailOptions = {
       from: process.env.NODE_MAIL_FROM_EMAIL,
