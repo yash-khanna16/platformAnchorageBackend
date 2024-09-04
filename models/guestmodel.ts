@@ -672,6 +672,9 @@ export async function fetchAllFeedbackModel() {
   try {
     const resultFeedback = await pool.query(fetchAllFeedbackQuery);
     const resultsOrderFeedback = await pool.query(fetchAllOrderFeedbackQuery);
+
+    console.log("result feedbacK: ", resultFeedback.rows);
+    console.log("order feedback: ", resultsOrderFeedback.rows);
     
     // Combine both results
     const combinedResults = [
