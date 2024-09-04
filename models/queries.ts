@@ -195,9 +195,14 @@ export const fetchAllFeedbackQuery = `
     f.comment, 
     f.last_modified  
   FROM feedback AS f 
-  JOIN bookings AS b ON f.booking_id = b.booking_id 
+  JOIN (
+    SELECT * FROM bookings
+    UNION
+    SELECT * FROM logs
+  ) AS b ON f.booking_id = b.booking_id 
   JOIN guests AS g ON b.guest_email = g.email
 `;
+
 
 export const fetchAllOrderFeedbackQuery = `
   SELECT 
@@ -209,7 +214,12 @@ export const fetchAllOrderFeedbackQuery = `
     o.feedback AS comment, 
     to_timestamp(o.created_at::bigint / 1000) AS last_modified 
   FROM orders AS o 
-  JOIN bookings AS b ON b.booking_id = o.booking_id 
+  JOIN (
+    SELECT * FROM bookings
+    UNION
+    SELECT * FROM logs
+  ) AS b ON b.booking_id = o.booking_id 
   JOIN guests AS g ON b.guest_email = g.email
   WHERE o.rating != -1
 `;
+

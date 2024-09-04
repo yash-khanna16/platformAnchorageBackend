@@ -371,7 +371,7 @@ export async function deleteOrderService(orderId: string, reason: string, reject
 
       if (reject) {
         const mailOptions = {
-          from: process.env.NODE_MAIL_FROM_EMAIL,
+          from: process.env.COS_EMAIL,
           to: orderDetails[0].guest_email,
           subject: `Items Cancellation - [Order #${orderDetails[0].order_id}]`,
           html: `
@@ -521,7 +521,7 @@ export async function updateOrderStatusService(orderid: string, status: string) 
 
           if (status === "Delivered") {
             const mailOptions = {
-              from: process.env.NODE_MAIL_FROM_EMAIL,
+              from: process.env.COS_EMAIL,
               to: details[0].guest_email,
               subject: `Items Delivered - [Order #${details[0].order_id}]`,
               html: `

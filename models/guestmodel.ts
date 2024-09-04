@@ -196,10 +196,57 @@ export async function addGuestData(guestData: {
   }
 }
 
-export async function fetchRoomResv(roomNo: string): Promise<QueryResult<any>> {
+export async function fetchRoomResv(roomNo: string): Promise<any[]> {
   try {
-    const result = await pool.query(fetchResv, [roomNo]);
-    return result;
+    // Fetch room reservations
+    const resvResult = await pool.query(fetchResv, [roomNo]);
+    const reservations = resvResult.rows;
+
+    // Fetch all orders related to the room
+    const ordersResult = await pool.query(fetchAllOrders);
+    const orders = ordersResult.rows;
+
+    // Create a map to aggregate orders by order_id
+    const ordersMap: Record<string, OrderDataType> = {};
+
+    orders.forEach((order: any) => {
+      const orderId = order.order_id;
+
+      // Check if the order already exists in the ordersMap
+      if (!ordersMap[orderId]) {
+        // Initialize the order with guest details and an empty items array
+        ordersMap[orderId] = {
+          order_id: orderId,
+          booking_id: order.booking_id,
+          room: order.room,
+          created_at: order.created_at,
+          status: order.status,
+          remarks: order.order_remarks,
+          items: [], // Initialize an empty items array
+          name: order.name,
+          email: order.email,
+          phone: order.phone,
+        };
+      }
+
+      // Add item details to the items array for the corresponding order
+      ordersMap[orderId].items.push({
+        name: order.item_name,
+        qty: order.qty,
+        price: order.price,
+      });
+    });
+
+    // Convert the ordersMap to an array
+    const combinedOrders = Object.values(ordersMap);
+
+    // Merge orders into reservations
+    const reservationsWithOrders = reservations.map((reservation: any) => ({
+      ...reservation,
+      orders: combinedOrders.filter(order => order.booking_id === reservation.booking_id) || [],
+    }));
+
+    return reservationsWithOrders;
   } catch (error) {
     throw error;
   }
@@ -625,6 +672,9 @@ export async function fetchAllFeedbackModel() {
   try {
     const resultFeedback = await pool.query(fetchAllFeedbackQuery);
     const resultsOrderFeedback = await pool.query(fetchAllOrderFeedbackQuery);
+
+    console.log("result feedbacK: ", resultFeedback.rows);
+    console.log("order feedback: ", resultsOrderFeedback.rows);
     
     // Combine both results
     const combinedResults = [
