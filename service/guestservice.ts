@@ -167,7 +167,13 @@ export function addGuests(guestData: {
           reject("internal server error");
         });
     } else {
-      reject("Email already present");
+      try{
+        const results=await editGuest(guestData);
+        resolve(results.rows)
+      }
+      catch(error){
+        console.log("Error updating guest data:",error);
+      }
     }
   });
 }
