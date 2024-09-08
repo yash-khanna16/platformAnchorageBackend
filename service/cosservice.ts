@@ -287,11 +287,11 @@ export async function addOrderService(order: orderType) {
                                                           <strong>Estimated Delivery/Pickup Time:</strong> ${new Date(
                                                             parseInt(details[0].created_at) +
                                                               details[0].items.reduce(
-                                                                (max, item) =>
-                                                                  item.time_to_prepare > max ? item.time_to_prepare : max,
+                                                                (max, item) => (item.time_to_prepare > max ? item.time_to_prepare : max),
                                                                 0
-                                                              ) *
-                                                                60000
+                                                              ) * 60000 +
+                                                              5 * 60 * 60 * 1000 +
+                                                              30 * 60 * 1000 
                                                           ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                                       </p>
                                                   </td>
