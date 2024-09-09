@@ -1,7 +1,7 @@
 export const fetchBookingFromRoomQuery = `SELECT *
 FROM bookings
 WHERE room = $1
-  AND CURRENT_TIMESTAMP BETWEEN checkin AND checkout;
+AND CURRENT_TIMESTAMP BETWEEN checkin AND checkout;
 `;
 
 export const updateOTPQuery = `UPDATE guests SET otp = $2, expiry= $3, tries = $4 where email = $1`;
