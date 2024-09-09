@@ -194,8 +194,8 @@ cron.schedule("0 0 * * *", () => {
   moveExpiredBookings();
 });
 
-// Schedule the job to run at 12:00 AM every 2 months
-cron.schedule("0 0 * */2 *", () => {
+// Schedule the job to run at 12:00 AM every 5 days
+cron.schedule("0 0 */5 * *", () => {
   console.log('Moving all movements to logs...');
   moveExpiredData(); 
 });
