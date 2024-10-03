@@ -25,18 +25,17 @@ export const fetchOrderByBookingIdQuery = `
     orders.created_at, 
     order_details.item_id, 
     orders.status,
-    items.name, 
-    items.description, 
+    order_details.name, 
+    order_details.description, 
     order_details.qty,
-    items.type,
-    items.price,
+    order_details.type,
+    order_details.price,
     orders.rating,
     orders.feedback,
-    items.category
+    order_details.category
   FROM 
     orders 
     JOIN order_details ON orders.order_id = order_details.order_id 
-    JOIN items ON order_details.item_id = items.item_id 
   WHERE 
     orders.booking_id = $1
     ORDER BY created_at DESC;
@@ -46,12 +45,10 @@ export const fetchAllOrdersQuery = `
   SELECT 
     orders.*,
     order_details.*,
-    items.*,
     guests.name AS guest_name,
     guests.email AS guest_email
   FROM orders 
   JOIN order_details ON orders.order_id = order_details.order_id 
-  JOIN items ON order_details.item_id = items.item_id 
   JOIN (
     SELECT * FROM bookings 
     UNION ALL 
