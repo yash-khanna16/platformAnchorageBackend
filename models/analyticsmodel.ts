@@ -112,15 +112,15 @@ export async function fetchTotalProfitPerDayModel(year:number, month:number) {
     throw error;
   }
 }
-export async function fetchTotalProfitPerQuarterModel(year:number, month:number) {
+export async function fetchTotalProfitPerQuarterModel(year:number, quarter:number) {
   try {
-    const result = await pool.query(fetchTotalProfitPerDayQueryForQuarter,[year, month]);
+    const result = await pool.query(fetchTotalProfitPerDayQueryForQuarter,[year, quarter]);
     return result;
   } catch (error) {
     throw error;
   }
 }
-export async function fetchTotalProfitPerYearModel(year:number, month:number) {
+export async function fetchTotalProfitPerYearModel(year:number) {
   try {
     const result = await pool.query(fetchTotalProfitPerDayQueryForYear,[year]);
     return result;

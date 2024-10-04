@@ -173,8 +173,8 @@ export const getTotalProfitePerDay=async(req: Request, res:Response) => {
 export const getTotalProfitPerQuarter=async(req: Request, res:Response) => {
     try {
         const year = parseInt(req.headers.year as string);
-        const month = parseInt(req.headers.month as string);
-        fetchTotalProfitPerQuarter(year,month).then(result=>{
+        const quarter = parseInt(req.headers.quarter as string);
+        fetchTotalProfitPerQuarter(year,quarter).then(result=>{
             res.status(200).send(result)
         }).catch(error=>{
             res.status(500).send({message: "Internal Server Error"})
@@ -186,8 +186,7 @@ export const getTotalProfitPerQuarter=async(req: Request, res:Response) => {
 export const getTotalProfitPerYear=async(req: Request, res:Response) => {
     try {
         const year = parseInt(req.headers.year as string);
-        const month = parseInt(req.headers.month as string);
-        fetchTotalProfitPerYear(year,month).then(result=>{
+        fetchTotalProfitPerYear(year).then(result=>{
             res.status(200).send(result)
         }).catch(error=>{
             res.status(500).send({message: "Internal Server Error"})

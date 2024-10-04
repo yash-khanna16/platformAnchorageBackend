@@ -240,9 +240,9 @@ export async function fetchTotalProfitPerDay(year: number, month: number) {
   });
 }
 
-export async function fetchTotalProfitPerQuarter(year: number, month: number) {
+export async function fetchTotalProfitPerQuarter(year: number, quarter: number) {
   return new Promise((resolve, reject) => {
-    fetchTotalProfitPerQuarterModel(year, month)
+    fetchTotalProfitPerQuarterModel(year, quarter)
       .then((results) => {
         results.rows.map((row: { order_date: string,profit:string }) => {
           row.order_date = toLocalISOString(new Date(row.order_date));
@@ -255,9 +255,9 @@ export async function fetchTotalProfitPerQuarter(year: number, month: number) {
       });
   });
 }
-export async function fetchTotalProfitPerYear(year: number, month: number) {
+export async function fetchTotalProfitPerYear(year: number) {
   return new Promise((resolve, reject) => {
-    fetchTotalProfitPerYearModel(year, month)
+    fetchTotalProfitPerYearModel(year)
       .then((results) => {
         results.rows.map((row: { order_date: string,profit:string }) => {
           row.order_date = toLocalISOString(new Date(row.order_date));
