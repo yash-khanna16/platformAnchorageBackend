@@ -88,7 +88,7 @@ export async function putItemModel(itemDetails: itemDetailsType) {
 
 export async function addOrderModel(orderDetails: orderType) {
   try {
-    
+    // Insert order into the orders table
     const result = await pool.query(addOrderQuery, [
       orderDetails.booking_id,
       orderDetails.room,
@@ -96,18 +96,47 @@ export async function addOrderModel(orderDetails: orderType) {
       orderDetails.created_at,
       orderDetails.status,
     ]);
+    
     const order_id = result.rows[0].order_id;
-
     orderDetails.order_id = order_id;
 
-    const addOrderDetailsQuery = `
-      INSERT INTO public.order_details (order_id, item_id, qty)
-      VALUES ${orderDetails.items.map((_, index) => `($1, $${index * 2 + 2}, $${index * 2 + 3})`).join(", ")}
+    const fetchItemsQuery = `
+      SELECT * FROM public.items
+      WHERE item_id = ANY($1::varchar[]);
     `;
 
-    const orderDetailsValues = orderDetails.items.flatMap((item) => [item.item_id, item.qty]);
+    const itemIds = orderDetails.items.map(item => item.item_id);
+
+    const itemsResult = await pool.query(fetchItemsQuery, [itemIds]);
+    const items:itemDetailsType[] = itemsResult.rows;
+
+    const addOrderDetailsQuery = `
+      INSERT INTO public.order_details (order_id, item_id, qty, name, description, price, type, category, available, time_to_prepare, base_price)
+      VALUES ${orderDetails.items.map((_, index) => 
+        `($1, $${index * 10 + 2}, $${index * 10 + 3}, $${index * 10 + 4}, $${index * 10 + 5}, $${index * 10 + 6}, $${index * 10 + 7}, $${index * 10 + 8}, $${index * 10 + 9}, $${index * 10 + 10}, $${index * 10 + 11})`
+      ).join(", ")}
+    `;
+
+    const orderDetailsValues = orderDetails.items.flatMap((item) => {
+      const itemDetails = items.find(i => i.item_id === item.item_id);
+      return [
+        item.item_id, 
+        item.qty,
+        itemDetails?.name,
+        itemDetails?.description,
+        itemDetails?.price,
+        itemDetails?.type,
+        itemDetails?.category,
+        itemDetails?.available,
+        itemDetails?.time_to_prepare,
+        itemDetails?.base_price
+      ];
+    });
+
+    // Combine order_id with item details
     const queryValues = [orderDetails.order_id, ...orderDetailsValues];
 
+    // Insert the data into order_details
     await pool.query(addOrderDetailsQuery, queryValues);
 
     return { message: "Order added successfully!", order_id: orderDetails.order_id };
@@ -116,6 +145,7 @@ export async function addOrderModel(orderDetails: orderType) {
     throw new Error("Error adding order");
   }
 }
+
 
 export async function deleteOrderModel(orderid: string) {
   try {

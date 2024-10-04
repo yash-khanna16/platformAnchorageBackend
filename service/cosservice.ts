@@ -46,8 +46,8 @@ const transporter = nodemailer.createTransport({
 
 const transporterCOS = nodemailer.createTransport({
   // service: "gmail", // You can use any email service
-  host: "us3.smtp.mailhostbox.com",
-  port: 587,
+  host: "smtp.mailgun.org",
+  port: 465,
   auth: {
     user: process.env.COS_EMAIL_USER,
     pass: process.env.COS_EMAIL_PASSWORD,
