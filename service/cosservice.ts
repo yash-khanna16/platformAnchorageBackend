@@ -19,6 +19,7 @@ import {
   updateFeedbackModel,
   fetchFeedbackCOSModel,
   insertFeedbackCOSModel,
+  updateCategoryModel,
 } from "../models/cosmodel";
 import { fetchMovementByBookingIdModel } from "../models/movementmodel";
 import nodemailer from "nodemailer";
@@ -749,6 +750,18 @@ export async function insertFeedBackCOSService(type: string, booking_id: string,
   return new Promise((resolve, reject) => {
     const last_modified = new Date();
     insertFeedbackCOSModel(type, booking_id, rating, comment,last_modified)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error inserting feedback COS", error);
+        reject("Error inserting feedback COS!");
+      });
+  });
+}
+export async function updateCategoryService(originalCategory: string, newCategory: string) {
+  return new Promise((resolve, reject) => {
+    updateCategoryModel(originalCategory,newCategory)
       .then((results) => {
         resolve(results);
       })
