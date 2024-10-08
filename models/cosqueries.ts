@@ -8,7 +8,7 @@ export const updateOTPQuery = `UPDATE guests SET otp = $2, expiry= $3, tries = $
 
 export const fetchOTPQuery = `SELECT otp, expiry, tries FROM guests where email=$1`;
 
-export const fetchAllItemsQuery = `SELECT * FROM items;`;
+export const fetchAllItemsQuery = `SELECT * FROM items JOIN category ON items.category_id=category.category_id;`;
 
 export const putItemQuery = `INSERT INTO items (item_id,name,description, price, type, category, available, time_to_prepare, base_price) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);`;
 
@@ -94,3 +94,5 @@ export const updateFeedbackQuery = 'UPDATE orders SET rating = $1, feedback = $2
 export const fetchFeedbackCOSQuery = `SELECT * FROM feedback where booking_id = $1;`
 
 export const insertFeedbackCOSQuery = `INSERT INTO feedback (type, booking_id, rating, comment, last_modified) VALUES ($1,$2,$3,$4,$5);`
+
+

@@ -342,3 +342,34 @@ export async function insertFeedbackCOSModel(type: string, booking_id: string, r
     throw new Error("Error updating feedback cos");
   }
 }
+export async function updateCategoryModel(originalCategory: string, newCategory: string) {
+  try {
+    const updateCategoryQueryItems = `UPDATE items SET category = $1 WHERE category = $2;`;
+    const updateCategoryQueryOrder = `UPDATE order_details SET category = $1 WHERE category = $2;`;
+
+    // Start a transaction
+    await pool.query('BEGIN');
+
+    // Update the 'items' table
+    const result = await pool.query(updateCategoryQueryItems, [newCategory, originalCategory]);
+
+    // Update the 'order_details' table
+    const result2 = await pool.query(updateCategoryQueryOrder, [newCategory, originalCategory]);
+
+    // Commit the transaction
+    await pool.query('COMMIT');
+
+    // Return the result of both queries (you can return anything depending on your needs)
+    return {
+      itemsUpdated: result.rowCount,        // Number of rows updated in items
+      orderDetailsUpdated: result2.rowCount // Number of rows updated in order_details
+    };
+
+  } catch (error) {
+    // If any error occurs, rollback the transaction
+    await pool.query('ROLLBACK');
+    console.error("Error updating Category", error);
+    throw new Error("Error updating Category");
+  }
+}
+
