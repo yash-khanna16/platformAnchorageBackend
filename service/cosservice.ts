@@ -20,6 +20,7 @@ import {
   fetchFeedbackCOSModel,
   insertFeedbackCOSModel,
   updateCategoryModel,
+  fetchAllCouponsModel,
 } from "../models/cosmodel";
 import { fetchMovementByBookingIdModel } from "../models/movementmodel";
 import nodemailer from "nodemailer";
@@ -770,4 +771,21 @@ export async function updateCategoryService(originalCategory: string, newCategor
         reject("Error inserting feedback COS!");
       });
   });
+}
+export async function fetchAllCouponsService() {
+  return new Promise((resolve, reject) => {
+    const last_modified = new Date();
+    fetchAllCouponsModel()
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error fetching coupons", error);
+        reject("Error fetching coupons!");
+      });
+  });
+}
+
+export const validateCouponService(coupon_id: string, email: string, cart) {
+
 }
