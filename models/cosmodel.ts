@@ -22,6 +22,10 @@ import {
   updateFeedbackQuery,
   fetchFeedbackCOSQuery,
   insertFeedbackCOSQuery,
+  fetchAllCouponsQuery,
+  fetchCouponDetailsQuery,
+  fetchUserRestrictionQuery,
+  fetchUsageRestrictionQuery,
 } from "./cosqueries";
 
 
@@ -372,4 +376,44 @@ export async function updateCategoryModel(originalCategory: string, newCategory:
     throw new Error("Error updating Category");
   }
 }
+
+export async function fetchAllCouponsModel() {
+  try {
+    const result = await pool.query(fetchAllCouponsQuery);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupons", error);
+    throw new Error("Error fetching coupons");
+  }
+}
+
+export async function fetchCouponDetailsModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchCouponDetailsQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon details", error);
+    throw new Error("Error fetching coupon details");
+  }
+}
+export async function fetchUserRestrictionModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchUserRestrictionQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon user restriction", error);
+    throw new Error("Error fetching coupon user restriction");
+  }
+}
+export async function fetchUsageRestrictionModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchUsageRestrictionQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon usage restriction", error);
+    throw new Error("Error fetching coupon usage restriction");
+  }
+}
+
+
 

@@ -95,4 +95,65 @@ export const fetchFeedbackCOSQuery = `SELECT * FROM feedback where booking_id = 
 
 export const insertFeedbackCOSQuery = `INSERT INTO feedback (type, booking_id, rating, comment, last_modified) VALUES ($1,$2,$3,$4,$5);`
 
+export const fetchAllCouponsQuery = `
+SELECT
+  *
+FROM
+  coupons AS c
+LEFT JOIN
+  coupon_conditions AS cc
+  ON c.coupon_id = cc.coupon_id
+LEFT JOIN
+  coupon_category_restriction AS ccr
+  ON ccr.coupon_id = c.coupon_id
+LEFT JOIN
+  coupon_item_restriction AS cir
+  ON cir.coupon_id = c.coupon_id;
+`;
+
+export const fetchCouponDetailsQuery = `
+SELECT
+  *
+FROM
+  coupons AS c
+LEFT JOIN
+  coupon_conditions AS cc
+  ON c.coupon_id = cc.coupon_id
+LEFT JOIN
+  coupon_category_restriction AS ccr
+  ON ccr.coupon_id = c.coupon_id
+LEFT JOIN
+  coupon_item_restriction AS cir
+  ON cir.coupon_id = c.coupon_id
+LEFT JOIN
+  WHERE c.coupon_id = $1;
+  ;
+`;
+
+export const fetchUserRestrictionQuery = `
+SELECT
+  *
+FROM
+  coupons AS c
+JOIN
+  coupon_user_restriction AS cur
+  ON c.coupon_id = cur.coupon_id
+WHERE c.coupon_id = $1;
+  ;
+`
+export const fetchUsageRestrictionQuery = `
+SELECT
+  *
+FROM
+  coupons AS c
+JOIN
+  coupon_usage_restrictions AS cur
+  ON c.coupon_id = cur.coupon_id
+WHERE c.coupon_id = $1;
+  ;
+`
+
+
+
+
 

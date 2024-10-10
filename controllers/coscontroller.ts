@@ -19,6 +19,7 @@ import {
   fetchFeedBackCOSService,
   insertFeedBackCOSService,
   updateCategoryService,
+  fetchAllCouponsService,
 } from "../service/cosservice";
 import { itemDetailsType, orderType } from "../types/cos";
 
@@ -229,6 +230,14 @@ export const updateCategory = async (req: Request, res: Response) => {
   }
 };
 
+export const fetchAllCoupons = async (req: Request, res: Response) => {
+  try {    
+    const result = await fetchAllCouponsService();
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
 
 
 
