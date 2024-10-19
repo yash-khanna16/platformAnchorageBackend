@@ -298,13 +298,12 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
             io.to(ROOM_CODE).emit("order_received", details);
           }
 
-          const mailOptions = {
-            from: process.env.COS_EMAIL,
-            to: booking.email,
-            cc: process.env.OWNER_EMAIL,
-            bcc: process.env.ADMIN_EMAIL,
-            subject: `Items Confirmation - [Order #${details[0].order_id}]`,
-            html: `
+                      const mailOptions = {
+                        from: process.env.COS_EMAIL,
+                        to: booking.email,
+                        bcc: process.env.ADMIN_EMAIL,process.env.OWNER_EMAIL, 
+                        subject: `Items Confirmation - [Order #${details[0].order_id}]`,
+                        html: `
                           <!DOCTYPE html>
                           <html lang="en">
                           <head>
