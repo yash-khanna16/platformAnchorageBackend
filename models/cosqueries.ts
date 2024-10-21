@@ -94,6 +94,7 @@ export const fetchFeedbackCOSQuery = `SELECT * FROM feedback where booking_id = 
 
 export const insertFeedbackCOSQuery = `INSERT INTO feedback (type, booking_id, rating, comment, last_modified) VALUES ($1,$2,$3,$4,$5);`
 
+
 export const fetchAllCouponsQuery = `
 SELECT
   *
