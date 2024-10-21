@@ -49,12 +49,12 @@ export const fetchAllOrdersQuery = `
     guests.email AS guest_email
   FROM orders 
   JOIN order_details ON orders.order_id = order_details.order_id 
-  JOIN (
+  left JOIN (
     SELECT * FROM bookings 
     UNION ALL 
     SELECT * FROM logs
   ) AS all_bookings ON orders.booking_id = all_bookings.booking_id 
-  JOIN guests ON all_bookings.guest_email = guests.email;
+  left JOIN guests ON all_bookings.guest_email = guests.email;
 `;
 
 export const updateOrderStatusQuery = `UPDATE orders SET status = $1 WHERE order_id = $2; `;
