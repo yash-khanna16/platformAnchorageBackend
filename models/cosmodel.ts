@@ -26,6 +26,14 @@ import {
   fetchCouponDetailsQuery,
   fetchUserRestrictionQuery,
   fetchUsageRestrictionQuery,
+  fetchItemsQuery,
+  fetchCategoryRestrictionQuery,
+  fetchItemRestrictionQuery,
+  fetchCouponFreeItemsQuery,
+  putCouponUsageQuery,
+  fetchCouponUsageCountQuery,
+  insertCouponUsageFreeItemsQuery,
+  fetchAllCouponsAdminQuery,
 } from "./cosqueries";
 
 
@@ -111,8 +119,8 @@ export async function addOrderModel(orderDetails: orderType) {
 
     const itemIds = orderDetails.items.map(item => item.item_id);
 
-    const itemsResult = await pool.query(fetchItemsQuery, [itemIds]);
-    const items:itemDetailsType[] = itemsResult.rows;
+    const itemsResult = await fetchItemsModel(itemIds);
+    const items:itemDetailsType[] = itemsResult;
 
     const addOrderDetailsQuery = `
       INSERT INTO public.order_details (order_id, item_id, qty, name, description, price, type, category, available, time_to_prepare, base_price)
@@ -150,6 +158,15 @@ export async function addOrderModel(orderDetails: orderType) {
   }
 }
 
+export async function fetchItemsModel(items: string[]):Promise<itemDetailsType[]> {
+  try {
+    const res = await pool.query(fetchItemsQuery, [items]);
+    return res.rows;
+  } catch(error) {
+    console.error("Error fetching items, ", error)
+    throw new Error("Error fetching items");
+  }
+}
 
 export async function deleteOrderModel(orderid: string) {
   try {
@@ -380,6 +397,7 @@ export async function updateCategoryModel(originalCategory: string, newCategory:
 export async function fetchAllCouponsModel() {
   try {
     const result = await pool.query(fetchAllCouponsQuery);
+    console.log("fetch All coupons: ", result.rows)
     return result.rows;
   } catch (error) {
     console.error("Error fetching coupons", error);
@@ -396,22 +414,87 @@ export async function fetchCouponDetailsModel(coupon_id: string) {
     throw new Error("Error fetching coupon details");
   }
 }
-export async function fetchUserRestrictionModel(coupon_id: string) {
+export async function fetchUserRestrictionModel(coupon_id: string, email: string) {
   try {
-    const result = await pool.query(fetchUserRestrictionQuery, [coupon_id]);
+    const result = await pool.query(fetchUserRestrictionQuery, [coupon_id, email]);
     return result.rows;
   } catch (error) {
     console.error("Error fetching coupon user restriction", error);
     throw new Error("Error fetching coupon user restriction");
   }
 }
-export async function fetchUsageRestrictionModel(coupon_id: string) {
+export async function fetchUsageRestrictionModel(coupon_id: string, email: string) {
   try {
-    const result = await pool.query(fetchUsageRestrictionQuery, [coupon_id]);
+    const result = await pool.query(fetchUsageRestrictionQuery, [coupon_id, email]);
     return result.rows;
   } catch (error) {
     console.error("Error fetching coupon usage restriction", error);
     throw new Error("Error fetching coupon usage restriction");
+  }
+}
+export async function fetchCategoryRestrictionModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchCategoryRestrictionQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon category restriction", error);
+    throw new Error("Error fetching coupon category restriction");
+  }
+}
+export async function fetchItemRestrictionModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchItemRestrictionQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon usage restriction", error);
+    throw new Error("Error fetching coupon usage restriction");
+  }
+}
+
+export async function fetchCouponFreeItemsModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchCouponFreeItemsQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon free items ", error);
+    throw new Error("Error fetching coupon free items ");
+  }
+}
+export async function fetchCouponUsageCountModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchCouponUsageCountQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon usage ", error);
+    throw new Error("Error fetching coupon usage ");
+  }
+}
+
+export async function putCouponUsageModel(coupon_id: string, email: string, usage_id: string, order_id: number, created_at: string, is_redeemed: boolean ) {
+  try {
+    const result = await pool.query(putCouponUsageQuery, [
+      usage_id,
+      coupon_id,
+      email,
+      order_id,
+      is_redeemed,
+      created_at,
+    ]);
+    await pool.query(insertCouponUsageFreeItemsQuery, [usage_id, coupon_id, created_at])
+    return {message: "Usage inserted successfully"};
+  } catch (error) {
+    console.error("Error inserting coupon usage: ", error);
+    throw new Error("Error inserting coupon usage");
+  }
+}
+
+export async function fetchAllCouponsAdminModel() {
+  try {
+    const result = await pool.query(fetchAllCouponsAdminQuery);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupons ", error);
+    throw new Error("Error fetching coupons");
   }
 }
 
