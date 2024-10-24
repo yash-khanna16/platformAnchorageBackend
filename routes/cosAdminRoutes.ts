@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addOrder, deleteItem, deleteOrder, fetchAllItems, fetchAllOrders, fetchBookingByRoom, fetchOrdersByBookingId, putItem, sendOTPByEmail, updateDelay, updateItem, updateOrderStatus, verifyOTP,updateCategory } from "../controllers/coscontroller";
+import { addOrder, deleteItem, deleteOrder, fetchAllItems, fetchAllOrders, fetchBookingByRoom, fetchOrdersByBookingId, putItem, sendOTPByEmail, updateDelay, updateItem, updateOrderStatus, verifyOTP,updateCategory, fetchAllCouponsAdmin } from "../controllers/coscontroller";
 const router = Router();
 
 
@@ -12,5 +12,6 @@ router.get("/deleteItem", deleteItem)
 router.get("/deleteOrder", deleteOrder)
 router.get("/updateDelay", updateDelay)
 router.post("/updateCategory",updateCategory);
+router.get("/fetchAllCouponsAdmin",fetchAllCouponsAdmin);
 
 export default router;
