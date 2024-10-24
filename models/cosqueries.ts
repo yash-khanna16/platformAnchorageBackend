@@ -10,8 +10,6 @@ export const fetchOTPQuery = `SELECT otp, expiry, tries FROM guests where email=
 
 export const fetchAllItemsQuery = `SELECT * FROM items JOIN category ON items.category_id=category.category_id;`;
 
-export const putItemQuery = `INSERT INTO items (item_id,name,description, price, type, category, available, time_to_prepare, base_price) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);`;
-
 export const addOrderQuery = `INSERT INTO orders (booking_id, room, remarks, created_at, status) VALUES ($1,$2,$3,$4,$5) RETURNING order_id;`;
 
 export const deleteOrderQuery = `DELETE FROM orders WHERE order_id = $1`;
@@ -49,17 +47,17 @@ export const fetchAllOrdersQuery = `
     guests.email AS guest_email
   FROM orders 
   JOIN order_details ON orders.order_id = order_details.order_id 
-  JOIN (
+  left JOIN (
     SELECT * FROM bookings 
     UNION ALL 
     SELECT * FROM logs
   ) AS all_bookings ON orders.booking_id = all_bookings.booking_id 
-  JOIN guests ON all_bookings.guest_email = guests.email;
+  left JOIN guests ON all_bookings.guest_email = guests.email;
 `;
 
 export const updateOrderStatusQuery = `UPDATE orders SET status = $1 WHERE order_id = $2; `;
 
-export const updateItemQuery = `UPDATE items SET name = $1, description = $2, price = $3, type = $4, category = $5, available = $6, time_to_prepare = $7, base_price = $9 WHERE item_id = $8;`;
+export const updateItemQuery = `UPDATE items SET name = $1, description = $2, price = $3, type = $4, category_id = $5, available = $6, time_to_prepare = $7, base_price = $9 WHERE item_id = $8;`;
 
 export const deleteItemQuery = `DELETE FROM items WHERE item_id=$1`;
 
@@ -271,4 +269,29 @@ ORDER BY
 `;
 
 
+export const fetchCategoryQuery = `SELECT * FROM category where category = $1;`
 
+export const addCategoryQuery = `INSERT INTO category (category_id,category,sequence) VALUES($1,$2,$3)`
+
+export const updateCategorySequenceQuery = 'UPDATE category SET sequence=$2 WHERE category=$1'
+
+export const updateCategoryNameQuery = 'UPDATE category SET category=$2 WHERE category=$1'
+
+export const getCategoryItemsCountQuery = `SELECT * FROM items WHERE category_id = (SELECT category_id FROM items WHERE item_id = $1)`
+
+export const deleteCategoryQuery = `DELETE  FROM category WHERE category_id = (SELECT category_id FROM items WHERE item_id = $1)`
+
+
+export const fetchBestSellerQuery = `WITH RankedItems AS (
+    SELECT 
+        category, 
+        name, 
+        COUNT(*) AS occurrence_count,
+        ROW_NUMBER() OVER (PARTITION BY category ORDER BY COUNT(*) DESC) AS rank
+    FROM order_details
+    GROUP BY category, name
+)
+SELECT category, name, occurrence_count
+FROM RankedItems
+WHERE rank <= 2
+ORDER BY category, occurrence_count DESC;`

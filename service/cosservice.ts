@@ -31,6 +31,11 @@ import {
   putCouponUsageModel,
   fetchCouponUsageCountModel,
   fetchAllCouponsAdminModel,
+  fetchCategory,
+  addCategory,
+  fetchOriginalCategory,
+  deleteCategory,
+  fetchBestSeller,
 } from "../models/cosmodel";
 import { fetchMovementByBookingIdModel } from "../models/movementmodel";
 import nodemailer from "nodemailer";
@@ -145,21 +150,38 @@ export async function verifyOTPService(email: string, otp: string) {
 }
 
 export async function fetchAllItemsService() {
-  return new Promise((resolve, reject) => {
-    fetchAllItemsModel()
-      .then((results) => {
-        resolve(results);
-      })
-      .catch((error) => {
-        console.log("error fetching all items", error);
-        reject("Error fetching all items");
+  return new Promise(async (resolve, reject) => {
+    try {
+      const bestSelling = await fetchBestSeller();
+      const bestSellingNames = bestSelling.map((item: any) => item.name);
+      
+      const allItems = await fetchAllItemsModel();
+      
+      const enrichedItems = allItems.map((item: any) => {
+        const isBestSeller = bestSellingNames.includes(item.name) ? true : false;
+        return {
+          ...item,
+          bestSeller: isBestSeller,
+        };
       });
+      
+      resolve(enrichedItems);
+    } catch (error) {
+      console.log("Error fetching all items", error);
+      reject("Error fetching all items");
+    }
   });
 }
+
 export async function putItemService(itemDetails: itemDetailsType) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     itemDetails.item_id = uuidv4();
-    putItemModel(itemDetails)
+    const categoryAvailable = await fetchCategory(itemDetails.category);
+    console.log(categoryAvailable);
+    if(categoryAvailable.length===0){
+      itemDetails.category_id = uuidv4();
+      await addCategory(itemDetails); 
+      putItemModel(itemDetails)
       .then((results) => {
         resolve(results);
       })
@@ -167,6 +189,20 @@ export async function putItemService(itemDetails: itemDetailsType) {
         console.log("error inserting  items", error);
         reject("Error inserting item");
       });
+    }
+    else{
+      itemDetails.sequence = categoryAvailable.sequence;
+      itemDetails.category_id=categoryAvailable.category_id;
+      putItemModel(itemDetails)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error inserting  items", error);
+        reject("Error inserting item");
+      });
+    }
+    
   });
 }
 
@@ -663,20 +699,45 @@ export async function updateOrderStatusService(orderid: string, status: string) 
 }
 
 export async function updateItemService(itemDetails: itemDetailsType) {
-  return new Promise((resolve, reject) => {
-    updateItemModel(itemDetails)
-      .then((results) => {
-        resolve(results);
-      })
-      .catch((error) => {
-        console.log("error updating item status", error);
-        reject("Error update item status!");
-      });
+  return new Promise(async (resolve, reject) => {
+    const categoryAvailable = await fetchCategory(itemDetails.category);
+    const originalCategory=await fetchOriginalCategory(itemDetails.item_id);
+    if(originalCategory.length<2){
+      await deleteCategory(itemDetails.item_id);
+    }
+    if(categoryAvailable.length===0){
+      itemDetails.category_id = uuidv4();
+      await addCategory(itemDetails); 
+      updateItemModel(itemDetails)
+        .then((results) => {
+          resolve(results);
+        })
+        .catch((error) => {
+          console.log("error updating item status", error);
+          reject("Error update item status!");
+        });
+      }
+      else{
+        console.log(categoryAvailable)
+        itemDetails.category_id=categoryAvailable[0].category_id;
+        updateItemModel(itemDetails)
+        .then((results) => {
+          resolve(results);
+        })
+        .catch((error) => {
+          console.log("error updating item status", error);
+          reject("Error update item status!");
+        });
+      }
   });
 }
 
 export async function deleteItemService(itemid: string) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
+    const originalCategory=await fetchOriginalCategory(itemid);
+    if(originalCategory.length<2){
+      await deleteCategory(itemid);
+    }
     deleteItemModel(itemid)
       .then((results) => {
         resolve(results);
@@ -803,9 +864,9 @@ export async function insertFeedBackCOSService(type: string, booking_id: string,
       });
   });
 }
-export async function updateCategoryService(originalCategory: string, newCategory: string) {
+export async function updateCategoryService(originalCategory: string, newCategory: string,categories:string[]) {
   return new Promise((resolve, reject) => {
-    updateCategoryModel(originalCategory, newCategory)
+    updateCategoryModel(originalCategory, newCategory,categories)
       .then((results) => {
         resolve(results);
       })
