@@ -10,7 +10,7 @@ export const fetchOTPQuery = `SELECT otp, expiry, tries FROM guests where email=
 
 export const fetchAllItemsQuery = `SELECT * FROM items JOIN category ON items.category_id=category.category_id;`;
 
-export const addOrderQuery = `INSERT INTO orders (booking_id, room, remarks, created_at, status) VALUES ($1,$2,$3,$4,$5) RETURNING order_id;`;
+export const addOrderQuery = `INSERT INTO orders (booking_id, room, remarks, created_at, status, discount) VALUES ($1,$2,$3,$4,$5,$6) RETURNING order_id;`;
 
 export const deleteOrderQuery = `DELETE FROM orders WHERE order_id = $1`;
 
@@ -30,7 +30,8 @@ export const fetchOrderByBookingIdQuery = `
     order_details.price,
     orders.rating,
     orders.feedback,
-    order_details.category
+    order_details.category,
+    orders.discount
   FROM 
     orders 
     JOIN order_details ON orders.order_id = order_details.order_id 
