@@ -13,7 +13,6 @@ import {
   fetchOrderByBookingIdQuery,
   fetchOrderDetailsByOrderIdQuery,
   fetchOTPQuery,
-  putItemQuery,
   updateItemQuery,
   updateOrderStatusQuery,
   updateOTPQuery,
@@ -22,6 +21,13 @@ import {
   updateFeedbackQuery,
   fetchFeedbackCOSQuery,
   insertFeedbackCOSQuery,
+  fetchCategoryQuery,
+  addCategoryQuery,
+  updateCategorySequenceQuery,
+  updateCategoryNameQuery,
+  getCategoryItemsCountQuery,
+  deleteCategoryQuery,
+  fetchBestSellerQuery
 } from "./cosqueries";
 
 
@@ -68,13 +74,14 @@ export async function fetchAllItemsModel() {
 
 export async function putItemModel(itemDetails: itemDetailsType) {
   try {
+    const putItemQuery=`INSERT INTO items (item_id,name,description, price, type, category_id, available, time_to_prepare, base_price) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);`
     await pool.query(putItemQuery, [
       itemDetails.item_id,
       itemDetails.name,
       itemDetails.description,
       itemDetails.price,
       itemDetails.type,
-      itemDetails.category,
+      itemDetails.category_id,
       true,
       itemDetails.time_to_prepare,
       itemDetails.base_price
@@ -240,7 +247,7 @@ export async function updateItemModel(itemDetails: itemDetailsType) {
       itemDetails.description,
       itemDetails.price,
       itemDetails.type,
-      itemDetails.category,
+      itemDetails.category_id,
       itemDetails.available,
       itemDetails.time_to_prepare,
       itemDetails.item_id,
@@ -342,34 +349,69 @@ export async function insertFeedbackCOSModel(type: string, booking_id: string, r
     throw new Error("Error updating feedback cos");
   }
 }
-export async function updateCategoryModel(originalCategory: string, newCategory: string) {
+export async function updateCategoryModel(originalCategory: string, newCategory: string,categories:string[]) {
   try {
-    const updateCategoryQueryItems = `UPDATE items SET category = $1 WHERE category = $2;`;
-    const updateCategoryQueryOrder = `UPDATE order_details SET category = $1 WHERE category = $2;`;
-
-    // Start a transaction
     await pool.query('BEGIN');
 
-    // Update the 'items' table
-    const result = await pool.query(updateCategoryQueryItems, [newCategory, originalCategory]);
+    for (const [index, category] of categories.entries()) {
+      await pool.query(updateCategorySequenceQuery, [category, index + 1]);
+    }
 
-    // Update the 'order_details' table
-    const result2 = await pool.query(updateCategoryQueryOrder, [newCategory, originalCategory]);
+    await pool.query(updateCategoryNameQuery, [originalCategory, newCategory]);
 
-    // Commit the transaction
     await pool.query('COMMIT');
 
-    // Return the result of both queries (you can return anything depending on your needs)
-    return {
-      itemsUpdated: result.rowCount,        // Number of rows updated in items
-      orderDetailsUpdated: result2.rowCount // Number of rows updated in order_details
-    };
-
+    return { message: 'Category updated successfully' };
   } catch (error) {
-    // If any error occurs, rollback the transaction
     await pool.query('ROLLBACK');
-    console.error("Error updating Category", error);
-    throw new Error("Error updating Category");
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
   }
 }
 
+
+export async function fetchCategory(category: string) {
+  try {
+    const result = await pool.query(fetchCategoryQuery, [category]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
+  }
+}
+export async function addCategory(itemDetails:itemDetailsType) {
+  try {
+    const result = await pool.query(addCategoryQuery, [itemDetails.category_id,itemDetails.category,itemDetails.sequence]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
+  }
+}
+export async function fetchOriginalCategory(item_id:string) {
+  try {
+    const result = await pool.query(getCategoryItemsCountQuery, [item_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
+  }
+}
+export async function deleteCategory(item_id:string) {
+  try {
+    const result = await pool.query(deleteCategoryQuery, [item_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
+  }
+}
+export async function fetchBestSeller() {
+  try {
+    const result = await pool.query(fetchBestSellerQuery);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
+  }
+}

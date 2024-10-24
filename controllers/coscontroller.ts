@@ -64,6 +64,7 @@ export const fetchAllItems = async (req: Request, res: Response) => {
 export const putItem = async (req: Request, res: Response) => {
   try {
     const itemDetails: itemDetailsType = req.body.itemDetails;
+    console.log(itemDetails)
     const result = await putItemService(itemDetails);
     res.status(200).send(result);
   } catch (error) {
@@ -135,7 +136,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 export const updateItem = async (req: Request, res: Response) => {
   try {
     const itemdetails: itemDetailsType = req.body.itemDetails as itemDetailsType;
-    
+    console.log(itemdetails)
     const result = await updateItemService(itemdetails);
     res.status(200).send(result);
   } catch (error) {
@@ -221,8 +222,9 @@ export const updateCategory = async (req: Request, res: Response) => {
   try {
     const originalCategory = req.body.originalCategory as string;
     const newCategory = req.body.newCategory as string;
+    const categories=req.body.categories;
     console.log("hello");
-    const result = await updateCategoryService(originalCategory, newCategory);
+    const result = await updateCategoryService(originalCategory, newCategory,categories);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });

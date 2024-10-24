@@ -7,7 +7,9 @@ export type itemDetailsType = {
   category: string;
   time_to_prepare: number;
   available: boolean
-  base_price: number
+  base_price: number,
+  category_id:string,
+  sequence:number,
 };
 
 export type orderType = {
