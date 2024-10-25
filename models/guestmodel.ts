@@ -59,6 +59,7 @@ type OrderDataType = {
   name: string;
   email: string;
   phone: string;
+  discount: number;
 };
 
 interface OrderData {
@@ -105,6 +106,8 @@ export async function fetchAllGuests(): Promise<GuestData[]> {
     const ordersResult = await pool.query(fetchAllOrders);
     const orders = ordersResult.rows;
 
+    console.log("orders: ", orders)
+
     // Create a map to aggregate orders by order_id
     const ordersMap: Record<string, OrderDataType> = {};
 
@@ -125,6 +128,7 @@ export async function fetchAllGuests(): Promise<GuestData[]> {
           name: order.name,
           email: order.email,
           phone: order.phone,
+          discount: order.discount
         };
       }
 
@@ -205,6 +209,7 @@ export async function fetchRoomResv(roomNo: string): Promise<any[]> {
     // Fetch all orders related to the room
     const ordersResult = await pool.query(fetchAllOrders);
     const orders = ordersResult.rows;
+    console.log("ORDERS: ", orders)
 
     // Create a map to aggregate orders by order_id
     const ordersMap: Record<string, OrderDataType> = {};
@@ -226,6 +231,7 @@ export async function fetchRoomResv(roomNo: string): Promise<any[]> {
           name: order.name,
           email: order.email,
           phone: order.phone,
+          discount: order.discount,
         };
       }
 

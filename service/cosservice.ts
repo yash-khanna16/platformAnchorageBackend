@@ -154,9 +154,9 @@ export async function fetchAllItemsService() {
     try {
       const bestSelling = await fetchBestSeller();
       const bestSellingNames = bestSelling.map((item: any) => item.name);
-      
+
       const allItems = await fetchAllItemsModel();
-      
+
       const enrichedItems = allItems.map((item: any) => {
         const isBestSeller = bestSellingNames.includes(item.name) ? true : false;
         return {
@@ -164,7 +164,7 @@ export async function fetchAllItemsService() {
           bestSeller: isBestSeller,
         };
       });
-      
+
       resolve(enrichedItems);
     } catch (error) {
       console.log("Error fetching all items", error);
@@ -178,31 +178,29 @@ export async function putItemService(itemDetails: itemDetailsType) {
     itemDetails.item_id = uuidv4();
     const categoryAvailable = await fetchCategory(itemDetails.category);
     console.log(categoryAvailable);
-    if(categoryAvailable.length===0){
+    if (categoryAvailable.length === 0) {
       itemDetails.category_id = uuidv4();
-      await addCategory(itemDetails); 
+      await addCategory(itemDetails);
       putItemModel(itemDetails)
-      .then((results) => {
-        resolve(results);
-      })
-      .catch((error) => {
-        console.log("error inserting  items", error);
-        reject("Error inserting item");
-      });
-    }
-    else{
+        .then((results) => {
+          resolve(results);
+        })
+        .catch((error) => {
+          console.log("error inserting  items", error);
+          reject("Error inserting item");
+        });
+    } else {
       itemDetails.sequence = categoryAvailable.sequence;
-      itemDetails.category_id=categoryAvailable.category_id;
+      itemDetails.category_id = categoryAvailable.category_id;
       putItemModel(itemDetails)
-      .then((results) => {
-        resolve(results);
-      })
-      .catch((error) => {
-        console.log("error inserting  items", error);
-        reject("Error inserting item");
-      });
+        .then((results) => {
+          resolve(results);
+        })
+        .catch((error) => {
+          console.log("error inserting  items", error);
+          reject("Error inserting item");
+        });
     }
-    
   });
 }
 
@@ -229,13 +227,23 @@ export async function addOrderService(order: orderType) {
                       placeOrder(order, booking)
                         .then((res) => {
                           const coupon_usage_id = uuidv4();
-                          putCouponUsageModel(order.coupon_id, order.email, coupon_usage_id, res.details.order_id, new Date().toISOString(), true).then(() => {
-                            console.log("Coupon usage inserted successfully!")
-                          }).catch((error)=>{
-                            console.log("Error inserting coupon usage: ", error)
-                          }).finally(()=>{
-                            resolve(res);
-                          })
+                          putCouponUsageModel(
+                            order.coupon_id,
+                            order.email,
+                            coupon_usage_id,
+                            res.details.order_id,
+                            new Date().toISOString(),
+                            true
+                          )
+                            .then(() => {
+                              console.log("Coupon usage inserted successfully!");
+                            })
+                            .catch((error) => {
+                              console.log("Error inserting coupon usage: ", error);
+                            })
+                            .finally(() => {
+                              resolve(res);
+                            });
                         })
                         .catch((error) => {
                           reject(error);
@@ -360,15 +368,19 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
                                               <tr>
                                                 <td style="padding: 20px 20px 20px 20px;">
                                                   <strong>Order SubTotal:</strong> ₹${details[0].items.reduce(
-                                                                (total, item) => total + item.price * item.qty,
-                                                                0
-                                                              )}<br>
+                                                    (total, item) => total + item.price * item.qty,
+                                                    0
+                                                  )}<br>
                                                               <strong>Discount:</strong> ₹${order.discount}<br>
                                                               <strong>Platform Fee:</strong> ₹2<br>
-                                                              <strong>Order Total:</strong> ₹${details[0].items.reduce(
-                                                                (total, item) => total + item.price * item.qty,
-                                                                0
-                                                              ) - order.discount + 2}<br>
+                                                              <strong>Order Total:</strong> ₹${
+                                                                details[0].items.reduce(
+                                                                  (total, item) => total + item.price * item.qty,
+                                                                  0
+                                                                ) -
+                                                                order.discount +
+                                                                2
+                                                              }<br>
                                                 </td>
                                               </tr>
                                               <tr>
@@ -701,13 +713,13 @@ export async function updateOrderStatusService(orderid: string, status: string) 
 export async function updateItemService(itemDetails: itemDetailsType) {
   return new Promise(async (resolve, reject) => {
     const categoryAvailable = await fetchCategory(itemDetails.category);
-    const originalCategory=await fetchOriginalCategory(itemDetails.item_id);
-    if(originalCategory.length<2){
+    const originalCategory = await fetchOriginalCategory(itemDetails.item_id);
+    if (originalCategory.length < 2) {
       await deleteCategory(itemDetails.item_id);
     }
-    if(categoryAvailable.length===0){
+    if (categoryAvailable.length === 0) {
       itemDetails.category_id = uuidv4();
-      await addCategory(itemDetails); 
+      await addCategory(itemDetails);
       updateItemModel(itemDetails)
         .then((results) => {
           resolve(results);
@@ -716,11 +728,10 @@ export async function updateItemService(itemDetails: itemDetailsType) {
           console.log("error updating item status", error);
           reject("Error update item status!");
         });
-      }
-      else{
-        console.log(categoryAvailable)
-        itemDetails.category_id=categoryAvailable[0].category_id;
-        updateItemModel(itemDetails)
+    } else {
+      console.log(categoryAvailable);
+      itemDetails.category_id = categoryAvailable[0].category_id;
+      updateItemModel(itemDetails)
         .then((results) => {
           resolve(results);
         })
@@ -728,14 +739,14 @@ export async function updateItemService(itemDetails: itemDetailsType) {
           console.log("error updating item status", error);
           reject("Error update item status!");
         });
-      }
+    }
   });
 }
 
 export async function deleteItemService(itemid: string) {
   return new Promise(async (resolve, reject) => {
-    const originalCategory=await fetchOriginalCategory(itemid);
-    if(originalCategory.length<2){
+    const originalCategory = await fetchOriginalCategory(itemid);
+    if (originalCategory.length < 2) {
       await deleteCategory(itemid);
     }
     deleteItemModel(itemid)
@@ -864,9 +875,9 @@ export async function insertFeedBackCOSService(type: string, booking_id: string,
       });
   });
 }
-export async function updateCategoryService(originalCategory: string, newCategory: string,categories:string[]) {
+export async function updateCategoryService(originalCategory: string, newCategory: string, categories: string[]) {
   return new Promise((resolve, reject) => {
-    updateCategoryModel(originalCategory, newCategory,categories)
+    updateCategoryModel(originalCategory, newCategory, categories)
       .then((results) => {
         resolve(results);
       })
@@ -891,7 +902,11 @@ export async function fetchAllCouponsService() {
   });
 }
 
-export async function validateCouponService(coupon_id: string, email: string, cart: orderType):Promise<{discount: number, freeItems: {item_id: string, qty: number}[]}> {
+export async function validateCouponService(
+  coupon_id: string,
+  email: string,
+  cart: orderType
+): Promise<{ discount: number; freeItems: { item_id: string; qty: number }[] }> {
   return new Promise(async (resolve, reject) => {
     try {
       console.log("fetching details of coupon_id: ", coupon_id);
@@ -946,13 +961,13 @@ export async function validateCouponService(coupon_id: string, email: string, ca
 
       const itemRestriction = await checkItemRestriction(coupon_id, cart);
       if (!itemRestriction.hasMatchingItem) {
-        const allowedItems = itemRestriction.allowedItems.map((item) => `"${item.name}"`);
+        const allowedItems = itemRestriction.allowedItems.map((item) => `"${item.qty_to_add}x ${item.name}"`);
 
         let message;
         if (allowedItems.length === 1) {
           message = `Add ${allowedItems[0]} to your cart to claim this coupon.`;
         } else if (allowedItems.length === 2) {
-          message = `Add ${allowedItems.join(" or ")} to your cart to claim this coupon.`;
+          message = `Add ${allowedItems.join(" and ")} to your cart to claim this coupon.`;
         } else {
           const lastItem = allowedItems.pop();
           message = `Add ${allowedItems.join(", ")} or ${lastItem} to your cart to claim this coupon.`;
@@ -971,11 +986,11 @@ export async function validateCouponService(coupon_id: string, email: string, ca
         let discount = 0;
         const updatedFreeItems: FreeItem[] = [];
 
-        console.log("free item: ", freeItems)
+        console.log("free item: ", freeItems);
 
         freeItems.forEach((freeItem) => {
-          updatedFreeItems.push({ ...freeItem});
-          discount += freeItem.price*freeItem.qty;
+          updatedFreeItems.push({ ...freeItem });
+          discount += freeItem.price * freeItem.qty;
         });
 
         resolve({ discount: discount, freeItems: updatedFreeItems });
@@ -1029,8 +1044,8 @@ async function checkCouponUsageRestriction(coupon: Coupon) {
     if (res.length === 0) return true;
 
     const count = Number(res[0].usage_count);
-    return  count < coupon.usage_limit;
-  } catch(error) {
+    return count < coupon.usage_limit;
+  } catch (error) {
     console.log("Error fetching coupon usage", error);
     throw new Error("Error fetching coupon usage");
   }
@@ -1122,25 +1137,31 @@ async function checkCategoryRestriction(
 async function checkItemRestriction(
   coupon_id: string,
   cart: orderType
-): Promise<{ hasMatchingItem: boolean; allowedItems: { item_id: string; name: string }[] }> {
+): Promise<{ hasMatchingItem: boolean; allowedItems: { item_id: string; name: string; qty: number; qty_to_add: number }[] }> {
   try {
     const result = await fetchItemRestrictionModel(coupon_id);
 
+    // If no restrictions, assume all items are allowed
     if (result.length === 0) return { hasMatchingItem: true, allowedItems: [] };
 
-    const itemIds = cart.items.map((item) => item.item_id);
-    const itemsResult: itemDetailsType[] = await fetchItemsModel(itemIds);
-
-    const allowedItems = result
-      .filter((restriction: { item_id: string; is_allowed: boolean }) => restriction.is_allowed)
-      .map((restriction: { item_id: string; name: string }) => ({
+    const cartItemsById = new Map(cart.items.map((item) => [item.item_id, item.qty]));
+    const allowedItems = result.map((restriction: { item_id: string; name: string; qty: number }) => {
+      const cartQty = cartItemsById.get(restriction.item_id) || 0;
+      const qty_to_add = Math.max(restriction.qty - cartQty, 0);
+      return {
         item_id: restriction.item_id,
         name: restriction.name,
-      }));
+        qty: restriction.qty,
+        qty_to_add,
+      };
+    });
 
-    const hasMatchingItem = itemsResult.some((item) =>
-      allowedItems.some((allowedItem: { item_id: string; name: string }) => allowedItem.item_id === item.item_id)
-    );
+    // Check if all restricted items have quantities less than or equal to quantities in cart
+    const hasMatchingItem = allowedItems.every((allowedItem: any) => {
+      const cartQty = cartItemsById.get(allowedItem.item_id) || 0;
+      return allowedItem.qty <= cartQty;
+    });
+
     return { hasMatchingItem, allowedItems };
   } catch (error) {
     console.log("Error fetching item restriction", error);
@@ -1163,9 +1184,9 @@ export async function fetchAllCouponsAdminService() {
   });
 }
 export function transformCoupons(coupons: any): any[] {
-  const transformedCoupons:any = {};
+  const transformedCoupons: any = {};
 
-  coupons.forEach((coupon:any) => {
+  coupons.forEach((coupon: any) => {
     const { coupon_id } = coupon;
 
     if (!transformedCoupons[coupon_id]) {
@@ -1177,14 +1198,14 @@ export function transformCoupons(coupons: any): any[] {
     }
 
     // If the coupon type is 'free_item' and it has an associated item, add the item details to the free_items array
-    if (coupon.coupon_type === 'free_item' && coupon.item_id) {
+    if (coupon.coupon_type === "free_item" && coupon.item_id) {
       transformedCoupons[coupon_id].free_items.push({
         item_id: coupon.item_id,
         qty: coupon.qty ?? 0, // Default qty to 0 if undefined
-        name: coupon.name ?? '',
+        name: coupon.name ?? "",
         price: coupon.price ?? 0,
-        type: coupon.type ?? '',
-        category_id: coupon.category_id ?? '',
+        type: coupon.type ?? "",
+        category_id: coupon.category_id ?? "",
         available: coupon.is_allowed ?? false, // Assuming `is_allowed` determines availability
         time_to_prepare: coupon.time_to_prepare ?? 0,
         base_price: coupon.base_price ?? 0,

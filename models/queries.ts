@@ -10,6 +10,7 @@ SELECT
     o.created_at,
     o.status,
     o.remarks,
+    o.discount,
     g.name,
     g.email,
     g.phone,
