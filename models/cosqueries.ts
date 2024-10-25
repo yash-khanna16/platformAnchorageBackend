@@ -49,12 +49,10 @@ export const fetchAllOrdersQuery = `
   FROM orders 
   JOIN order_details ON orders.order_id = order_details.order_id 
   left JOIN (
-  left JOIN (
     SELECT * FROM bookings 
     UNION ALL 
     SELECT * FROM logs
   ) AS all_bookings ON orders.booking_id = all_bookings.booking_id 
-  left JOIN guests ON all_bookings.guest_email = guests.email;
   left JOIN guests ON all_bookings.guest_email = guests.email;
 `;
 
