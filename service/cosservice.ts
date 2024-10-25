@@ -36,6 +36,23 @@ import {
   putCouponUsageModel,
   fetchCouponUsageCountModel,
   fetchAllCouponsAdminModel,
+  updateCategoryModel,
+  fetchAllCouponsModel,
+  fetchCouponDetailsModel,
+  fetchItemsModel,
+  fetchUserRestrictionModel,
+  fetchUsageRestrictionModel,
+  fetchCategoryRestrictionModel,
+  fetchItemRestrictionModel,
+  fetchCouponFreeItemsModel,
+  putCouponUsageModel,
+  fetchCouponUsageCountModel,
+  fetchAllCouponsAdminModel,
+  fetchCategory,
+  addCategory,
+  fetchOriginalCategory,
+  deleteCategory,
+  fetchBestSeller,
 } from "../models/cosmodel";
 import { fetchMovementByBookingIdModel } from "../models/movementmodel";
 import nodemailer from "nodemailer";
