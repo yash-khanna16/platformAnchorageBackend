@@ -13,7 +13,6 @@ import {
   fetchOrderByBookingIdQuery,
   fetchOrderDetailsByOrderIdQuery,
   fetchOTPQuery,
-  putItemQuery,
   updateItemQuery,
   updateOrderStatusQuery,
   updateOTPQuery,
@@ -22,6 +21,25 @@ import {
   updateFeedbackQuery,
   fetchFeedbackCOSQuery,
   insertFeedbackCOSQuery,
+  fetchItemsQuery,
+  fetchBestSellerQuery,
+  deleteCategoryQuery,
+  getCategoryItemsCountQuery,
+  fetchAllCouponsAdminQuery,
+  insertCouponUsageFreeItemsQuery,
+  putCouponUsageQuery,
+  fetchCouponUsageCountQuery,
+  fetchCouponFreeItemsQuery,
+  fetchItemRestrictionQuery,
+  fetchCategoryRestrictionQuery,
+  fetchUsageRestrictionQuery,
+  fetchUserRestrictionQuery,
+  fetchCouponDetailsQuery,
+  fetchAllCouponsQuery,
+  addCategoryQuery,
+  fetchCategoryQuery,
+  updateCategoryNameQuery,
+  updateCategorySequenceQuery,
 } from "./cosqueries";
 
 
@@ -68,13 +86,14 @@ export async function fetchAllItemsModel() {
 
 export async function putItemModel(itemDetails: itemDetailsType) {
   try {
+    const putItemQuery=`INSERT INTO items (item_id,name,description, price, type, category_id, available, time_to_prepare, base_price) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);`
     await pool.query(putItemQuery, [
       itemDetails.item_id,
       itemDetails.name,
       itemDetails.description,
       itemDetails.price,
       itemDetails.type,
-      itemDetails.category,
+      itemDetails.category_id,
       true,
       itemDetails.time_to_prepare,
       itemDetails.base_price
@@ -95,6 +114,7 @@ export async function addOrderModel(orderDetails: orderType) {
       orderDetails.remarks,
       orderDetails.created_at,
       orderDetails.status,
+      orderDetails.discount
     ]);
     
     const order_id = result.rows[0].order_id;
@@ -107,8 +127,8 @@ export async function addOrderModel(orderDetails: orderType) {
 
     const itemIds = orderDetails.items.map(item => item.item_id);
 
-    const itemsResult = await pool.query(fetchItemsQuery, [itemIds]);
-    const items:itemDetailsType[] = itemsResult.rows;
+    const itemsResult = await fetchItemsModel(itemIds);
+    const items:itemDetailsType[] = itemsResult;
 
     const addOrderDetailsQuery = `
       INSERT INTO public.order_details (order_id, item_id, qty, name, description, price, type, category, available, time_to_prepare, base_price)
@@ -146,6 +166,15 @@ export async function addOrderModel(orderDetails: orderType) {
   }
 }
 
+export async function fetchItemsModel(items: string[]):Promise<itemDetailsType[]> {
+  try {
+    const res = await pool.query(fetchItemsQuery, [items]);
+    return res.rows;
+  } catch(error) {
+    console.error("Error fetching items, ", error)
+    throw new Error("Error fetching items");
+  }
+}
 
 export async function deleteOrderModel(orderid: string) {
   try {
@@ -170,8 +199,8 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
     const orders: { [key: string]: any } = {};
     
 
-    result.rows.forEach((row:{order_id:Number,booking_id:string, item_id:string, name:string, description:string, qty:Number, created_at:Number,price:Number, type: string,status:string, rating: Number, feedback: string,category:string}) => {
-      const { order_id,booking_id, item_id, name, description, qty, created_at,price, type,status, rating, feedback,category } = row;
+    result.rows.forEach((row:{order_id:Number,booking_id:string, item_id:string, name:string, description:string, qty:Number, created_at:Number,price:Number, type: string,status:string, rating: Number, feedback: string,category:string, discount: number}) => {
+      const { order_id,booking_id, item_id, name, description, qty, created_at,price, type,status, rating, feedback,category,discount } = row;
 
       const orderIdKey = order_id.toString();
       if (!orders[orderIdKey]) {
@@ -182,6 +211,7 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
           orderStatus: status,
           rating: rating,
           feedback: feedback,
+          discount: discount,
           items: [],
         };
       }
@@ -240,7 +270,7 @@ export async function updateItemModel(itemDetails: itemDetailsType) {
       itemDetails.description,
       itemDetails.price,
       itemDetails.type,
-      itemDetails.category,
+      itemDetails.category_id,
       itemDetails.available,
       itemDetails.time_to_prepare,
       itemDetails.item_id,
@@ -336,6 +366,178 @@ export async function fetchFeedbackCOSModel(booking_id: string) {
 export async function insertFeedbackCOSModel(type: string, booking_id: string, rating: number, comment: string, last_modified: Date) {
   try {
     const result = await pool.query(insertFeedbackCOSQuery, [type, booking_id, rating, comment, last_modified]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
+  }
+}
+export async function updateCategoryModel(originalCategory: string, newCategory: string,categories:string[]) {
+  try {
+    await pool.query('BEGIN');
+
+    for (const [index, category] of categories.entries()) {
+      await pool.query(updateCategorySequenceQuery, [category, index + 1]);
+    }
+
+    await pool.query(updateCategoryNameQuery, [originalCategory, newCategory]);
+
+    await pool.query('COMMIT');
+
+    return { message: 'Category updated successfully' };
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
+  }
+}
+
+
+export async function fetchCategory(category: string) {
+  try {
+    const result = await pool.query(fetchCategoryQuery, [category]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
+  }
+}
+export async function addCategory(itemDetails:itemDetailsType) {
+  try {
+    const result = await pool.query(addCategoryQuery, [itemDetails.category_id,itemDetails.category,itemDetails.sequence]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
+  }
+}
+
+export async function fetchAllCouponsModel() {
+  try {
+    const result = await pool.query(fetchAllCouponsQuery);
+    console.log("fetch All coupons: ", result.rows)
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupons", error);
+    throw new Error("Error fetching coupons");
+  }
+}
+
+export async function fetchCouponDetailsModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchCouponDetailsQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon details", error);
+    throw new Error("Error fetching coupon details");
+  }
+}
+export async function fetchUserRestrictionModel(coupon_id: string, email: string) {
+  try {
+    const result = await pool.query(fetchUserRestrictionQuery, [coupon_id, email]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon user restriction", error);
+    throw new Error("Error fetching coupon user restriction");
+  }
+}
+export async function fetchUsageRestrictionModel(coupon_id: string, email: string) {
+  try {
+    const result = await pool.query(fetchUsageRestrictionQuery, [coupon_id, email]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon usage restriction", error);
+    throw new Error("Error fetching coupon usage restriction");
+  }
+}
+export async function fetchCategoryRestrictionModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchCategoryRestrictionQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon category restriction", error);
+    throw new Error("Error fetching coupon category restriction");
+  }
+}
+export async function fetchItemRestrictionModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchItemRestrictionQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon usage restriction", error);
+    throw new Error("Error fetching coupon usage restriction");
+  }
+}
+
+export async function fetchCouponFreeItemsModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchCouponFreeItemsQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon free items ", error);
+    throw new Error("Error fetching coupon free items ");
+  }
+}
+export async function fetchCouponUsageCountModel(coupon_id: string) {
+  try {
+    const result = await pool.query(fetchCouponUsageCountQuery, [coupon_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupon usage ", error);
+    throw new Error("Error fetching coupon usage ");
+  }
+}
+
+export async function putCouponUsageModel(coupon_id: string, email: string, usage_id: string, order_id: number, created_at: string, is_redeemed: boolean ) {
+  try {
+    const result = await pool.query(putCouponUsageQuery, [
+      usage_id,
+      coupon_id,
+      email,
+      order_id,
+      is_redeemed,
+      created_at,
+    ]);
+    await pool.query(insertCouponUsageFreeItemsQuery, [usage_id, coupon_id, created_at])
+    return {message: "Usage inserted successfully"};
+  } catch (error) {
+    console.error("Error inserting coupon usage: ", error);
+    throw new Error("Error inserting coupon usage");
+  }
+}
+
+export async function fetchAllCouponsAdminModel() {
+  try {
+    const result = await pool.query(fetchAllCouponsAdminQuery);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching coupons ", error);
+    throw new Error("Error fetching coupons");
+  }
+}
+
+
+export async function fetchOriginalCategory(item_id:string) {
+  try {
+    const result = await pool.query(getCategoryItemsCountQuery, [item_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
+  }
+}
+export async function deleteCategory(item_id:string) {
+  try {
+    const result = await pool.query(deleteCategoryQuery, [item_id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error updating feedback cos", error);
+    throw new Error("Error updating feedback cos");
+  }
+}
+export async function fetchBestSeller() {
+  try {
+    const result = await pool.query(fetchBestSellerQuery);
     return result.rows;
   } catch (error) {
     console.error("Error updating feedback cos", error);
