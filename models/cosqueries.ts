@@ -293,15 +293,68 @@ export const deleteCategoryQuery = `DELETE  FROM category WHERE category_id = (S
 
 
 export const fetchBestSellerQuery = `WITH RankedItems AS (
-    SELECT 
-        category, 
-        name, 
-        COUNT(*) AS occurrence_count,
-        ROW_NUMBER() OVER (PARTITION BY category ORDER BY COUNT(*) DESC) AS rank
-    FROM order_details
-    GROUP BY category, name
-)
-SELECT category, name, occurrence_count
-FROM RankedItems
-WHERE rank <= 2
-ORDER BY category, occurrence_count DESC;`
+  SELECT 
+  category, 
+  name, 
+  COUNT(*) AS occurrence_count,
+  ROW_NUMBER() OVER (PARTITION BY category ORDER BY COUNT(*) DESC) AS rank
+  FROM order_details
+  GROUP BY category, name
+  )
+  SELECT category, name, occurrence_count
+  FROM RankedItems
+  WHERE rank <= 2
+  ORDER BY category, occurrence_count DESC;`
+  
+  export const addCouponAdminQuery = `
+  INSERT INTO coupons (
+    coupon_id,
+    code,
+    description,
+    coupon_type,
+    discount_value,
+    max_discount,
+    min_order_value,
+    start_date,
+    end_date,
+    usage_limit,
+    is_active,
+    created_at,
+    modified_at,
+    coupon_type_description,
+    user_usage_limit,
+    percentage_discount
+    )
+    VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+      )
+`;
+
+
+export const freeItemsAddedQuery = `Insert Into coupon_free_item(coupon_id,item_id,qty,created_at,modified_at) Values($1,$2,$3,$4,$5)`
+
+export const freeItemsDeletedQuery = `DELETE  FROM coupon_free_item WHERE coupon_id=$1`
+
+export const deleteCouponAdminQuery = `DELETE  FROM coupons WHERE coupon_id=$1`
+
+export const getExistingCouponQuery = `SELECT * FROM coupons WHERE coupon_id=$1`
+
+export const updateCouponAdminQuery = `
+  UPDATE coupons
+  SET 
+    code = $1,
+    description = $2,
+    coupon_type = $3,
+    discount_value = $4,
+    max_discount = $5,
+    min_order_value = $6,
+    start_date = $7,
+    end_date = $8,
+    usage_limit = $9,
+    is_active = $10,
+    modified_at = $11,
+    coupon_type_description = $12,
+    user_usage_limit = $13,
+    percentage_discount = $14
+  WHERE coupon_id = $15
+`;
