@@ -412,9 +412,9 @@ export async function addCategory(itemDetails:itemDetailsType) {
   }
 }
 
-export async function fetchAllCouponsModel() {
+export async function fetchAllCouponsModel(email: string) {
   try {
-    const result = await pool.query(fetchAllCouponsQuery);
+    const result = await pool.query(fetchAllCouponsQuery, [email]);
     console.log("fetch All coupons: ", result.rows)
     return result.rows;
   } catch (error) {
@@ -432,9 +432,9 @@ export async function fetchCouponDetailsModel(coupon_id: string) {
     throw new Error("Error fetching coupon details");
   }
 }
-export async function fetchUserRestrictionModel(coupon_id: string, email: string) {
+export async function fetchUserRestrictionModel(coupon_id: string) {
   try {
-    const result = await pool.query(fetchUserRestrictionQuery, [coupon_id, email]);
+    const result = await pool.query(fetchUserRestrictionQuery, [coupon_id]);
     return result.rows;
   } catch (error) {
     console.error("Error fetching coupon user restriction", error);

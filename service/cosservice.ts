@@ -887,10 +887,10 @@ export async function updateCategoryService(originalCategory: string, newCategor
       });
   });
 }
-export async function fetchAllCouponsService() {
+export async function fetchAllCouponsService(email: string) {
   return new Promise((resolve, reject) => {
     const last_modified = new Date();
-    fetchAllCouponsModel()
+    fetchAllCouponsModel(email)
       .then((results) => {
         console.log("results: ", results);
         resolve(results);
@@ -1083,8 +1083,9 @@ async function calculateCartValue(cart: orderType): Promise<number> {
 
 async function checkUserRestriction(coupon_id: string, email: string): Promise<boolean> {
   try {
-    const result = await fetchUserRestrictionModel(coupon_id, email);
-    return result.length === 0 || result[0].is_allowed;
+    const result = await fetchUserRestrictionModel(coupon_id);
+    return result.length === 0 || result.some((user:any) => user.user_email === email);    
+
   } catch (error) {
     console.log("Error fetching user restriction ", error);
     throw new Error("Error fetching user restriction");

@@ -117,7 +117,7 @@ FROM
 JOIN
   coupon_user_restriction AS cur
   ON c.coupon_id = cur.coupon_id
-WHERE c.coupon_id = $1 AND cur.user_email=$2;
+WHERE c.coupon_id = $1;
   ;
 `
 export const fetchUsageRestrictionQuery = `
@@ -242,17 +242,13 @@ ORDER BY
   c.code ASC;
 `;
 
-
-
-
-
-
-
 export const fetchAllCouponsQuery = `
-SELECT
-  *
-FROM
-  coupons AS c
+SELECT c.*
+FROM coupons c
+LEFT JOIN coupon_user_restriction cur ON c.coupon_id = cur.coupon_id
+WHERE c.is_active = true
+  AND (cur.is_allowed = true AND cur.user_email = $1 OR cur.restriction_id IS NULL);
+
 `;
 
 export const fetchCouponDetailsQuery = `

@@ -236,7 +236,8 @@ export const updateCategory = async (req: Request, res: Response) => {
 
 export const fetchAllCoupons = async (req: Request, res: Response) => {
   try {    
-    const result = await fetchAllCouponsService();
+    const email = req.headers.email as string;
+    const result = await fetchAllCouponsService(email);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
