@@ -1,5 +1,5 @@
 import pool from "../db";
-import { Coupon, FreeItem, itemDetailsType, orderType } from "../types/cos";
+import { adminCoupon, Coupon, FreeItem, itemDetailsType, orderType } from "../types/cos";
 import {
   addOrderQuery,
   deleteItemQuery,
@@ -45,7 +45,13 @@ import {
   freeItemsDeletedQuery,
   deleteCouponAdminQuery,
   getExistingCouponQuery,
-  updateCouponAdminQuery
+  updateCouponAdminQuery,
+  addRestictionCategoryQuery,
+  addRestictionItemQuery,
+  addRestictionUserQuery,
+  deleteAppicableCategory,
+  deleteAppicableItem,
+  deleteSelectedGuest
 } from "./cosqueries";
 
 
@@ -550,55 +556,57 @@ export async function fetchBestSeller() {
     throw new Error("Error updating feedback cos");
   }
 }
-export async function addCouponAdminModel(couponData: Coupon) {
+export async function addCouponAdminModel(couponData: adminCoupon) {
+  console.log(couponData)
   try {
-    const result = await pool.query(addCouponAdminQuery, [couponData.coupon_id, couponData.code, couponData.description, couponData.coupon_type, couponData.discount_value, couponData.max_discount, couponData.min_order_value, couponData.start_date, couponData.end_date, couponData.usage_limit, couponData.is_active, couponData.created_at, couponData.modified_at,couponData.coupon_type_description,couponData.user_usage_limit, couponData.percentage_discount]);
-    return result.rows;
+    await pool.query('Begin');
+    await pool.query(addCouponAdminQuery, [couponData.coupon_id, couponData.code, couponData.description, couponData.coupon_type, couponData.discount_value, couponData.max_discount, couponData.min_order_value, couponData.start_date, couponData.end_date, couponData.usage_limit, couponData.is_active, couponData.created_at, couponData.modified_at,couponData.coupon_type_description,couponData.user_usage_limit, couponData.percentage_discount]);
+    if(couponData.coupon_type==="free_item"){
+      for(let i =0;i<couponData.free_items.length;i++){ 
+        await pool.query(freeItemsAddedQuery, [couponData.coupon_id, couponData.free_items[i].item_id, couponData.free_items[i].qty, couponData.created_at, couponData.modified_at]);
+      }
+    }
+    for(let i =0;i<couponData.applicable_categories.length;i++){
+      await pool.query(addRestictionCategoryQuery,[couponData.restriction_id,couponData.coupon_id,couponData.applicable_categories[i],true,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.applicable_items.length;i++){
+      await pool.query(addRestictionItemQuery,[couponData.restriction_id,couponData.coupon_id,couponData.applicable_items[i].item_id,couponData.applicable_items[i].qty,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.selectedGuests.length;i++){
+      await pool.query(addRestictionUserQuery,[couponData.restriction_id,couponData.coupon_id,couponData.selectedGuests[i].email,couponData.created_at,couponData.modified_at,true]);
+    }
+    await pool.query('COMMIT')
+    return ("Successfully added coupon data")
   } catch (error) {
+    await pool.query('ROLLBACK')
     console.error("Error adding coupon", error);
     throw new Error("Error adding coupon");
   }
 }
-export async function freeItemsAdded(freeItemData: FreeItem) {
+export async function deleteCouponAdminModel(couponData:adminCoupon) {
+  console.log(couponData.coupon_id)
   try {
-    const result = await pool.query(freeItemsAddedQuery, [freeItemData.coupon_id, freeItemData.item_id, freeItemData.qty, freeItemData.created_at, freeItemData.modified_at]);
-    return result.rows;
+    await pool.query('BEGIN');
+    await pool.query(deleteCouponAdminQuery, [couponData.coupon_id]);
+    await pool.query(freeItemsDeletedQuery, [couponData.coupon_id]);
+    await pool.query(deleteAppicableCategory, [couponData.coupon_id]);
+    await pool.query(deleteAppicableItem, [couponData.coupon_id]);
+    await pool.query(deleteSelectedGuest, [couponData.coupon_id]);
+    await pool.query('COMMIT');
+    return ("Successfully deleted coupon data")
   } catch (error) {
-    console.error("Error adding free item", error);
-    throw new Error("Error adding free item");
-  }
-}
-export async function deleteCouponAdminModel(couponData:Coupon) {
-  try {
-    const result = await pool.query(deleteCouponAdminQuery, [couponData.coupon_id]);
-    return result.rows;
-  } catch (error) {
+    await pool.query('ROLLBACK');
     console.error("Error deleting free item", error);
     throw new Error("Error deleting free item");
-  }
-}
-export async function freeItemsDeleted(couponData:Coupon) {
-  try {
-    const result = await pool.query(freeItemsDeletedQuery, [couponData.coupon_id]);
-    return result.rows;
-  } catch (error) {
-    console.error("Error deleting free item", error);
-    throw new Error("Error deleting free item");
-  }
-}
-export async function getExistingCoupon(couponData:Coupon) {
-  try {
-    const result = await pool.query(getExistingCouponQuery, [couponData.coupon_id]);
-    return result.rows[0];
-  } catch (error) {
-    console.error("Error getting coupon info", error);
-    throw new Error("Error getting coupon info");
   }
 }
 
-export async function updateCouponAdminModel(couponData: Coupon) {
+export async function updateCouponAdminModel(couponData: adminCoupon) {
   try {
-    const result = await pool.query(updateCouponAdminQuery, [
+    await pool.query('BEGIN');
+    await pool.query(updateCouponAdminQuery, [
       couponData.code,
       couponData.description,
       couponData.coupon_type,
@@ -615,9 +623,29 @@ export async function updateCouponAdminModel(couponData: Coupon) {
       couponData.percentage_discount,
       couponData.coupon_id
     ]);
-    console.log(result);
-    return result.rows;
+    await pool.query(freeItemsDeletedQuery, [couponData.coupon_id]);
+    await pool.query(deleteAppicableCategory, [couponData.coupon_id]);
+    await pool.query(deleteAppicableItem, [couponData.coupon_id]);
+    await pool.query(deleteSelectedGuest, [couponData.coupon_id]);
+    if(couponData.coupon_type==="free_item"){
+      for(let i =0;i<couponData.free_items.length;i++){ 
+        await pool.query(freeItemsAddedQuery, [couponData.coupon_id, couponData.free_items[i].item_id, couponData.free_items[i].qty, couponData.created_at, couponData.modified_at]);
+      }
+    }
+    for(let i =0;i<couponData.applicable_categories.length;i++){
+      await pool.query(addRestictionCategoryQuery,[couponData.restriction_id,couponData.coupon_id,couponData.applicable_categories[i],true,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.applicable_items.length;i++){
+      await pool.query(addRestictionItemQuery,[couponData.restriction_id,couponData.coupon_id,couponData.applicable_items[i].item_id,couponData.applicable_items[i].qty,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.selectedGuests.length;i++){
+      await pool.query(addRestictionUserQuery,[couponData.restriction_id,couponData.coupon_id,couponData.selectedGuests[i].email,couponData.created_at,couponData.modified_at,true]);
+    }
+    await pool.query('COMMIT');
   } catch (error) {
+    await pool.query('ROLLBACK');
     console.error("Error updating coupon", error);
     throw new Error("Error updating coupon");
   }

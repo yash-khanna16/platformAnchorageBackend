@@ -26,7 +26,7 @@ import {
   deleteCouponAdminService,
   updateCouponAdminService
 } from "../service/cosservice";
-import { Coupon, FreeItem, itemDetailsType, OrderDetails, orderType } from "../types/cos";
+import { adminCoupon, Coupon, FreeItem, itemDetailsType, OrderDetails, orderType } from "../types/cos";
 
 export const fetchBookingByRoom = async (req: Request, res: Response) => {
   const room = req.headers.room as string;
@@ -277,9 +277,8 @@ export const fetchAllCouponsAdmin = async (req: Request, res: Response) => {
 
 export const addCoupon = async (req: Request, res: Response) => {
   try {    
-    const couponData:Coupon=req.body.couponData;
-    let freeItemData:FreeItem[]=req.body.itemData;
-    const result = await addCouponAdminService(couponData,freeItemData);
+    const couponData:adminCoupon=req.body.couponData;
+    const result = await addCouponAdminService(couponData);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
@@ -287,7 +286,7 @@ export const addCoupon = async (req: Request, res: Response) => {
 };
 export const deleteCoupon = async (req: Request, res: Response) => {
   try {    
-    const couponData:Coupon=req.body.couponData;
+    const couponData:adminCoupon=req.body.couponData;
     const result = await deleteCouponAdminService(couponData);
     res.status(200).send(result);
   } catch (error) {
@@ -296,9 +295,8 @@ export const deleteCoupon = async (req: Request, res: Response) => {
 };
 export const updateCoupon = async (req: Request, res: Response) => {
   try {    
-    const couponData:Coupon=req.body.couponData;
-    let freeItemData:FreeItem[]=req.body.itemData;
-    const result = await updateCouponAdminService(couponData,freeItemData);
+    const couponData:adminCoupon=req.body.couponData;
+    const result = await updateCouponAdminService(couponData);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });

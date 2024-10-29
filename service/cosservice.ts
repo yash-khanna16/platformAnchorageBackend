@@ -37,17 +37,14 @@ import {
   deleteCategory,
   fetchBestSeller,
   addCouponAdminModel,
-  freeItemsAdded,
   deleteCouponAdminModel,
-  freeItemsDeleted,
-  getExistingCoupon,
   updateCouponAdminModel
 } from "../models/cosmodel";
 import { fetchMovementByBookingIdModel } from "../models/movementmodel";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import otpGenerator from "otp-generator";
-import { Coupon, FreeItem, itemDetailsType, OrderDetails, orderType } from "../types/cos";
+import { adminCoupon, Coupon, FreeItem, itemDetailsType, OrderDetails, orderType } from "../types/cos";
 import { v4 as uuidv4 } from "uuid";
 import { getIO } from "../socket";
 import jwt from "jsonwebtoken";
@@ -1221,85 +1218,47 @@ export function transformCoupons(coupons: any): any[] {
 }
 
 
-export function addCouponAdminService(couponData: Coupon, freeItemData: FreeItem[]): Promise<any> {
+export function addCouponAdminService(couponData: adminCoupon): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
-      const couponId = uuidv4();
-      couponData.coupon_id = couponId,
+      couponData.coupon_id = uuidv4();
       couponData.created_at = (new Date()).toISOString();
       couponData.modified_at = (new Date()).toISOString();
+      couponData.restriction_id = uuidv4();
       const result = await addCouponAdminModel(couponData);
-      if (couponData.coupon_type === "free_item") {
-        for (let i = 0; i < freeItemData.length; i++) {
-          freeItemData[i].created_at = (new Date()).toISOString();
-          freeItemData[i].modified_at = (new Date()).toISOString();
-          freeItemData[i].coupon_id=couponId;
-          await freeItemsAdded(freeItemData[i]);
-        }
-
-        resolve({ message: "Coupon added succesfully" });
-        return;
-      }
-      else {
-        resolve({ message: "Coupon added succesfully" });
-        return;
-      }
+      resolve({ message: "Coupon added succesfully" });
+      return;
     } catch (error) {
-      console.log("Error addeding restriction ", error);
+      console.log("Error adding coupon ", error);
       reject("Error entering coupon");
     }
   });
 
 }
-export function deleteCouponAdminService(couponData: Coupon): Promise<any> {
+export function deleteCouponAdminService(couponData: adminCoupon): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
-      const result = await deleteCouponAdminModel(couponData);
-      if (couponData.coupon_type === "free_item") {
-        await freeItemsDeleted(couponData);
-        resolve({ message: "Coupon deleted succesfully" });
-        return;
-      }
-      else {
-        resolve({ message: "Coupon deleted succesfully" });
-        return;
-      }
+      await deleteCouponAdminModel(couponData);
+      resolve({ message: "Coupon deleted successfully" });
+      return;
     } catch (error) {
-      console.log("Error addeding restriction ", error);
-      reject("Error entering coupon");
+      console.log("Error deleting successfully ", error);
+      reject("Error deleting coupon");
     }
   });
 
 }
-export function updateCouponAdminService(couponData: Coupon, freeItemData: FreeItem[]): Promise<any> {
+export function updateCouponAdminService(couponData: adminCoupon): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
-      const existingCoupon = await getExistingCoupon(couponData);
-      console.log(existingCoupon.coupon_type)
-      if(existingCoupon.coupon_type==="free_item"){
-        console.log("hello");
-        await freeItemsDeleted(couponData);
-      }
-      couponData.modified_at=(new Date).toISOString();
-      const result = await updateCouponAdminModel(couponData);
-      if (couponData.coupon_type === "free_item") {
-        for (let i = 0; i < freeItemData.length; i++) {
-          freeItemData[i].created_at = (new Date()).toISOString();
-          freeItemData[i].modified_at = (new Date()).toISOString();
-          freeItemData[i].coupon_id=couponData.coupon_id;
-          await freeItemsAdded(freeItemData[i]);
-        }
+      couponData.modified_at = (new Date).toISOString();
+      await updateCouponAdminModel(couponData);
+      resolve({ message: "Coupon updated succesfully" });
+      return;
 
-        resolve({ message: "Coupon updated succesfully" });
-        return;
-      }
-      else {
-        resolve({ message: "Coupon updated succesfully" });
-        return;
-      }
     } catch (error) {
-      console.log("Error addeding restriction ", error);
-      reject("Error entering coupon");
+      console.log("Error updating coupon ", error);
+      reject("Error updating coupon");
     }
   });
 
