@@ -331,8 +331,8 @@ export const updateCheckInGuestDetailsQuery = `UPDATE guests
     SET email = $1
     WHERE email=$2;
 `;
-  
-  export const addCouponAdminQuery = `
+
+export const addCouponAdminQuery = `
   INSERT INTO coupons (
     coupon_id,
     code,
@@ -359,11 +359,23 @@ export const updateCheckInGuestDetailsQuery = `UPDATE guests
 
 export const freeItemsAddedQuery = `Insert Into coupon_free_item(coupon_id,item_id,qty,created_at,modified_at) Values($1,$2,$3,$4,$5)`
 
+export const addRestictionCategoryQuery = `Insert Into coupon_category_restriction(restriction_id,coupon_id,category_id,is_allowed,created_at,modified_at) Values($1,$2,$3,$4,$5,$6)`
+
+export const addRestictionItemQuery = `Insert Into coupon_item_restriction(restriction_id,coupon_id,item_id,qty,created_at,modified_at) Values($1,$2,$3,$4,$5,$6)`
+
+export const addRestictionUserQuery = `Insert Into coupon_user_restriction(restriction_id,coupon_id,user_email,created_at,modified_at,is_allowed) Values($1,$2,$3,$4,$5,$6)`
+
 export const freeItemsDeletedQuery = `DELETE  FROM coupon_free_item WHERE coupon_id=$1`
 
 export const deleteCouponAdminQuery = `DELETE  FROM coupons WHERE coupon_id=$1`
 
 export const getExistingCouponQuery = `SELECT * FROM coupons WHERE coupon_id=$1`
+
+export const deleteAppicableCategory = `DELETE  FROM coupon_category_restriction WHERE coupon_id=$1`
+
+export const deleteAppicableItem = `DELETE  FROM coupon_item_restriction WHERE coupon_id=$1`
+
+export const deleteSelectedGuest = `DELETE  FROM coupon_user_restriction WHERE coupon_id=$1`
 
 export const updateCouponAdminQuery = `
   UPDATE coupons
