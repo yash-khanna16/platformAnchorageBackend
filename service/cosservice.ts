@@ -1191,29 +1191,69 @@ export function transformCoupons(coupons: any): any[] {
     const { coupon_id } = coupon;
 
     if (!transformedCoupons[coupon_id]) {
-      // Create a new entry for the coupon if it doesn't already exist
+      // Initialize the coupon entry with empty arrays and Map for unique applicable_items
       transformedCoupons[coupon_id] = {
         ...coupon,
-        free_items: [], // Initialize free_items array for free_item coupon types
+        free_items: new Map<string, { // Use Map to ensure unique free_items by item_id
+          item_id: string;
+          qty: number;
+          name: string;
+          price: number;
+          type: string;
+          category_id: string;
+          available: boolean;
+          time_to_prepare: number;
+          base_price: number;
+        }>(),
+        applicable_category: new Set<string>(), // Set for unique category names
+        applicable_items: new Map<string, { item_id: string; qty: number }>(), // Map for unique item_id with qty
+        selectedGuest: new Set<string>(), // Set for unique user emails
       };
     }
 
-    // If the coupon type is 'free_item' and it has an associated item, add the item details to the free_items array
-    if (coupon.coupon_type === "free_item" && coupon.item_id) {
-      transformedCoupons[coupon_id].free_items.push({
-        item_id: coupon.item_id,
-        qty: coupon.qty ?? 0, // Default qty to 0 if undefined
-        name: coupon.name ?? "",
-        price: coupon.price ?? 0,
-        type: coupon.type ?? "",
-        category_id: coupon.category_id ?? "",
-        available: coupon.is_allowed ?? false, // Assuming `is_allowed` determines availability
-        time_to_prepare: coupon.time_to_prepare ?? 0,
-        base_price: coupon.base_price ?? 0,
+    // Add to free_items map if the coupon type is 'free_item' and it has an associated item
+    if (coupon.free_item_id && !transformedCoupons[coupon_id].free_items.has(coupon.free_item_id)) {
+      transformedCoupons[coupon_id].free_items.set(coupon.free_item_id, {
+        item_id: coupon.free_item_id,
+        qty: coupon.free_item_qty ?? 0,
+        name: coupon.free_item_name ?? "",
+        price: coupon.free_item_price ?? 0,
+        type: coupon.free_item_type ?? "",
+        category_id: coupon.free_item_category_id ?? "",
+        available: coupon.free_item_available ?? false,
+        time_to_prepare: coupon.free_item_time_to_prepare ?? 0,
+        base_price: coupon.free_item_base_price ?? 0,
       });
     }
+
+    // Add unique category name to applicable_category set
+    if (coupon.restricted_category_name) {
+      transformedCoupons[coupon_id].applicable_category.add(coupon.restricted_category_name);
+    }
+
+    // Add unique item to applicable_items map based on item_id
+    if (coupon.restricted_item_id) {
+      transformedCoupons[coupon_id].applicable_items.set(coupon.restricted_item_id, {
+        item_id: coupon.restricted_item_id,
+        qty: coupon.qty ?? 0,
+      });
+    }
+
+    // Add unique user email to selectedGuest set
+    if (coupon.restricted_user_email) {
+      transformedCoupons[coupon_id].selectedGuest.add(coupon.restricted_user_email);
+    }
+  });
+
+  // Convert Set and Map objects back to arrays for each coupon
+  Object.values(transformedCoupons).forEach((coupon: any) => {
+    coupon.free_items = Array.from(coupon.free_items.values()); // Convert free_items Map to array of objects
+    coupon.applicable_categories = Array.from(coupon.applicable_category);
+    coupon.applicable_items = Array.from(coupon.applicable_items.values()); // Convert Map to array of objects
+    coupon.selectedGuests = Array.from(coupon.selectedGuest);
   });
 
   // Convert the transformedCoupons object back into an array
   return Object.values(transformedCoupons);
 }
+

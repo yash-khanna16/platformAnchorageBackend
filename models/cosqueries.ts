@@ -199,7 +199,6 @@ WHERE
 GROUP BY 
     coupon_id;
 `
-
 export const fetchAllCouponsAdminQuery = `
 SELECT 
   c.coupon_id,
@@ -218,29 +217,41 @@ SELECT
   c.coupon_type_description,
   c.user_usage_limit,
   c.percentage_discount,
-  cfi.item_id,
-  cfi.qty,
-  i.name,
-  i.price,
-  i.type,
-  i.category_id,
-  i.available,
-  i.time_to_prepare,
-  i.base_price
+  cfi.item_id AS free_item_id,
+  cfi.qty AS free_item_qty,
+  i.name AS free_item_name,
+  i.price AS free_item_price,
+  i.type AS free_item_type,
+  i.category_id AS free_item_category_id,
+  i.available AS free_item_available,
+  i.time_to_prepare AS free_item_time_to_prepare,
+  i.base_price AS free_item_base_price,
+  cir.item_id AS restricted_item_id,
+  ir.name AS restricted_item_name, -- Item name from items table for applicable_items
+  ccr.category_id AS restricted_category_id,
+  cat.category AS restricted_category_name, -- Category name from category table for applicable_category
+  cur.user_email AS restricted_user_email
 FROM 
   coupons AS c
 LEFT JOIN
-  coupon_free_item AS cfi
-ON
-  cfi.coupon_id = c.coupon_id
+  coupon_free_item AS cfi ON cfi.coupon_id = c.coupon_id
 LEFT JOIN
-  items AS i
-ON
-  i.item_id = cfi.item_id
+  items AS i ON i.item_id = cfi.item_id
+LEFT JOIN
+  coupon_item_restriction AS cir ON cir.coupon_id = c.coupon_id
+LEFT JOIN
+  items AS ir ON ir.item_id = cir.item_id -- Join for restricted item names
+LEFT JOIN
+  coupon_category_restriction AS ccr ON ccr.coupon_id = c.coupon_id
+LEFT JOIN
+  category AS cat ON cat.category_id = ccr.category_id -- Join for restricted category names
+LEFT JOIN
+  coupon_user_restriction AS cur ON cur.coupon_id = c.coupon_id
 ORDER BY 
-  c.is_active DESC,  -- Active coupons first (or modify according to your logic)
+  c.is_active DESC,
   c.code ASC;
 `;
+
 
 export const fetchAllCouponsQuery = `
 SELECT c.*
