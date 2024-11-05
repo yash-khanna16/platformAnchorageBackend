@@ -86,14 +86,13 @@ export const fetchBookingByBookingIdQuery = `SELECT * FROM guests JOIN bookings 
 
 export const fetchAvailabilityOfItemsQuery = "SELECT item_id,name, available FROM items WHERE item_id = ANY($1::text[])";
 
-export const setDelayQuery = 'UPDATE orders SET delay=$1 WHERE order_id=$2;'
+export const setDelayQuery = "UPDATE orders SET delay=$1 WHERE order_id=$2;";
 
-export const updateFeedbackQuery = 'UPDATE orders SET rating = $1, feedback = $2 WHERE order_id=$3;'
+export const updateFeedbackQuery = "UPDATE orders SET rating = $1, feedback = $2 WHERE order_id=$3;";
 
-export const fetchFeedbackCOSQuery = `SELECT * FROM feedback where booking_id = $1;`
+export const fetchFeedbackCOSQuery = `SELECT * FROM feedback where booking_id = $1;`;
 
-export const insertFeedbackCOSQuery = `INSERT INTO feedback (type, booking_id, rating, comment, last_modified) VALUES ($1,$2,$3,$4,$5);`
-
+export const insertFeedbackCOSQuery = `INSERT INTO feedback (type, booking_id, rating, comment, last_modified) VALUES ($1,$2,$3,$4,$5);`;
 
 export const fetchItemRestrictionQuery = `
 SELECT
@@ -107,7 +106,7 @@ LEFT JOIN
   items as i
   ON i.item_id = cir.item_id
   WHERE c.coupon_id = $1;
-`
+`;
 
 export const fetchUserRestrictionQuery = `
 SELECT
@@ -119,7 +118,7 @@ JOIN
   ON c.coupon_id = cur.coupon_id
 WHERE c.coupon_id = $1;
   ;
-`
+`;
 export const fetchUsageRestrictionQuery = `
 SELECT
   *
@@ -130,7 +129,7 @@ JOIN
   ON c.coupon_id = cur.coupon_id
 WHERE c.coupon_id = $1 AND cur.user_email=$2;
   ;
-`
+`;
 
 export const fetchItemsQuery = `
   SELECT * FROM items JOIN category ON items.category_id = category.category_id
@@ -147,7 +146,7 @@ export const fetchCouponFreeItemsQuery = `
     ON c.category_id = i.category_id
   WHERE coupon_id = $1;
   ;
-`
+`;
 
 export const putCouponUsageQuery = `
 INSERT INTO coupon_usage 
@@ -187,7 +186,6 @@ FROM coupon_free_item cfi
 WHERE cfi.coupon_id = $2;
 `;
 
-
 export const fetchCouponUsageCountQuery = `SELECT 
     coupon_id,
     COUNT(*) AS usage_count
@@ -198,7 +196,7 @@ WHERE
     AND is_redeemed = true
 GROUP BY 
     coupon_id;
-`
+`;
 export const fetchAllCouponsAdminQuery = `
 SELECT 
   c.coupon_id,
@@ -252,7 +250,6 @@ ORDER BY
   c.code ASC;
 `;
 
-
 export const fetchAllCouponsQuery = `
 SELECT c.*
 FROM coupons c
@@ -281,23 +278,19 @@ LEFT JOIN
 LEFT JOIN
   category as ct
   ON ct.category_id = ccr.category_id
-  WHERE c.coupon_id = $1;`
+  WHERE c.coupon_id = $1;`;
 
+export const fetchCategoryQuery = `SELECT * FROM category where category = $1;`;
 
+export const addCategoryQuery = `INSERT INTO category (category_id,category,sequence) VALUES($1,$2,$3)`;
 
+export const updateCategorySequenceQuery = "UPDATE category SET sequence=$2 WHERE category=$1";
 
-export const fetchCategoryQuery = `SELECT * FROM category where category = $1;`
+export const updateCategoryNameQuery = "UPDATE category SET category=$2 WHERE category=$1";
 
-export const addCategoryQuery = `INSERT INTO category (category_id,category,sequence) VALUES($1,$2,$3)`
+export const getCategoryItemsCountQuery = `SELECT * FROM items WHERE category_id = (SELECT category_id FROM items WHERE item_id = $1)`;
 
-export const updateCategorySequenceQuery = 'UPDATE category SET sequence=$2 WHERE category=$1'
-
-export const updateCategoryNameQuery = 'UPDATE category SET category=$2 WHERE category=$1'
-
-export const getCategoryItemsCountQuery = `SELECT * FROM items WHERE category_id = (SELECT category_id FROM items WHERE item_id = $1)`
-
-export const deleteCategoryQuery = `DELETE  FROM category WHERE category_id = (SELECT category_id FROM items WHERE item_id = $1)`
-
+export const deleteCategoryQuery = `DELETE  FROM category WHERE category_id = (SELECT category_id FROM items WHERE item_id = $1)`;
 
 export const fetchBestSellerQuery = `WITH RankedItems AS (
     SELECT 
@@ -311,7 +304,7 @@ export const fetchBestSellerQuery = `WITH RankedItems AS (
 SELECT category, name, occurrence_count
 FROM RankedItems
 WHERE rank <= 2
-ORDER BY category, occurrence_count DESC;`
+ORDER BY category, occurrence_count DESC;`;
 
 export const fetchCheckinByRoomQuery = `
 SELECT *
@@ -322,4 +315,19 @@ WHERE b.document_url IS NULL
   AND NOW() BETWEEN b.checkin AND b.checkout;
 `;
 
-export const updateCheckInGuestQuery = `UPDATE bookings SET document_url = $1, guest_email = $2 WHERE booking_id = $3`
+export const updateCheckInGuestQuery = `
+    WITH old_data AS (
+        SELECT guest_email
+        FROM bookings
+        WHERE booking_id = $3
+    )
+    UPDATE bookings
+    SET document_url = $1, guest_email = $2
+    WHERE booking_id = $3
+    RETURNING (SELECT guest_email FROM old_data) AS old_email;
+`;
+
+export const updateCheckInGuestDetailsQuery = `UPDATE guests
+    SET email = $1
+    WHERE email=$2;
+`;

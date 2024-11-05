@@ -42,6 +42,7 @@ import {
   updateCategorySequenceQuery,
   fetchCheckinByRoomQuery,
   updateCheckInGuestQuery,
+  updateCheckInGuestDetailsQuery,
 } from "./cosqueries";
 
 
@@ -559,7 +560,9 @@ export async function fetchCheckInByRoomModel(room: string) {
 
 export async function updateCheckinGuestModel(booking_id: string, document_url: string, email: string) {
   try {
-    const result = await pool.query(updateCheckInGuestQuery,[document_url, email, booking_id]);
+    const res = await pool.query(updateCheckInGuestQuery,[document_url, email, booking_id]);
+    const old_email = res.rows[0].guest_email;
+    const res2 = await pool.query(updateCheckInGuestDetailsQuery, [email, old_email])
     return {message: "Check-In updated successfully!"};
   } catch (error) {
     console.error("Error updating check in guest", error);
