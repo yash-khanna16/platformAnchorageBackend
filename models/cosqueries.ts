@@ -312,3 +312,14 @@ SELECT category, name, occurrence_count
 FROM RankedItems
 WHERE rank <= 2
 ORDER BY category, occurrence_count DESC;`
+
+export const fetchCheckinByRoomQuery = `
+SELECT *
+FROM bookings AS b
+JOIN guests AS g ON g.email = b.guest_email
+WHERE b.document_url IS NULL
+  AND b.room = $1
+  AND NOW() BETWEEN b.checkin AND b.checkout;
+`;
+
+export const updateCheckInGuestQuery = `UPDATE bookings SET document_url = $1, guest_email = $2 WHERE booking_id = $3`

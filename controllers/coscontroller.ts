@@ -22,6 +22,8 @@ import {
   fetchAllCouponsService,
   validateCouponService,
   fetchAllCouponsAdminService,
+  fetchCheckinByRoomService,
+  updateCheckinGuestService,
 } from "../service/cosservice";
 import { itemDetailsType, OrderDetails, orderType } from "../types/cos";
 
@@ -267,6 +269,28 @@ export const validateCoupon = async (req: Request, res: Response) => {
 export const fetchAllCouponsAdmin = async (req: Request, res: Response) => {
   try {    
     const result = await fetchAllCouponsAdminService();
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+
+export const fetchCheckinByRoom = async (req: Request, res: Response) => {
+  try {    
+    const room = req.headers.room as string;
+    const result = await fetchCheckinByRoomService(room);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+export const updateCheckinGuest = async (req: Request, res: Response) => {
+  try {    
+    const booking_id= req.body.booking_id as string;
+    const email= req.body.email as string;
+    const document_url= req.body.document_url as string;
+    
+    const result = await updateCheckinGuestService(booking_id,document_url,email);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });

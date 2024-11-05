@@ -40,6 +40,8 @@ import {
   fetchCategoryQuery,
   updateCategoryNameQuery,
   updateCategorySequenceQuery,
+  fetchCheckinByRoomQuery,
+  updateCheckInGuestQuery,
 } from "./cosqueries";
 
 
@@ -544,3 +546,24 @@ export async function fetchBestSeller() {
     throw new Error("Error updating feedback cos");
   }
 }
+
+export async function fetchCheckInByRoomModel(room: string) {
+  try {
+    const result = await pool.query(fetchCheckinByRoomQuery, [room]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching check in by room", error);
+    throw new Error("Error fetching check in by room");
+  }
+}
+
+export async function updateCheckinGuestModel(booking_id: string, document_url: string, email: string) {
+  try {
+    const result = await pool.query(updateCheckInGuestQuery,[document_url, email, booking_id]);
+    return {message: "Check-In updated successfully!"};
+  } catch (error) {
+    console.error("Error updating check in guest", error);
+    throw new Error("Error updating check in guest");
+  }
+}
+

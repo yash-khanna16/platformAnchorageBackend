@@ -36,6 +36,8 @@ import {
   fetchOriginalCategory,
   deleteCategory,
   fetchBestSeller,
+  fetchCheckInByRoomModel,
+  updateCheckinGuestModel,
 } from "../models/cosmodel";
 import { fetchMovementByBookingIdModel } from "../models/movementmodel";
 import nodemailer from "nodemailer";
@@ -1255,5 +1257,31 @@ export function transformCoupons(coupons: any): any[] {
 
   // Convert the transformedCoupons object back into an array
   return Object.values(transformedCoupons);
+}
+
+export async function fetchCheckinByRoomService(room: string) {
+  return new Promise((resolve, reject) => {
+    fetchCheckInByRoomModel(room)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error fetching checkin by room", error);
+        reject("Error fetching checkin by room!");
+      });
+  });
+}
+
+export async function updateCheckinGuestService(booking_id: string, document_url: string, email: string) {
+  return new Promise((resolve, reject) => {
+    updateCheckinGuestModel(booking_id,document_url, email)
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log("error updating checkin ", error);
+        reject("Error updating checkin ");
+      });
+  });
 }
 
