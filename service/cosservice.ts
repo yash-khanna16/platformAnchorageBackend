@@ -36,6 +36,9 @@ import {
   fetchOriginalCategory,
   deleteCategory,
   fetchBestSeller,
+  addCouponAdminModel,
+  deleteCouponAdminModel,
+  updateCouponAdminModel,
   fetchCheckInByRoomModel,
   updateCheckinGuestModel,
 } from "../models/cosmodel";
@@ -43,10 +46,11 @@ import { fetchMovementByBookingIdModel } from "../models/movementmodel";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import otpGenerator from "otp-generator";
-import { Coupon, FreeItem, itemDetailsType, OrderDetails, orderType } from "../types/cos";
+import { adminCoupon, Coupon, FreeItem, itemDetailsType, OrderDetails, orderType } from "../types/cos";
 import { v4 as uuidv4 } from "uuid";
 import { getIO } from "../socket";
 import jwt from "jsonwebtoken";
+
 
 dotenv.config();
 const { ROOM_CODE } = process.env;
@@ -300,13 +304,13 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
             io.to(ROOM_CODE).emit("order_received", details);
           }
 
-                      const mailOptions = {
-                        from: process.env.COS_EMAIL,
-                        to: booking.email,
-                        cc:  process.env.OWNER_EMAIL,
-                        bcc: process.env.ADMIN_EMAIL, 
-                        subject: `Items Confirmation - [Order #${details[0].order_id}]`,
-                        html: `
+          const mailOptions = {
+            from: process.env.COS_EMAIL,
+            to: booking.email,
+            cc: process.env.OWNER_EMAIL,
+            bcc: process.env.ADMIN_EMAIL,
+            subject: `Items Confirmation - [Order #${details[0].order_id}]`,
+            html: `
                           <!DOCTYPE html>
                           <html lang="en">
                           <head>
@@ -323,17 +327,15 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
                                                   <td style="padding: 20px; text-align: center;">
                                                       <img src="https://drive.usercontent.google.com/download?id=10uMrHQslBy2zOrWxaQ03nAvSbwTQZiQZ" alt="Anchorage" style="max-width: 80px; height: auto; margin-bottom: 20px;">
                                                       <h1 style="margin: 0; color: #333;">Items Confirmation</h1>
-                                                      <p style="margin: 10px 0 20px; color: #777;">Order #${
-                                                        details[0].order_id
-                                                      }</p>
+                                                      <p style="margin: 10px 0 20px; color: #777;">Order #${details[0].order_id
+              }</p>
                                                   </td>
                                               </tr>
                                               <tr>
                                                   <td style="padding: 20px;">
                                                       <p style="margin: 10px 0; color: #555;">Dear ${details[0].guest_name},</p>
-                                                      <p style="margin: 10px 0; color: #555;">Thank you for your purchase! We are pleased to confirm your order <strong>#${
-                                                        details[0].order_id
-                                                      }</strong>.</p>
+                                                      <p style="margin: 10px 0; color: #555;">Thank you for your purchase! We are pleased to confirm your order <strong>#${details[0].order_id
+              }</strong>.</p>
                                                   </td>
                                               </tr>
                                               <tr>
@@ -342,8 +344,8 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
                                                       <p style="margin-top: 0;">
                                                           <strong>Order Number:</strong> ${details[0].order_id} <br>
                                                           <strong>Order Date:</strong> ${new Date(
-                                                            parseInt(details[0].created_at)
-                                                          ).toLocaleDateString()} <br>
+                parseInt(details[0].created_at)
+              ).toLocaleDateString()} <br>
                                                           <strong>Room No:</strong> ${booking.room} <br>
                                                           
                                                       </p>
@@ -354,35 +356,34 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
                                                       <h3 style="color: #333; margin-top: 0;">Items Ordered</h3>
                                                       <ul style="margin: 0; padding: 0; list-style-type: none;">
                                                           ${details[0].items
-                                                            .map(
-                                                              (item) => `
+                .map(
+                  (item) => `
                                                               <li style="margin: 10px 0;">
                                                                   <strong>${item.name}</strong> - Quantity: ${item.qty} - Price: ₹${item.price}
                                                                   <br>
                                                                   <em>${item.description}</em>
                                                               </li>
                                                           `
-                                                            )
-                                                            .join("")}
+                )
+                .join("")}
                                                       </ul>
                                                   </td>
                                               </tr>
                                               <tr>
                                                 <td style="padding: 20px 20px 20px 20px;">
                                                   <strong>Order SubTotal:</strong> ₹${details[0].items.reduce(
-                                                    (total, item) => total + item.price * item.qty,
-                                                    0
-                                                  )}<br>
+                  (total, item) => total + item.price * item.qty,
+                  0
+                )}<br>
                                                               <strong>Discount:</strong> ₹${order.discount}<br>
                                                               <strong>Platform Fee:</strong> ₹2<br>
-                                                              <strong>Order Total:</strong> ₹${
-                                                                details[0].items.reduce(
-                                                                  (total, item) => total + item.price * item.qty,
-                                                                  0
-                                                                ) -
-                                                                order.discount +
-                                                                2
-                                                              }<br>
+                                                              <strong>Order Total:</strong> ₹${details[0].items.reduce(
+                  (total, item) => total + item.price * item.qty,
+                  0
+                ) -
+              order.discount +
+              2
+              }<br>
                                                 </td>
                                               </tr>
                                               <tr>
@@ -390,30 +391,30 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
                                                       <h3 style="color: #333; margin-top: 0;">Expected Waiting Time</h3>
                                                       <p style="margin-top: 0;">
                                                           <strong>Preparation Time:</strong> ${details[0].items.reduce(
-                                                            (max, item) =>
-                                                              item.time_to_prepare > max ? item.time_to_prepare : max,
-                                                            0
-                                                          )} minutes <br>
+                (max, item) =>
+                  item.time_to_prepare > max ? item.time_to_prepare : max,
+                0
+              )} minutes <br>
                                                           <strong>Estimated Delivery/Pickup Time:</strong> ${new Date(
-                                                            parseInt(details[0].created_at) +
-                                                              details[0].items.reduce(
-                                                                (max, item) =>
-                                                                  item.time_to_prepare > max ? item.time_to_prepare : max,
-                                                                0
-                                                              ) *
-                                                                60000 +
-                                                              5 * 60 * 60 * 1000 +
-                                                              30 * 60 * 1000
-                                                          ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                parseInt(details[0].created_at) +
+                details[0].items.reduce(
+                  (max, item) =>
+                    item.time_to_prepare > max ? item.time_to_prepare : max,
+                  0
+                ) *
+                60000 +
+                5 * 60 * 60 * 1000 +
+                30 * 60 * 1000
+              ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                                       </p>
                                                   </td>
                                               </tr>
                                               <tr>
                                                   <td style="padding: 20px;">
                                                       <p style="margin: 10px 0; color: #555;">We are currently processing your order, and you can expect it to be ready in approximately <strong>${details[0].items.reduce(
-                                                        (max, item) => (item.time_to_prepare > max ? item.time_to_prepare : max),
-                                                        0
-                                                      )} minutes</strong>.</p>
+                (max, item) => (item.time_to_prepare > max ? item.time_to_prepare : max),
+                0
+              )} minutes</strong>.</p>
                                                       <p style="margin: 10px 0; color: #555;">If you have any questions or need to make changes to your order, please feel free to contact us  <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
                                                       <p style="margin: 10px 0; color: #555;">For any complaints or queries, you can reach our front desk at: <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
                                                   </td>
@@ -642,9 +643,8 @@ export async function updateOrderStatusService(orderid: string, status: string) 
                                     <tr>
                                         <td style="padding: 20px;">
                                             <p style="margin: 10px 0; color: #555;">Dear ${details[0].guest_name},</p>
-                                            <p style="margin: 10px 0; color: #555;">We are happy to inform you that your order has been successfully delivered to your room <strong>${
-                                              details[0].room
-                                            }</strong>.</p>
+                                            <p style="margin: 10px 0; color: #555;">We are happy to inform you that your order has been successfully delivered to your room <strong>${details[0].room
+                }</strong>.</p>
                                             <p style="margin: 10px 0; color: #555;">Here is a summary of your order:</p>
                                         </td>
                                     </tr>
@@ -653,16 +653,16 @@ export async function updateOrderStatusService(orderid: string, status: string) 
                                             <h3 style="color: #333;">Order Summary</h3>
                                             <ul style="margin: 0; padding: 0; list-style-type: none;">
                                                 ${details[0].items
-                                                  .map(
-                                                    (item) => `
+                  .map(
+                    (item) => `
                                                     <li style="margin: 10px 0;">
                                                         <strong>${item.name}</strong> - Quantity: ${item.qty} - Price: ₹${item.price}
                                                         <br>
                                                         <em>${item.description}</em>
                                                     </li>
                                                 `
-                                                  )
-                                                  .join("")}
+                  )
+                  .join("")}
                                             </ul>
                                         </td>
                                     </tr>
@@ -1285,3 +1285,50 @@ export async function updateCheckinGuestService(booking_id: string, document_url
   });
 }
 
+
+
+export function addCouponAdminService(couponData: adminCoupon): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      couponData.coupon_id = uuidv4();
+      couponData.created_at = (new Date()).toISOString();
+      couponData.modified_at = (new Date()).toISOString();
+      couponData.restriction_id = uuidv4();
+      const result = await addCouponAdminModel(couponData);
+      resolve({ message: "Coupon added succesfully" });
+      return;
+    } catch (error) {
+      console.log("Error adding coupon ", error);
+      reject("Error entering coupon");
+    }
+  });
+
+}
+export function deleteCouponAdminService(couponData: adminCoupon): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await deleteCouponAdminModel(couponData);
+      resolve({ message: "Coupon deleted successfully" });
+      return;
+    } catch (error) {
+      console.log("Error deleting successfully ", error);
+      reject("Error deleting coupon");
+    }
+  });
+
+}
+export function updateCouponAdminService(couponData: adminCoupon): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      couponData.modified_at = (new Date).toISOString();
+      await updateCouponAdminModel(couponData);
+      resolve({ message: "Coupon updated succesfully" });
+      return;
+
+    } catch (error) {
+      console.log("Error updating coupon ", error);
+      reject("Error updating coupon");
+    }
+  });
+
+}

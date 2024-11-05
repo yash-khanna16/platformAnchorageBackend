@@ -24,8 +24,11 @@ import {
   fetchAllCouponsAdminService,
   fetchCheckinByRoomService,
   updateCheckinGuestService,
+  addCouponAdminService,
+  deleteCouponAdminService,
+  updateCouponAdminService
 } from "../service/cosservice";
-import { itemDetailsType, OrderDetails, orderType } from "../types/cos";
+import { adminCoupon, Coupon, FreeItem, itemDetailsType, OrderDetails, orderType } from "../types/cos";
 
 export const fetchBookingByRoom = async (req: Request, res: Response) => {
   const room = req.headers.room as string;
@@ -291,6 +294,34 @@ export const updateCheckinGuest = async (req: Request, res: Response) => {
     const document_url= req.body.document_url as string;
     
     const result = await updateCheckinGuestService(booking_id,document_url,email);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+
+export const addCoupon = async (req: Request, res: Response) => {
+  try {    
+    const couponData:adminCoupon=req.body.couponData;
+    const result = await addCouponAdminService(couponData);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+export const deleteCoupon = async (req: Request, res: Response) => {
+  try {    
+    const couponData:adminCoupon=req.body.couponData;
+    const result = await deleteCouponAdminService(couponData);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+export const updateCoupon = async (req: Request, res: Response) => {
+  try {    
+    const couponData:adminCoupon=req.body.couponData;
+    const result = await updateCouponAdminService(couponData);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
