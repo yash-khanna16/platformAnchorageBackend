@@ -41,9 +41,6 @@ import {
   updateCouponAdminModel,
   fetchCheckInByRoomModel,
   updateCheckinGuestModel,
-  addCouponAdminModel,
-  deleteCouponAdminModel,
-  updateCouponAdminModel
 } from "../models/cosmodel";
 import { fetchMovementByBookingIdModel } from "../models/movementmodel";
 import nodemailer from "nodemailer";
