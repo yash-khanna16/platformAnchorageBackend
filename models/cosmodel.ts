@@ -1,5 +1,6 @@
 import pool from "../db";
-import { itemDetailsType, orderType } from "../types/cos";
+import { convertUTCToIST } from "../service/guestservice";
+import { adminCoupon, Coupon, FreeItem, itemDetailsType, orderType } from "../types/cos";
 import {
   addOrderQuery,
   deleteItemQuery,
@@ -40,9 +41,27 @@ import {
   fetchCategoryQuery,
   updateCategoryNameQuery,
   updateCategorySequenceQuery,
+  fetchCheckinByRoomQuery,
+  updateCheckInGuestQuery,
+  updateCheckInGuestDetailsQuery,
+  freeItemsAddedQuery,
+  freeItemsDeletedQuery,
+  deleteCouponAdminQuery,
+  getExistingCouponQuery,
+  updateCouponAdminQuery,
+  addRestictionCategoryQuery,
+  addRestictionItemQuery,
+  addRestictionUserQuery,
+  deleteAppicableCategory,
+  deleteAppicableItem,
+  deleteSelectedGuest,
+  upsertRestrictionUserQuery,
+  addCouponAdminQuery
 } from "./cosqueries";
 
+import { v4 as uuidv4 } from "uuid";
 
+const coupon_id_checkin = 'e9c5ab16-691b-47e2-9e8e-ce69234940cd'
 
 export async function fetchBookingByRoomModel(room: string) {
   try {
@@ -86,7 +105,7 @@ export async function fetchAllItemsModel() {
 
 export async function putItemModel(itemDetails: itemDetailsType) {
   try {
-    const putItemQuery=`INSERT INTO items (item_id,name,description, price, type, category_id, available, time_to_prepare, base_price) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);`
+    const putItemQuery = `INSERT INTO items (item_id,name,description, price, type, category_id, available, time_to_prepare, base_price) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);`
     await pool.query(putItemQuery, [
       itemDetails.item_id,
       itemDetails.name,
@@ -116,7 +135,7 @@ export async function addOrderModel(orderDetails: orderType) {
       orderDetails.status,
       orderDetails.discount
     ]);
-    
+
     const order_id = result.rows[0].order_id;
     orderDetails.order_id = order_id;
 
@@ -128,19 +147,19 @@ export async function addOrderModel(orderDetails: orderType) {
     const itemIds = orderDetails.items.map(item => item.item_id);
 
     const itemsResult = await fetchItemsModel(itemIds);
-    const items:itemDetailsType[] = itemsResult;
+    const items: itemDetailsType[] = itemsResult;
 
     const addOrderDetailsQuery = `
       INSERT INTO public.order_details (order_id, item_id, qty, name, description, price, type, category, available, time_to_prepare, base_price)
-      VALUES ${orderDetails.items.map((_, index) => 
-        `($1, $${index * 10 + 2}, $${index * 10 + 3}, $${index * 10 + 4}, $${index * 10 + 5}, $${index * 10 + 6}, $${index * 10 + 7}, $${index * 10 + 8}, $${index * 10 + 9}, $${index * 10 + 10}, $${index * 10 + 11})`
-      ).join(", ")}
+      VALUES ${orderDetails.items.map((_, index) =>
+      `($1, $${index * 10 + 2}, $${index * 10 + 3}, $${index * 10 + 4}, $${index * 10 + 5}, $${index * 10 + 6}, $${index * 10 + 7}, $${index * 10 + 8}, $${index * 10 + 9}, $${index * 10 + 10}, $${index * 10 + 11})`
+    ).join(", ")}
     `;
 
     const orderDetailsValues = orderDetails.items.flatMap((item) => {
       const itemDetails = items.find(i => i.item_id === item.item_id);
       return [
-        item.item_id, 
+        item.item_id,
         item.qty,
         itemDetails?.name,
         itemDetails?.description,
@@ -166,11 +185,11 @@ export async function addOrderModel(orderDetails: orderType) {
   }
 }
 
-export async function fetchItemsModel(items: string[]):Promise<itemDetailsType[]> {
+export async function fetchItemsModel(items: string[]): Promise<itemDetailsType[]> {
   try {
     const res = await pool.query(fetchItemsQuery, [items]);
     return res.rows;
-  } catch(error) {
+  } catch (error) {
     console.error("Error fetching items, ", error)
     throw new Error("Error fetching items");
   }
@@ -197,10 +216,10 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
     }
 
     const orders: { [key: string]: any } = {};
-    
 
-    result.rows.forEach((row:{order_id:Number,booking_id:string, item_id:string, name:string, description:string, qty:Number, created_at:Number,price:Number, type: string,status:string, rating: Number, feedback: string,category:string, discount: number}) => {
-      const { order_id,booking_id, item_id, name, description, qty, created_at,price, type,status, rating, feedback,category,discount } = row;
+
+    result.rows.forEach((row: { order_id: Number, booking_id: string, item_id: string, name: string, description: string, qty: Number, created_at: Number, price: Number, type: string, status: string, rating: Number, feedback: string, category: string, discount: number }) => {
+      const { order_id, booking_id, item_id, name, description, qty, created_at, price, type, status, rating, feedback, category, discount } = row;
 
       const orderIdKey = order_id.toString();
       if (!orders[orderIdKey]) {
@@ -221,9 +240,9 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
         itemName: name,
         itemDescription: description,
         itemQty: qty,
-        itemPrice:price,
+        itemPrice: price,
         itemType: type,
-        itemCategory:category
+        itemCategory: category
       });
     });
 
@@ -233,7 +252,7 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
 
     ordersArray.sort((a, b) => b.orderId - a.orderId);
 
-    
+
 
     return ordersArray;
   } catch (error) {
@@ -264,7 +283,7 @@ export async function updateOrderStatusModel(orderid: string, status: string) {
 
 export async function updateItemModel(itemDetails: itemDetailsType) {
   try {
-    
+
     await pool.query(updateItemQuery, [
       itemDetails.name,
       itemDetails.description,
@@ -276,7 +295,7 @@ export async function updateItemModel(itemDetails: itemDetailsType) {
       itemDetails.item_id,
       itemDetails.base_price
     ]);
-    
+
     return { message: "Item updated successfully" };
   } catch (error) {
     console.error("Error updating item", error);
@@ -316,7 +335,7 @@ export async function fetchBookingByEmailId(emailId: string) {
 
 export async function fetchBookingByBookingIdModel(bookingId: string) {
   try {
-    
+
     const result = await pool.query(fetchBookingByBookingIdQuery, [bookingId]);
     return (result.rows[0]);
   } catch (error) {
@@ -372,7 +391,7 @@ export async function insertFeedbackCOSModel(type: string, booking_id: string, r
     throw new Error("Error updating feedback cos");
   }
 }
-export async function updateCategoryModel(originalCategory: string, newCategory: string,categories:string[]) {
+export async function updateCategoryModel(originalCategory: string, newCategory: string, categories: string[]) {
   try {
     await pool.query('BEGIN');
 
@@ -402,9 +421,9 @@ export async function fetchCategory(category: string) {
     throw new Error("Error updating feedback cos");
   }
 }
-export async function addCategory(itemDetails:itemDetailsType) {
+export async function addCategory(itemDetails: itemDetailsType) {
   try {
-    const result = await pool.query(addCategoryQuery, [itemDetails.category_id,itemDetails.category,itemDetails.sequence]);
+    const result = await pool.query(addCategoryQuery, [itemDetails.category_id, itemDetails.category, itemDetails.sequence]);
     return result.rows;
   } catch (error) {
     console.error("Error updating feedback cos", error);
@@ -412,9 +431,9 @@ export async function addCategory(itemDetails:itemDetailsType) {
   }
 }
 
-export async function fetchAllCouponsModel() {
+export async function fetchAllCouponsModel(email: string) {
   try {
-    const result = await pool.query(fetchAllCouponsQuery);
+    const result = await pool.query(fetchAllCouponsQuery, [email]);
     console.log("fetch All coupons: ", result.rows)
     return result.rows;
   } catch (error) {
@@ -432,9 +451,9 @@ export async function fetchCouponDetailsModel(coupon_id: string) {
     throw new Error("Error fetching coupon details");
   }
 }
-export async function fetchUserRestrictionModel(coupon_id: string, email: string) {
+export async function fetchUserRestrictionModel(coupon_id: string) {
   try {
-    const result = await pool.query(fetchUserRestrictionQuery, [coupon_id, email]);
+    const result = await pool.query(fetchUserRestrictionQuery, [coupon_id]);
     return result.rows;
   } catch (error) {
     console.error("Error fetching coupon user restriction", error);
@@ -488,7 +507,7 @@ export async function fetchCouponUsageCountModel(coupon_id: string) {
   }
 }
 
-export async function putCouponUsageModel(coupon_id: string, email: string, usage_id: string, order_id: number, created_at: string, is_redeemed: boolean ) {
+export async function putCouponUsageModel(coupon_id: string, email: string, usage_id: string, order_id: number, created_at: string, is_redeemed: boolean) {
   try {
     const result = await pool.query(putCouponUsageQuery, [
       usage_id,
@@ -499,7 +518,7 @@ export async function putCouponUsageModel(coupon_id: string, email: string, usag
       created_at,
     ]);
     await pool.query(insertCouponUsageFreeItemsQuery, [usage_id, coupon_id, created_at])
-    return {message: "Usage inserted successfully"};
+    return { message: "Usage inserted successfully" };
   } catch (error) {
     console.error("Error inserting coupon usage: ", error);
     throw new Error("Error inserting coupon usage");
@@ -517,7 +536,7 @@ export async function fetchAllCouponsAdminModel() {
 }
 
 
-export async function fetchOriginalCategory(item_id:string) {
+export async function fetchOriginalCategory(item_id: string) {
   try {
     const result = await pool.query(getCategoryItemsCountQuery, [item_id]);
     return result.rows;
@@ -526,7 +545,7 @@ export async function fetchOriginalCategory(item_id:string) {
     throw new Error("Error updating feedback cos");
   }
 }
-export async function deleteCategory(item_id:string) {
+export async function deleteCategory(item_id: string) {
   try {
     const result = await pool.query(deleteCategoryQuery, [item_id]);
     return result.rows;
@@ -542,5 +561,129 @@ export async function fetchBestSeller() {
   } catch (error) {
     console.error("Error updating feedback cos", error);
     throw new Error("Error updating feedback cos");
+  }
+}
+
+export async function fetchCheckInByRoomModel(room: string) {
+  try {
+    const result = await pool.query(fetchCheckinByRoomQuery, [room]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching check in by room", error);
+    throw new Error("Error fetching check in by room");
+  }
+}
+
+export async function updateCheckinGuestModel(booking_id: string, document_url: string, email: string, room: string) {
+  try {
+    const res = await pool.query(updateCheckInGuestQuery,[document_url, email, booking_id]);
+    const old_email = res.rows[0].guest_email;
+    await pool.query(upsertRestrictionUserQuery,[coupon_id_checkin,email,convertUTCToIST(new Date()),convertUTCToIST(new Date()),true]);
+    const res2 = await pool.query(fetchCouponDetailsQuery,[coupon_id_checkin]);
+    const coupon:Coupon = res2.rows[0];
+
+    await pool.query(updateCheckInGuestDetailsQuery, [email, old_email])
+    return {message: "Check-In updated successfully!",coupon:coupon};
+  } catch (error) {
+    console.error("Error updating check in guest", error);
+    throw new Error("Error updating check in guest");
+  }
+}
+
+
+
+
+export async function addCouponAdminModel(couponData: adminCoupon) {
+  console.log(couponData)
+  try {
+    await pool.query('Begin');
+    await pool.query(addCouponAdminQuery, [couponData.coupon_id, couponData.code, couponData.description, couponData.coupon_type, couponData.discount_value, couponData.max_discount, couponData.min_order_value, couponData.start_date, couponData.end_date, couponData.usage_limit, couponData.is_active, couponData.created_at, couponData.modified_at,couponData.coupon_type_description,couponData.user_usage_limit, couponData.percentage_discount]);
+    if(couponData.coupon_type==="free_item"){
+      for(let i =0;i<couponData.free_items.length;i++){ 
+        await pool.query(freeItemsAddedQuery, [couponData.coupon_id, couponData.free_items[i].item_id, couponData.free_items[i].qty, couponData.created_at, couponData.modified_at]);
+      }
+    }
+    for(let i =0;i<couponData.applicable_categories.length;i++){
+      await pool.query(addRestictionCategoryQuery,[couponData.coupon_id,couponData.applicable_categories[i],true,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.applicable_items.length;i++){
+      await pool.query(addRestictionItemQuery,[couponData.coupon_id,couponData.applicable_items[i].item_id,couponData.applicable_items[i].qty,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.selectedGuests.length;i++){
+      await pool.query(addRestictionUserQuery,[couponData.coupon_id,couponData.selectedGuests[i].email,couponData.created_at,couponData.modified_at,true]);
+    }
+    await pool.query('COMMIT')
+    return ("Successfully added coupon data")
+  } catch (error) {
+    await pool.query('ROLLBACK')
+    console.error("Error adding coupon", error);
+    throw new Error("Error adding coupon");
+  }
+}
+export async function deleteCouponAdminModel(coupon_id:string) {
+
+  try {
+    await pool.query('BEGIN');
+    await pool.query(deleteCouponAdminQuery, [coupon_id]);
+    await pool.query(freeItemsDeletedQuery, [coupon_id]);
+    await pool.query(deleteAppicableCategory, [coupon_id]);
+    await pool.query(deleteAppicableItem, [coupon_id]);
+    await pool.query(deleteSelectedGuest, [coupon_id]);
+    await pool.query('COMMIT');
+    return ("Successfully deleted coupon data")
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    console.error("Error deleting free item", error);
+    throw new Error("Error deleting free item");
+  }
+}
+
+export async function updateCouponAdminModel(couponData: adminCoupon) {
+  try {
+    await pool.query('BEGIN');
+    await pool.query(updateCouponAdminQuery, [
+      couponData.code,
+      couponData.description,
+      couponData.coupon_type,
+      couponData.discount_value,
+      couponData.max_discount,
+      couponData.min_order_value,
+      couponData.start_date,
+      couponData.end_date,
+      couponData.usage_limit,
+      couponData.is_active,
+      couponData.modified_at,
+      couponData.coupon_type_description,
+      couponData.user_usage_limit,
+      couponData.percentage_discount,
+      couponData.coupon_id
+    ]);
+    await pool.query(freeItemsDeletedQuery, [couponData.coupon_id]);
+    await pool.query(deleteAppicableCategory, [couponData.coupon_id]);
+    await pool.query(deleteAppicableItem, [couponData.coupon_id]);
+    await pool.query(deleteSelectedGuest, [couponData.coupon_id]);
+    if(couponData.coupon_type==="free_item"){
+      for(let i =0;i<couponData.free_items.length;i++){ 
+        await pool.query(freeItemsAddedQuery, [couponData.coupon_id, couponData.free_items[i].item_id, couponData.free_items[i].qty, couponData.created_at, couponData.modified_at]);
+      }
+    }
+    for(let i =0;i<couponData.applicable_categories.length;i++){
+      await pool.query(addRestictionCategoryQuery,[couponData.coupon_id,couponData.applicable_categories[i],true,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.applicable_items.length;i++){
+      await pool.query(addRestictionItemQuery,[couponData.coupon_id,couponData.applicable_items[i].item_id,couponData.applicable_items[i].qty,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.selectedGuests.length;i++){
+      await pool.query(addRestictionUserQuery,[couponData.coupon_id,couponData.selectedGuests[i].email,couponData.created_at,couponData.modified_at,true]);
+    }
+    await pool.query('COMMIT');
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    console.error("Error updating coupon", error);
+    throw new Error("Error updating coupon");
   }
 }

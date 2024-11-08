@@ -56,3 +56,56 @@ class PriorityQueue {
 }
 
 export const priorityQueue = new PriorityQueue();
+
+type CouponData = {
+    coupon_id: string;
+    coupon_code: string;
+    description: string;
+    date_created: Date;
+    email: string;
+    room: string;
+    name: string;
+};
+
+class CouponPendingQueue {
+    private queue: CouponData[];
+
+    constructor() {
+        this.queue = [];
+    }
+
+    public enqueue(coupon: CouponData) {
+        this.queue.push(coupon);
+        this.queue.sort((a, b) => a.date_created.getTime() - b.date_created.getTime());
+    }
+
+    public dequeue(): CouponData | undefined {
+        return this.queue.shift();
+    }
+
+    public peek(): CouponData | undefined {
+        return this.queue[0];
+    }
+
+    public isEmpty(): boolean {
+        return this.queue.length === 0;
+    }
+
+    public size(): number {
+        return this.queue.length;
+    }
+
+    public removeById(couponId: string): CouponData | undefined {
+        const index = this.queue.findIndex(coupon => coupon.coupon_id === couponId);
+        if (index === -1) {
+            return undefined;
+        }
+        return this.queue.splice(index, 1)[0];
+    }
+
+    public getAllEntries(): CouponData[] {
+        return this.queue;
+    }
+}
+
+export const couponPendingQueue = new CouponPendingQueue();
