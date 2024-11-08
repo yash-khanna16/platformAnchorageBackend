@@ -57,6 +57,19 @@ import {
   deleteAppicableItem,
   deleteSelectedGuest,
   upsertRestrictionUserQuery
+  addCouponAdminQuery,
+  freeItemsAddedQuery,
+  freeItemsDeletedQuery,
+  deleteCouponAdminQuery,
+  getExistingCouponQuery,
+  updateCouponAdminQuery,
+  addRestictionCategoryQuery,
+  addRestictionItemQuery,
+  addRestictionUserQuery,
+  deleteAppicableCategory,
+  deleteAppicableItem,
+  deleteSelectedGuest,
+  upsertRestrictionUserQuery
 } from "./cosqueries";
 
 import { v4 as uuidv4 } from "uuid";
@@ -688,3 +701,98 @@ export async function updateCouponAdminModel(couponData: adminCoupon) {
 
 
 
+
+export async function addCouponAdminModel(couponData: adminCoupon) {
+  console.log(couponData)
+  try {
+    await pool.query('Begin');
+    await pool.query(addCouponAdminQuery, [couponData.coupon_id, couponData.code, couponData.description, couponData.coupon_type, couponData.discount_value, couponData.max_discount, couponData.min_order_value, couponData.start_date, couponData.end_date, couponData.usage_limit, couponData.is_active, couponData.created_at, couponData.modified_at,couponData.coupon_type_description,couponData.user_usage_limit, couponData.percentage_discount]);
+    if(couponData.coupon_type==="free_item"){
+      for(let i =0;i<couponData.free_items.length;i++){ 
+        await pool.query(freeItemsAddedQuery, [couponData.coupon_id, couponData.free_items[i].item_id, couponData.free_items[i].qty, couponData.created_at, couponData.modified_at]);
+      }
+    }
+    for(let i =0;i<couponData.applicable_categories.length;i++){
+      await pool.query(addRestictionCategoryQuery,[couponData.coupon_id,couponData.applicable_categories[i],true,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.applicable_items.length;i++){
+      await pool.query(addRestictionItemQuery,[couponData.coupon_id,couponData.applicable_items[i].item_id,couponData.applicable_items[i].qty,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.selectedGuests.length;i++){
+      await pool.query(addRestictionUserQuery,[couponData.coupon_id,couponData.selectedGuests[i].email,couponData.created_at,couponData.modified_at,true]);
+    }
+    await pool.query('COMMIT')
+    return ("Successfully added coupon data")
+  } catch (error) {
+    await pool.query('ROLLBACK')
+    console.error("Error adding coupon", error);
+    throw new Error("Error adding coupon");
+  }
+}
+export async function deleteCouponAdminModel(coupon_id:string) {
+
+  try {
+    await pool.query('BEGIN');
+    await pool.query(deleteCouponAdminQuery, [coupon_id]);
+    await pool.query(freeItemsDeletedQuery, [coupon_id]);
+    await pool.query(deleteAppicableCategory, [coupon_id]);
+    await pool.query(deleteAppicableItem, [coupon_id]);
+    await pool.query(deleteSelectedGuest, [coupon_id]);
+    await pool.query('COMMIT');
+    return ("Successfully deleted coupon data")
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    console.error("Error deleting free item", error);
+    throw new Error("Error deleting free item");
+  }
+}
+
+export async function updateCouponAdminModel(couponData: adminCoupon) {
+  try {
+    await pool.query('BEGIN');
+    await pool.query(updateCouponAdminQuery, [
+      couponData.code,
+      couponData.description,
+      couponData.coupon_type,
+      couponData.discount_value,
+      couponData.max_discount,
+      couponData.min_order_value,
+      couponData.start_date,
+      couponData.end_date,
+      couponData.usage_limit,
+      couponData.is_active,
+      couponData.modified_at,
+      couponData.coupon_type_description,
+      couponData.user_usage_limit,
+      couponData.percentage_discount,
+      couponData.coupon_id
+    ]);
+    await pool.query(freeItemsDeletedQuery, [couponData.coupon_id]);
+    await pool.query(deleteAppicableCategory, [couponData.coupon_id]);
+    await pool.query(deleteAppicableItem, [couponData.coupon_id]);
+    await pool.query(deleteSelectedGuest, [couponData.coupon_id]);
+    if(couponData.coupon_type==="free_item"){
+      for(let i =0;i<couponData.free_items.length;i++){ 
+        await pool.query(freeItemsAddedQuery, [couponData.coupon_id, couponData.free_items[i].item_id, couponData.free_items[i].qty, couponData.created_at, couponData.modified_at]);
+      }
+    }
+    for(let i =0;i<couponData.applicable_categories.length;i++){
+      await pool.query(addRestictionCategoryQuery,[couponData.coupon_id,couponData.applicable_categories[i],true,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.applicable_items.length;i++){
+      await pool.query(addRestictionItemQuery,[couponData.coupon_id,couponData.applicable_items[i].item_id,couponData.applicable_items[i].qty,couponData.created_at,couponData.modified_at]);
+    }
+    
+    for(let i =0;i<couponData.selectedGuests.length;i++){
+      await pool.query(addRestictionUserQuery,[couponData.coupon_id,couponData.selectedGuests[i].email,couponData.created_at,couponData.modified_at,true]);
+    }
+    await pool.query('COMMIT');
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    console.error("Error updating coupon", error);
+    throw new Error("Error updating coupon");
+  }
+}
