@@ -255,7 +255,10 @@ SELECT c.*
 FROM coupons c
 LEFT JOIN coupon_user_restriction cur ON c.coupon_id = cur.coupon_id
 WHERE c.is_active = true
-  AND (cur.is_allowed = true AND cur.user_email = $1 OR cur.restriction_id IS NULL);
+  AND (
+      (cur.is_allowed = true AND cur.user_email = $1)
+      OR cur.is_allowed IS NULL
+  );
 
 `;
 
@@ -306,15 +309,18 @@ export const fetchBestSellerQuery = `WITH RankedItems AS (
   WHERE rank <= 2
   ORDER BY category, occurrence_count DESC;`;
 
-export const fetchCheckinByRoomQuery = `
-SELECT *
-FROM bookings AS b
-JOIN guests AS g ON g.email = b.guest_email
-WHERE b.document_url IS NULL
-  AND b.room = $1
-  AND NOW() BETWEEN b.checkin AND b.checkout;
-`;
-
+  export const fetchCheckinByRoomQuery = `
+  SELECT *
+  FROM bookings AS b
+  JOIN guests AS g ON g.email = b.guest_email
+  WHERE b.document_url IS NULL
+    AND b.room = $1
+    AND (
+      NOW() BETWEEN b.checkin AND b.checkout
+      OR (b.checkin > NOW() AND b.checkin <= NOW() + INTERVAL '6 hours')
+    );
+  `;
+  
 export const updateCheckInGuestQuery = `
     WITH old_data AS (
         SELECT guest_email
@@ -359,11 +365,21 @@ export const addCouponAdminQuery = `
 
 export const freeItemsAddedQuery = `Insert Into coupon_free_item(coupon_id,item_id,qty,created_at,modified_at) Values($1,$2,$3,$4,$5)`
 
-export const addRestictionCategoryQuery = `Insert Into coupon_category_restriction(restriction_id,coupon_id,category_id,is_allowed,created_at,modified_at) Values($1,$2,$3,$4,$5,$6)`
+export const addRestictionCategoryQuery = `Insert Into coupon_category_restriction(coupon_id,category_id,is_allowed,created_at,modified_at) Values($1,$2,$3,$4,$5)`
 
-export const addRestictionItemQuery = `Insert Into coupon_item_restriction(restriction_id,coupon_id,item_id,qty,created_at,modified_at) Values($1,$2,$3,$4,$5,$6)`
+export const addRestictionItemQuery = `Insert Into coupon_item_restriction(coupon_id,item_id,qty,created_at,modified_at) Values($1,$2,$3,$4,$5)`
 
-export const addRestictionUserQuery = `Insert Into coupon_user_restriction(restriction_id,coupon_id,user_email,created_at,modified_at,is_allowed) Values($1,$2,$3,$4,$5,$6)`
+export const addRestictionUserQuery = `Insert Into coupon_user_restriction(coupon_id,user_email,created_at,modified_at,is_allowed) Values($1,$2,$3,$4,$5)`
+
+export const upsertRestrictionUserQuery = `
+    INSERT INTO coupon_user_restriction (coupon_id, user_email, created_at, modified_at, is_allowed)
+    VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT (coupon_id, user_email) 
+    DO UPDATE SET 
+        modified_at = EXCLUDED.modified_at,
+        is_allowed = EXCLUDED.is_allowed;
+`;
+
 
 export const freeItemsDeletedQuery = `DELETE  FROM coupon_free_item WHERE coupon_id=$1`
 

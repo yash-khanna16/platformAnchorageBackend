@@ -94,12 +94,12 @@ export type adminCoupon = {
   code: string;
   description: string;
   coupon_type: 'free_item' | 'percentage_discount' | 'flat_discount';
-  discount_value: string;
+  discount_value: string|null;
   max_discount: number | null;
-  min_order_value: number;
+  min_order_value: number|null;
   start_date: string;
   end_date: string;
-  usage_limit: number;
+  usage_limit: number|null;
   is_active: boolean;
   created_at: string | null;
   modified_at: string | null;
