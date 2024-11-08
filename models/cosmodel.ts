@@ -61,7 +61,7 @@ import {
 
 import { v4 as uuidv4 } from "uuid";
 
-const coupon_id_checkin = 'e9c5ab16-691b-47e2-9e8e-ce69234940cd'
+const coupon_id_checkin = '0442e20b-020f-438a-a6b4-3c0564e2f5a1';
 
 export async function fetchBookingByRoomModel(room: string) {
   try {
