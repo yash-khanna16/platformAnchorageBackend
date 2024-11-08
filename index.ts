@@ -8,16 +8,18 @@ import { loginAdmin } from "./controllers/guestcontroller";
 import { verifyAdmin } from "./middlewares/middleware";
 import analyticsroutes from "./routes/analyticroutes";
 import movementroutes from "./routes/movementroutes";
-import cosAdminRoutes from "./routes/cosAdminRoutes"
-import cosroutes from "./routes/cosroutes"
+import cosAdminRoutes from "./routes/cosAdminRoutes";
+import cosroutes from "./routes/cosroutes";
 import cron from "node-cron";
 import pool from "./db";
 import http from "http";
-import dotenv from "dotenv"
+import dotenv from "dotenv";
 import { initializeSocket } from "./socket";
-dotenv.config()
-const {ROOM_CODE} = process.env;
+import AWS from "aws-sdk";
+import dayjs from "dayjs";
 
+dotenv.config();
+const { ROOM_CODE } = process.env;
 
 const app = express();
 const port = 8000;
@@ -25,7 +27,6 @@ const port = 8000;
 app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
-
 
 const server = http.createServer(app);
 
@@ -64,10 +65,10 @@ app.post("/createlogin", async (req: Request, res: Response) => {
 });
 app.get("/loginAdmin", loginAdmin);
 
-app.use("/api/admin/cos",cosAdminRoutes);
-app.use("/api/admin",verifyAdmin, guestRoutes);
-app.use("/api/analytics",verifyAdmin, analyticsroutes);
-app.use("/api/movement",verifyAdmin, movementroutes);
+app.use("/api/admin/cos", cosAdminRoutes);
+app.use("/api/admin", verifyAdmin, guestRoutes);
+app.use("/api/analytics", verifyAdmin, analyticsroutes);
+app.use("/api/movement", verifyAdmin, movementroutes);
 app.use("/api/cos", cosroutes);
 
 // app.get("/test", (req:Request, res:Response)=>{
@@ -181,12 +182,79 @@ const moveExpiredAuditLogs = async () => {
     const result = await pool.query(query);
     console.log(`Deleted ${result.rowCount} old audit log(s)`);
   } catch (error) {
-    console.error('Error deleting old audit logs:', error);
+    console.error("Error deleting old audit logs:", error);
   }
 };
 
+const s3 = new AWS.S3({
+  region: process.env.AWS_REGION, // e.g., 'us-east-1'
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+});
 
+const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
 
+async function deleteExpiredBookingDocuments() {
+  try {
+    // Connect to the PostgreSQL database
+    await pool.connect();
+
+    // Calculate the date 15 days ago from today
+    const fifteenDaysAgo = dayjs().subtract(15, "day").toDate();
+
+    // SQL query to get expired bookings older than 15 days
+    console.log("Deleting expired documents...");
+    const res = await pool.query(
+      `
+          SELECT booking_id, document_url
+          FROM public.bookings
+          WHERE checkout < $1
+      `,
+      [fifteenDaysAgo]
+    );
+
+    console.log("res: ", res.rows);
+
+    let count = 0;
+    for (const row of res.rows) {
+      const { booking_id, document_url } = row;
+      count++;
+
+      if (document_url) {
+        // Construct the S3 key from booking_id and document_url
+        const s3Key = document_url.replace('https://platformanchoragectp.s3.amazonaws.com/', '');
+
+        try {
+          if (BUCKET_NAME) {
+            await deleteS3Object(BUCKET_NAME, s3Key);
+            console.log(`Successfully deleted document: ${s3Key} for booking ID: ${booking_id}`);
+          }
+        } catch (s3Error) {
+          console.error(`Failed to delete document for booking ID: ${booking_id} -`, s3Error);
+        }
+      } else {
+        console.log(`No document found for booking ID: ${booking_id}`);
+      }
+    }
+    console.log(`Successfully deleted ${count} documents`);
+  } catch (dbError) {
+    console.error("Database query failed:", dbError);
+  }
+}
+
+cron.schedule("0 0 * * *", deleteExpiredBookingDocuments);
+
+function deleteS3Object(bucket: string, key: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    s3.deleteObject({ Bucket: bucket, Key: key }, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
 
 // Schedule the job to run at 12:00 AM every day
 cron.schedule("0 0 * * *", () => {
@@ -196,8 +264,8 @@ cron.schedule("0 0 * * *", () => {
 
 // Schedule the job to run at 12:00 AM every 5 days
 cron.schedule("0 0 */5 * *", () => {
-  console.log('Moving all movements to logs...');
-  moveExpiredData(); 
+  console.log("Moving all movements to logs...");
+  moveExpiredData();
 });
 
 // Schedule the job to run at 12:00 AM every 2 months

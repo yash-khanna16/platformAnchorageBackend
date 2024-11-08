@@ -278,6 +278,22 @@ export const fetchAllCouponsAdmin = async (req: Request, res: Response) => {
   }
 };
 
+
+export const updateCheckinGuest = async (req: Request, res: Response) => {
+  try {    
+    const booking_id= req.body.booking_id as string;
+    const email= req.body.email as string;
+    const document_url= req.body.document_url as string;
+    const room = req.body.room as string;
+    const name = req.body.name as string;
+    
+    const result = await updateCheckinGuestService(booking_id,document_url,email,room,name);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+
 export const addCoupon = async (req: Request, res: Response) => {
   try {    
     const couponData:adminCoupon=req.body.couponData;
@@ -289,8 +305,8 @@ export const addCoupon = async (req: Request, res: Response) => {
 };
 export const deleteCoupon = async (req: Request, res: Response) => {
   try {    
-    const couponData:adminCoupon=req.body.couponData;
-    const result = await deleteCouponAdminService(couponData);
+    const coupon_id:string=req.body.coupon_id;
+    const result = await deleteCouponAdminService(coupon_id);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
@@ -315,18 +331,5 @@ export const fetchCheckinByRoom = async (req: Request, res: Response) => {
     res.status(500).send({ message: "Something went wrong, please try again!" });
   }
 };
-export const updateCheckinGuest = async (req: Request, res: Response) => {
-  try {    
-    const booking_id= req.body.booking_id as string;
-    const email= req.body.email as string;
-    const document_url= req.body.document_url as string;
-    
-    const result = await updateCheckinGuestService(booking_id,document_url,email);
-    res.status(200).send(result);
-  } catch (error) {
-    res.status(500).send({ message: "Something went wrong, please try again!" });
-  }
-};
-
 
 

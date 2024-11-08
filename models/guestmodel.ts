@@ -94,6 +94,7 @@ interface GuestData {
   additional_info: string;
   room: string;
   breakfast: number;
+  document_url: string;
   orders: OrderDataType[];
 }
 
