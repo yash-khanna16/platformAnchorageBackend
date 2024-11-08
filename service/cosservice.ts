@@ -36,6 +36,9 @@ import {
   fetchOriginalCategory,
   deleteCategory,
   fetchBestSeller,
+  addCouponAdminModel,
+  deleteCouponAdminModel,
+  updateCouponAdminModel,
   fetchCheckInByRoomModel,
   updateCheckinGuestModel,
 } from "../models/cosmodel";
@@ -43,15 +46,18 @@ import { fetchMovementByBookingIdModel } from "../models/movementmodel";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import otpGenerator from "otp-generator";
-import { Coupon, FreeItem, itemDetailsType, OrderDetails, orderType } from "../types/cos";
+import { adminCoupon, Coupon, FreeItem, itemDetailsType, OrderDetails, orderType } from "../types/cos";
 import { v4 as uuidv4 } from "uuid";
 import { getIO } from "../socket";
 import jwt from "jsonwebtoken";
+import { couponPendingQueue } from "./priorityqueue";
 
 dotenv.config();
 const { ROOM_CODE } = process.env;
 
 const maxTries = 10;
+const COUPON_MAIL_INTERVAL = 35*60*1000; // 35 minutes
+const CHECK_INTERVAL = 10000; // 10 seconds
 
 const transporter = nodemailer.createTransport({
   // service: "gmail", // You can use any email service
@@ -65,6 +71,7 @@ const transporter = nodemailer.createTransport({
 
 const transporterCOS = nodemailer.createTransport({
   // service: "gmail", // You can use any email service
+  // remember to change before pushing code
   host: "us3.smtp.mailhostbox.com",
   port: 587,
   auth: {
@@ -300,13 +307,13 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
             io.to(ROOM_CODE).emit("order_received", details);
           }
 
-                      const mailOptions = {
-                        from: process.env.COS_EMAIL,
-                        to: booking.email,
-                        cc:  process.env.OWNER_EMAIL,
-                        bcc: process.env.ADMIN_EMAIL, 
-                        subject: `Items Confirmation - [Order #${details[0].order_id}]`,
-                        html: `
+          const mailOptions = {
+            from: process.env.COS_EMAIL,
+            to: booking.email,
+            cc: process.env.OWNER_EMAIL,
+            bcc: process.env.ADMIN_EMAIL,
+            subject: `Items Confirmation - [Order #${details[0].order_id}]`,
+            html: `
                           <!DOCTYPE html>
                           <html lang="en">
                           <head>
@@ -1086,8 +1093,7 @@ async function calculateCartValue(cart: orderType): Promise<number> {
 async function checkUserRestriction(coupon_id: string, email: string): Promise<boolean> {
   try {
     const result = await fetchUserRestrictionModel(coupon_id);
-    return result.length === 0 || result.some((user:any) => user.user_email === email);    
-
+    return result.length === 0 || result.some((user: any) => user.user_email === email);
   } catch (error) {
     console.log("Error fetching user restriction ", error);
     throw new Error("Error fetching user restriction");
@@ -1196,17 +1202,21 @@ export function transformCoupons(coupons: any): any[] {
       // Initialize the coupon entry with empty arrays and Map for unique applicable_items
       transformedCoupons[coupon_id] = {
         ...coupon,
-        free_items: new Map<string, { // Use Map to ensure unique free_items by item_id
-          item_id: string;
-          qty: number;
-          name: string;
-          price: number;
-          type: string;
-          category_id: string;
-          available: boolean;
-          time_to_prepare: number;
-          base_price: number;
-        }>(),
+        free_items: new Map<
+          string,
+          {
+            // Use Map to ensure unique free_items by item_id
+            item_id: string;
+            qty: number;
+            name: string;
+            price: number;
+            type: string;
+            category_id: string;
+            available: boolean;
+            time_to_prepare: number;
+            base_price: number;
+          }
+        >(),
         applicable_category: new Set<string>(), // Set for unique category names
         applicable_items: new Map<string, { item_id: string; qty: number }>(), // Map for unique item_id with qty
         selectedGuest: new Set<string>(), // Set for unique user emails
@@ -1272,11 +1282,27 @@ export async function fetchCheckinByRoomService(room: string) {
   });
 }
 
-export async function updateCheckinGuestService(booking_id: string, document_url: string, email: string) {
+export async function updateCheckinGuestService(
+  booking_id: string,
+  document_url: string,
+  email: string,
+  room: string,
+  name: string
+) {
   return new Promise((resolve, reject) => {
-    updateCheckinGuestModel(booking_id,document_url, email)
+    updateCheckinGuestModel(booking_id, document_url, email, room)
       .then((results) => {
-        resolve(results);
+        const coupon: Coupon = results.coupon;
+        couponPendingQueue.enqueue({
+          room: room,
+          coupon_code: coupon.code,
+          coupon_id: coupon.coupon_id,
+          description: coupon.description,
+          email: email,
+          date_created: new Date(),
+          name: name,
+        });
+        resolve({ message: results.message });
       })
       .catch((error) => {
         console.log("error updating checkin ", error);
@@ -1285,3 +1311,139 @@ export async function updateCheckinGuestService(booking_id: string, document_url
   });
 }
 
+export function addCouponAdminService(couponData: adminCoupon): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      couponData.coupon_id = uuidv4();
+      couponData.created_at = new Date().toISOString();
+      couponData.modified_at = new Date().toISOString();
+      couponData.restriction_id = uuidv4();
+      const result = await addCouponAdminModel(couponData);
+      resolve({ message: "Coupon added succesfully" });
+      return;
+    } catch (error) {
+      console.log("Error adding coupon ", error);
+      reject("Error entering coupon");
+    }
+  });
+}
+export function deleteCouponAdminService(coupon_id: string): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await deleteCouponAdminModel(coupon_id);
+      resolve({ message: "Coupon deleted successfully" });
+      return;
+    } catch (error) {
+      console.log("Error deleting successfully ", error);
+      reject("Error deleting coupon");
+    }
+  });
+}
+export function updateCouponAdminService(couponData: adminCoupon): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      couponData.modified_at = new Date().toISOString();
+      await updateCouponAdminModel(couponData);
+      resolve({ message: "Coupon updated succesfully" });
+      return;
+    } catch (error) {
+      console.log("Error updating coupon ", error);
+      reject("Error updating coupon");
+    }
+  });
+}
+
+function monitorCouponQueue() {
+  setInterval(async () => {
+    const coupon = couponPendingQueue.peek();
+
+    if (coupon) {
+      const timeElapsed = (Date.now() - coupon.date_created.getTime()); 
+
+      if (timeElapsed > COUPON_MAIL_INTERVAL) {
+        console.log("Sending coupon pending mail to: ", coupon.email);
+        const mailOptions = {
+          from: process.env.COS_EMAIL,
+          to: coupon.email,
+          subject: "Your Exclusive Coupon Awaits - Don’t Miss Out!",
+          html: `
+ <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Coupon Reminder</title>
+          </head>
+          <body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                      <td align="center" style="padding: 20px;">
+                          <table width="470" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                              <!-- Welcome Message -->
+                              <tr>
+                                  <td style="padding: 20px; text-align: center;">
+                                      <p style="color: #555; font-size: 16px; margin: 0;">Hi <span style="font-weight: 600; ">${coupon.name}</span>,</p>
+                                      <p style="font-size: 24px; font-weight: bold; color: #e3342f; text-transform: uppercase; margin: 10px 0;">Your Check-in is Complete!</p>
+                                      <p style="color: #555; font-size: 16px; margin: 0;">We’re excited to offer you a special coupon!</p>
+                                  </td>
+                              </tr>
+        
+                              <!-- Coupon Section -->
+                              <tr>
+                                  <td style="padding: 0 20px 10px;">
+                                      <div style="background: linear-gradient(to right, #fef2f2, #fff7ed); border-radius: 12px; padding: 20px;">
+                                          <p style="color: #64748b; font-size: 16px; font-weight: 500; text-align: center; margin: 0 0 15px;">${coupon.description}</p>
+                                          <div style="background-color: #ffffff; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0px 1px 4px rgba(0,0,0,0.1);">
+                                              <span style="font-size: 24px; font-weight: bold; color: #e3342f;">${coupon.coupon_code}</span>
+                                          </div>
+                                      </div>
+                                  </td>
+                              </tr>
+        
+                              <!-- Claim Button -->
+                              <tr>
+                                  <td style="padding: 0 20px 20px;">
+                                      <a href="https://orders.platformanchorage.com/home?room=${coupon.room}" style="display: block; background-color: #e3342f; color: #ffffff; font-size: 16px; font-weight: bold; text-align: center; text-decoration: none; padding: 12px; border-radius: 8px; transition: background-color 0.3s; margin-top: 15px;">
+                                          Tap here to claim your coupon and enjoy the perks!
+                                      </a>
+                                  </td>
+                              </tr>
+        
+                              <!-- Footer -->
+                              <tr>
+                                  
+                                  <td style="padding: 20px; text-align: center; background-color: #f4f4f4;color: #777; font-weight: 500">
+                                    <p style="margin: 0 0; color: #777; font-weight: 500">Thank you for choosing Anchorage. We look forward to serving you again!</p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0 20px 20px; text-align: center; background-color: #f4f4f4;">
+                                            <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
+                                        </td>
+                                     </p>
+                                  </td>
+                              </tr>
+                          </table>
+                      </td>
+                  </tr>
+              </table>
+          </body>
+          </html>
+          `,
+        };
+        
+        transporterCOS.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.log("Error sending email:", error);
+          } else {
+            console.log("Coupon reminder email sent to: ", coupon.email, " response: ", info.response);
+          }
+        });
+
+        couponPendingQueue.dequeue(); // Remove the processed coupon
+      }
+    }
+  }, CHECK_INTERVAL);
+}
+
+monitorCouponQueue();
