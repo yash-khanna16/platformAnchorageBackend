@@ -540,21 +540,33 @@ WITH date_series AS (
             ), 
             '1 day'
         ) AS order_date
+),
+order_profits AS (
+    SELECT 
+        orders.order_id,
+        DATE(to_timestamp(orders.created_at::bigint / 1000))::date AS order_date,
+        COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0) - COALESCE(orders.discount, 0) AS total_profit
+    FROM 
+        orders
+    LEFT JOIN 
+        order_details ON orders.order_id = order_details.order_id
+    GROUP BY 
+        orders.order_id, order_date
 )
 SELECT 
     ds.order_date,
-    COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0) AS total_profit
+    COALESCE(SUM(op.total_profit), 0) AS total_profit
 FROM 
     date_series ds
 LEFT JOIN 
-    orders ON DATE(to_timestamp(orders.created_at::bigint / 1000)) = ds.order_date
-LEFT JOIN 
-    order_details ON orders.order_id = order_details.order_id
+    order_profits op ON ds.order_date = op.order_date
 GROUP BY 
     ds.order_date
 ORDER BY 
     ds.order_date;
 `;
+
+
 
 
 
@@ -581,21 +593,32 @@ WITH date_series AS (
             ), 
             '1 day'
         ) AS order_date
+),
+order_profits AS (
+    SELECT 
+        orders.order_id,
+        DATE(to_timestamp(orders.created_at::bigint / 1000))::date AS order_date,
+        COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0) - COALESCE(orders.discount, 0) AS total_profit
+    FROM 
+        orders
+    LEFT JOIN 
+        order_details ON orders.order_id = order_details.order_id
+    GROUP BY 
+        orders.order_id, order_date
 )
 SELECT 
     ds.order_date,
-    COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0) AS total_profit
+    COALESCE(SUM(op.total_profit), 0) AS total_profit
 FROM 
     date_series ds
 LEFT JOIN 
-    orders ON DATE(to_timestamp(orders.created_at::bigint / 1000)) = ds.order_date
-LEFT JOIN 
-    order_details ON orders.order_id = order_details.order_id
+    order_profits op ON ds.order_date = op.order_date
 GROUP BY 
     ds.order_date
 ORDER BY 
     ds.order_date;
 `;
+
 
 
 
@@ -613,21 +636,32 @@ WITH date_series AS (
             ), 
             '1 day'
         ) AS order_date
+),
+order_profits AS (
+    SELECT 
+        orders.order_id,
+        DATE(to_timestamp(orders.created_at::bigint / 1000))::date AS order_date,
+        COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0) - COALESCE(orders.discount, 0) AS total_profit
+    FROM 
+        orders
+    LEFT JOIN 
+        order_details ON orders.order_id = order_details.order_id
+    GROUP BY 
+        orders.order_id, order_date
 )
 SELECT 
     ds.order_date,
-    COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0) AS total_profit
+    COALESCE(SUM(op.total_profit), 0) AS total_profit
 FROM 
     date_series ds
 LEFT JOIN 
-    orders ON DATE(to_timestamp(orders.created_at::bigint / 1000)) = ds.order_date
-LEFT JOIN 
-    order_details ON orders.order_id = order_details.order_id
+    order_profits op ON ds.order_date = op.order_date
 GROUP BY 
     ds.order_date
 ORDER BY 
     ds.order_date;
 `;
+
 
 
 

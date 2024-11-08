@@ -278,6 +278,7 @@ export const fetchAllCouponsAdmin = async (req: Request, res: Response) => {
 export const fetchCheckinByRoom = async (req: Request, res: Response) => {
   try {    
     const room = req.headers.room as string;
+    console.log(room);
     const result = await fetchCheckinByRoomService(room);
     res.status(200).send(result);
   } catch (error) {
