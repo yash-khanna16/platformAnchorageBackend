@@ -61,7 +61,7 @@ import {
 
 import { v4 as uuidv4 } from "uuid";
 
-const coupon_id_checkin = 'e9c5ab16-691b-47e2-9e8e-ce69234940cd'
+const coupon_id_checkin = '0442e20b-020f-438a-a6b4-3c0564e2f5a1';
 
 export async function fetchBookingByRoomModel(room: string) {
   try {
@@ -576,9 +576,9 @@ export async function fetchCheckInByRoomModel(room: string) {
 
 export async function updateCheckinGuestModel(booking_id: string, document_url: string, email: string, room: string) {
   try {
-    const res = await pool.query(updateCheckInGuestQuery,[document_url, email, booking_id]);
-    const old_email = res.rows[0].guest_email;
-    await pool.query(upsertRestrictionUserQuery,[coupon_id_checkin,email,convertUTCToIST(new Date()),convertUTCToIST(new Date()),true]);
+    const res = await pool.query(updateCheckInGuestQuery,[document_url, email, booking_id, new Date()]);
+    const old_email = res.rows[0].old_email;
+    // await pool.query(upsertRestrictionUserQuery,[coupon_id_checkin,email,convertUTCToIST(new Date()),convertUTCToIST(new Date()),true]);
     const res2 = await pool.query(fetchCouponDetailsQuery,[coupon_id_checkin]);
     const coupon:Coupon = res2.rows[0];
 

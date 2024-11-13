@@ -328,7 +328,7 @@ export const updateCheckInGuestQuery = `
         WHERE booking_id = $3
     )
     UPDATE bookings
-    SET document_url = $1, guest_email = $2
+    SET document_url = $1, guest_email = $2, checkin = $4
     WHERE booking_id = $3
     RETURNING (SELECT guest_email FROM old_data) AS old_email;
 `;
