@@ -258,8 +258,8 @@ WHERE c.is_active = true
   AND (
       (cur.is_allowed = true AND cur.user_email = $1)
       OR cur.is_allowed IS NULL
-  );
-
+  )
+  ORDER BY c.created_at;
 `;
 
 export const fetchCouponDetailsQuery = `
@@ -328,7 +328,7 @@ export const updateCheckInGuestQuery = `
         WHERE booking_id = $3
     )
     UPDATE bookings
-    SET document_url = $1, guest_email = $2, checkin = $4
+    SET document_url = $1, guest_email = $2, checkin = $4, document_url_back = $5
     WHERE booking_id = $3
     RETURNING (SELECT guest_email FROM old_data) AS old_email;
 `;

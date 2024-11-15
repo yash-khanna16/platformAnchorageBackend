@@ -95,6 +95,7 @@ interface GuestData {
   room: string;
   breakfast: number;
   document_url: string;
+  document_url_back: string|null;
   orders: OrderDataType[];
 }
 
