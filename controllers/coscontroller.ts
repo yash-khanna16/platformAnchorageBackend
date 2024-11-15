@@ -284,10 +284,11 @@ export const updateCheckinGuest = async (req: Request, res: Response) => {
     const booking_id= req.body.booking_id as string;
     const email= req.body.email as string;
     const document_url= req.body.document_url as string;
+    const document_url_back= req.body.document_url_back as string|null;
     const room = req.body.room as string;
     const name = req.body.name as string;
     
-    const result = await updateCheckinGuestService(booking_id,document_url,email,room,name);
+    const result = await updateCheckinGuestService(booking_id,document_url,email,room,name,document_url_back);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
