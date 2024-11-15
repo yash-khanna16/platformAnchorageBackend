@@ -1287,10 +1287,11 @@ export async function updateCheckinGuestService(
   document_url: string,
   email: string,
   room: string,
-  name: string
+  name: string,
+  document_url_back: string|null
 ) {
   return new Promise((resolve, reject) => {
-    updateCheckinGuestModel(booking_id, document_url, email, room)
+    updateCheckinGuestModel(booking_id, document_url, email, room,document_url_back)
       .then((results) => {
         const coupon: Coupon = results.coupon;
         couponPendingQueue.enqueue({
