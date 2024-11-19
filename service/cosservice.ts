@@ -186,7 +186,6 @@ export async function putItemService(itemDetails: itemDetailsType) {
   return new Promise(async (resolve, reject) => {
     itemDetails.item_id = uuidv4();
     const categoryAvailable = await fetchCategory(itemDetails.category);
-    console.log(categoryAvailable);
     if (categoryAvailable.length === 0) {
       itemDetails.category_id = uuidv4();
       await addCategory(itemDetails);
@@ -199,8 +198,9 @@ export async function putItemService(itemDetails: itemDetailsType) {
           reject("Error inserting item");
         });
     } else {
-      itemDetails.sequence = categoryAvailable.sequence;
-      itemDetails.category_id = categoryAvailable.category_id;
+      itemDetails.sequence = categoryAvailable[0].sequence;
+      itemDetails.category_id = categoryAvailable[0].category_id;
+      console.log(itemDetails);
       putItemModel(itemDetails)
         .then((results) => {
           resolve(results);
