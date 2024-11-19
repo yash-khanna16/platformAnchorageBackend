@@ -133,7 +133,8 @@ export async function addOrderModel(orderDetails: orderType) {
       orderDetails.remarks,
       orderDetails.created_at,
       orderDetails.status,
-      orderDetails.discount
+      orderDetails.discount,
+      orderDetails.delay
     ]);
 
     const order_id = result.rows[0].order_id;
