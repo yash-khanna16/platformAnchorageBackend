@@ -51,7 +51,8 @@ import { v4 as uuidv4 } from "uuid";
 import { getIO } from "../socket";
 import jwt from "jsonwebtoken";
 import { couponPendingQueue } from "./priorityqueue";
-import { updateMealsModel } from "../models/guestmodel";
+import { fetchMealsByBookingIdAnDateModel as fetchMealsByBookingIdAndDateModel, fetchMealsByBookingIdModel, updateMealsModel } from "../models/guestmodel";
+import { fetchMealsByBookingId } from "../controllers/guestcontroller";
 
 dotenv.config();
 const { ROOM_CODE } = process.env;
@@ -632,6 +633,10 @@ export async function updateOrderStatusService(orderid: string, status: string) 
           console.log("res: ", details[0]);
 
           if (status === "Delivered") {
+
+            const meals = (await fetchMealsByBookingIdAndDateModel(details[0].booking_id,new Date()));
+            console.log("meals: ", meals)
+
             let breakfast_veg = 0,
               lunch_veg = 0,
               dinner_veg = 0;
@@ -639,42 +644,44 @@ export async function updateOrderStatusService(orderid: string, status: string) 
               lunch_nonveg = 0,
               dinner_nonveg = 0;
 
-            details[0].items.map((item) => {
-              switch (item.name) {
-                case process.env.BREAKFAST_VEG_ID:
-                  breakfast_veg++;
-                  break;
-                case process.env.LUNCH_VEG_ID:
-                  lunch_veg++;
-                  break;
-                case process.env.DINNER_VEG_ID:
-                  dinner_veg++;
-                  break;
-                case process.env.BREAKFAST_NON_VEG_ID:
-                  breakfast_nonveg++;
-                  break;
-                case process.env.LUNCH_NON_VEG_ID:
-                  lunch_nonveg++;
-                  break;
-                case process.env.DINNER_NON_VEG_ID:
-                  dinner_nonveg++;
-                  break;
-                default:
-                  break; // Optional: Handle cases where item.name doesn't match any ID
-              }
-            });
-            const mealDetails: MealDetails[] = [
-              {
-                booking_id: details[0].booking_id, // Replace with actual booking ID
-                date: new Date(), // Current date in YYYY-MM-DD format
-                breakfast_veg: 0,
-                breakfast_nonveg: 0,
-                lunch_veg: 0,
-                lunch_nonveg: 0,
-                dinner_veg: 0,
-                dinner_nonveg: 0,
-              },
-            ];
+              details[0].items.map((item) => {
+                switch (item.item_id) { // Use item_id instead of name
+                  case process.env.BREAKFAST_VEG_ID:
+                    breakfast_veg += item.qty; // Increment by item.qty if more than one
+                    break;
+                  case process.env.LUNCH_VEG_ID:
+                    lunch_veg += item.qty;
+                    break;
+                  case process.env.DINNER_VEG_ID:
+                    dinner_veg += item.qty;
+                    break;
+                  case process.env.BREAKFAST_NON_VEG_ID:
+                    breakfast_nonveg += item.qty;
+                    break;
+                  case process.env.LUNCH_NON_VEG_ID:
+                    lunch_nonveg += item.qty;
+                    break;
+                  case process.env.DINNER_NON_VEG_ID:
+                    dinner_nonveg += item.qty;
+                    break;
+                  default:
+                    break; // Handle items that don't match any meal type
+                }
+              });
+              
+              const mealDetails: MealDetails[] = [
+                {
+                  booking_id: details[0].booking_id,
+                  date: new Date(), // Format date as YYYY-MM-DD
+                  breakfast_veg,
+                  breakfast_nonveg,
+                  lunch_veg,
+                  lunch_nonveg,
+                  dinner_veg,
+                  dinner_nonveg,
+                },
+              ];
+              
             console.log("meal details: ", mealDetails);
 
             // if (breakfast_veg + lunch_veg + dinner_veg + breakfast_nonveg + lunch_nonveg + dinner_nonveg > 0) {

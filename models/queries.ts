@@ -173,6 +173,8 @@ export const fetchMealsByDateQuery = `
 
 export const fetchMealsByBookingIdQuery = `SELECT * FROM meals where booking_id = $1 ORDER BY date`;
 
+export const fetchMealsByBookingIdAnDateQuery = `SELECT * FROM meals where booking_id = $1 AND date=$2::date`;
+
 export const fetchBookingLogsQuery = "SELECT * FROM logs JOIN guests ON guests.email=logs.guest_email";
 
 export const addToAuditLogs = "insert into audit_logs(audit_id,time,author,api_call,name,phone)values($1,$2,$3,$4,$5,$6)";
