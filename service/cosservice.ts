@@ -51,12 +51,13 @@ import { v4 as uuidv4 } from "uuid";
 import { getIO } from "../socket";
 import jwt from "jsonwebtoken";
 import { couponPendingQueue } from "./priorityqueue";
+import { updateMealsModel } from "../models/guestmodel";
 
 dotenv.config();
 const { ROOM_CODE } = process.env;
 
 const maxTries = 10;
-const COUPON_MAIL_INTERVAL = 35*60*1000; // 35 minutes
+const COUPON_MAIL_INTERVAL = 35 * 60 * 1000; // 35 minutes
 const CHECK_INTERVAL = 10000; // 10 seconds
 
 const transporter = nodemailer.createTransport({
@@ -612,6 +613,14 @@ export async function fetchAllOrdersService() {
   });
 }
 
+const getCurrentDateInYYYYMMDD = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export async function updateOrderStatusService(orderid: string, status: string) {
   return new Promise((resolve, reject) => {
     updateOrderStatusModel(orderid, status)
@@ -620,8 +629,65 @@ export async function updateOrderStatusService(orderid: string, status: string) 
           const res = await fetchOrderDetailsByOrderId(orderid);
           const transformedResults = convertOrders(res);
           const details: OrderDetails[] = Object.values(transformedResults);
+          console.log("res: ", details[0]);
 
           if (status === "Delivered") {
+            let breakfast_veg = 0,
+              lunch_veg = 0,
+              dinner_veg = 0;
+            let breakfast_nonveg = 0,
+              lunch_nonveg = 0,
+              dinner_nonveg = 0;
+
+            details[0].items.map((item) => {
+              switch (item.name) {
+                case process.env.BREAKFAST_VEG_ID:
+                  breakfast_veg++;
+                  break;
+                case process.env.LUNCH_VEG_ID:
+                  lunch_veg++;
+                  break;
+                case process.env.DINNER_VEG_ID:
+                  dinner_veg++;
+                  break;
+                case process.env.BREAKFAST_NON_VEG_ID:
+                  breakfast_nonveg++;
+                  break;
+                case process.env.LUNCH_NON_VEG_ID:
+                  lunch_nonveg++;
+                  break;
+                case process.env.DINNER_NON_VEG_ID:
+                  dinner_nonveg++;
+                  break;
+                default:
+                  break; // Optional: Handle cases where item.name doesn't match any ID
+              }
+            });
+            const mealDetails: MealDetails[] = [
+              {
+                booking_id: details[0].booking_id, // Replace with actual booking ID
+                date: new Date(), // Current date in YYYY-MM-DD format
+                breakfast_veg: 0,
+                breakfast_nonveg: 0,
+                lunch_veg: 0,
+                lunch_nonveg: 0,
+                dinner_veg: 0,
+                dinner_nonveg: 0,
+              },
+            ];
+            console.log("meal details: ", mealDetails);
+
+            // if (breakfast_veg + lunch_veg + dinner_veg + breakfast_nonveg + lunch_nonveg + dinner_nonveg > 0) {
+              console.log("updating meals");
+
+              try {
+                await updateMealsModel(mealDetails);
+                console.log("meals updated...");
+              } catch (error) {
+                console.log("failed to update meals: ", error);
+              }
+            // }
+
             const mailOptions = {
               from: process.env.COS_EMAIL,
               to: details[0].guest_email,
@@ -1359,7 +1425,7 @@ function monitorCouponQueue() {
     const coupon = couponPendingQueue.peek();
 
     if (coupon) {
-      const timeElapsed = (Date.now() - coupon.date_created.getTime()); 
+      const timeElapsed = Date.now() - coupon.date_created.getTime();
 
       if (timeElapsed > COUPON_MAIL_INTERVAL) {
         console.log("Sending coupon pending mail to: ", coupon.email);
@@ -1432,7 +1498,7 @@ function monitorCouponQueue() {
           </html>
           `,
         };
-        
+
         transporterCOS.sendMail(mailOptions, (error, info) => {
           if (error) {
             console.log("Error sending email:", error);
