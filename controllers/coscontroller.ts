@@ -88,6 +88,7 @@ export const addOrder = async (req: Request, res: Response) => {
 
     res.status(200).send(result);
   } catch (error: any) {
+    console.log("error placing order: ", error)
     if (error.notAvailable || error.mealsRedeemed) {
       res.status(401).send(error);
     } else if (error.booking_expired) {
