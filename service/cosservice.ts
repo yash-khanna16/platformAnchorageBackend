@@ -287,7 +287,8 @@ async function checkMealsRedemption(
     return { canRedeemAll: true, redeemedMeals: [] }; // No meal items; no meals redeemed
   }
 
-  const meals = await fetchMealsByBookingIdAndDateModel(booking_id, date);
+  const meals = (await fetchMealsByBookingIdAndDateModel(booking_id, date))[0];
+  console.log("fetched Meals: ", meals)
   const currentMeals = meals || {
     breakfast_veg: 0,
     breakfast_nonveg: 0,
@@ -300,9 +301,15 @@ async function checkMealsRedemption(
   const redeemedMeals: string[] = [];
   let canRedeemAll = true;
 
+
   for (const [mealType, [vegId, nonVegId]] of Object.entries(mealCategories)) {
     const vegQty = mealItems.find((item) => item.item_id === vegId)?.qty || 0;
     const nonVegQty = mealItems.find((item) => item.item_id === nonVegId)?.qty || 0;
+
+    console.log("mealType: ", mealType)
+
+    console.log("veg qty: ", vegQty)
+    console.log("nonVeg qty: ", nonVegQty)
 
     // Check if the current meal type has been redeemed
     if ((currentMeals[`${mealType}_veg`] || 0) + vegQty > 0 || (currentMeals[`${mealType}_nonveg`] || 0) + nonVegQty > 0) {
@@ -311,6 +318,8 @@ async function checkMealsRedemption(
 
     // Check if the daily limit is exceeded for this meal type
     const totalQty = (currentMeals[`${mealType}_veg`] || 0) + (currentMeals[`${mealType}_nonveg`] || 0) + vegQty + nonVegQty;
+
+    console.log("total Qty: ", totalQty)
     if (totalQty > 1) {
       canRedeemAll = false;
     }
@@ -391,7 +400,7 @@ export async function addOrderService(order: orderType) {
               if (notAvailable.length === 0) {
                 // const maxPreparationTime = Math.max(...order.items.map((item) => item.time_to_prepare));
                 const redemptionDate = new Date(
-                  parseInt(order.created_at) +
+                  new Date().getTime() +
                     order.time_to_prepare * 60 * 1000 + // Convert minutes to milliseconds
                     order.delay * 60 * 1000
                 );
