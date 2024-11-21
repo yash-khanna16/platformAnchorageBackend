@@ -62,7 +62,8 @@ export const verifyOTP = async (req: Request, res: Response) => {
 
 export const fetchAllItems = async (req: Request, res: Response) => {
   try {
-    const result = await fetchAllItemsService();
+    const bookingId = req.headers.bookingid as string;
+    const result = await fetchAllItemsService(bookingId);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
@@ -87,12 +88,12 @@ export const addOrder = async (req: Request, res: Response) => {
 
     res.status(200).send(result);
   } catch (error: any) {
-    if (error.notAvailable) {
+    if (error.notAvailable || error.mealsRedeemed) {
       res.status(401).send(error);
     } else if (error.booking_expired) {
       res.status(415).send(error)
     } else {
-      res.status(500).send("Something went wrong!");
+      res.status(500).send({message:"Something went wrong!"});
     }
   }
 };

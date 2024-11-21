@@ -51,7 +51,11 @@ import { v4 as uuidv4 } from "uuid";
 import { getIO } from "../socket";
 import jwt from "jsonwebtoken";
 import { couponPendingQueue } from "./priorityqueue";
-import { fetchMealsByBookingIdAnDateModel as fetchMealsByBookingIdAndDateModel, fetchMealsByBookingIdModel, updateMealsModel } from "../models/guestmodel";
+import {
+  fetchMealsByBookingIdAnDateModel as fetchMealsByBookingIdAndDateModel,
+  fetchMealsByBookingIdModel,
+  updateMealsModel,
+} from "../models/guestmodel";
 import { fetchMealsByBookingId } from "../controllers/guestcontroller";
 
 dotenv.config();
@@ -160,19 +164,69 @@ export async function verifyOTPService(email: string, otp: string) {
   }
 }
 
-export async function fetchAllItemsService() {
+export async function fetchAllItemsService(bookingId: string) {
   return new Promise(async (resolve, reject) => {
     try {
       const bestSelling = await fetchBestSeller();
       const bestSellingNames = bestSelling.map((item: any) => item.name);
 
       const allItems = await fetchAllItemsModel();
+      let meals: MealDetails = (await fetchMealsByBookingIdAndDateModel(bookingId, new Date()))[0];
+
+      if (!meals) {
+        meals = {
+          booking_id: bookingId,
+          date: new Date(), // Initialize with the current date
+          breakfast_veg: 0,
+          breakfast_nonveg: 0,
+          lunch_veg: 0,
+          lunch_nonveg: 0,
+          dinner_veg: 0,
+          dinner_nonveg: 0,
+        };
+      }
+
+      const mealCategories = [
+        process.env.BREAKFAST_VEG_ID,
+        process.env.LUNCH_VEG_ID,
+        process.env.DINNER_VEG_ID,
+        process.env.BREAKFAST_NON_VEG_ID,
+        process.env.LUNCH_NON_VEG_ID,
+        process.env.DINNER_NON_VEG_ID,
+      ];
 
       const enrichedItems = allItems.map((item: any) => {
-        const isBestSeller = bestSellingNames.includes(item.name) ? true : false;
+        const isBestSeller = bestSellingNames.includes(item.name);
+        let isMealAvailable: boolean | undefined;
+
+        if (mealCategories.includes(item.item_id)) {
+          switch (item.item_id) {
+            case process.env.BREAKFAST_VEG_ID:
+              isMealAvailable = meals.breakfast_veg > 0 || meals.breakfast_nonveg > 0 ? false : true;
+              break;
+            case process.env.BREAKFAST_NON_VEG_ID:
+              isMealAvailable = meals.breakfast_veg > 0 || meals.breakfast_nonveg > 0 ? false : true;
+              break;
+            case process.env.LUNCH_VEG_ID:
+              isMealAvailable = meals.lunch_veg > 0 || meals.lunch_nonveg > 0 ? false : true;
+              break;
+            case process.env.LUNCH_NON_VEG_ID:
+              isMealAvailable = meals.lunch_veg > 0 || meals.lunch_nonveg > 0 ? false : true;
+              break;
+            case process.env.DINNER_VEG_ID:
+              isMealAvailable = meals.dinner_veg > 0 || meals.dinner_nonveg > 0 ? false : true;
+              break;
+            case process.env.DINNER_NON_VEG_ID:
+              isMealAvailable = meals.dinner_veg > 0 || meals.dinner_nonveg > 0 ? false : true;
+              break;
+            default:
+              break;
+          }
+        }
         return {
           ...item,
           bestSeller: isBestSeller,
+          ...(isMealAvailable !== undefined && { isMealAvailable }),
         };
       });
 
@@ -215,6 +269,109 @@ export async function putItemService(itemDetails: itemDetailsType) {
   });
 }
 
+async function checkMealsRedemption(
+  booking_id: string,
+  date: Date,
+  items: { item_id: string; qty: number }[]
+): Promise<{ canRedeemAll: boolean; redeemedMeals: string[] }> {
+  const mealCategories = {
+    breakfast: [process.env.BREAKFAST_VEG_ID, process.env.BREAKFAST_NON_VEG_ID],
+    lunch: [process.env.LUNCH_VEG_ID, process.env.LUNCH_NON_VEG_ID],
+    dinner: [process.env.DINNER_VEG_ID, process.env.DINNER_NON_VEG_ID],
+  };
+
+  // Group meal items by category
+  const mealItems = items.filter((item) => Object.values(mealCategories).flat().includes(item.item_id));
+
+  if (mealItems.length === 0) {
+    return { canRedeemAll: true, redeemedMeals: [] }; // No meal items; no meals redeemed
+  }
+
+  const meals = await fetchMealsByBookingIdAndDateModel(booking_id, date);
+  const currentMeals = meals || {
+    breakfast_veg: 0,
+    breakfast_nonveg: 0,
+    lunch_veg: 0,
+    lunch_nonveg: 0,
+    dinner_veg: 0,
+    dinner_nonveg: 0,
+  };
+
+  const redeemedMeals: string[] = [];
+  let canRedeemAll = true;
+
+  for (const [mealType, [vegId, nonVegId]] of Object.entries(mealCategories)) {
+    const vegQty = mealItems.find((item) => item.item_id === vegId)?.qty || 0;
+    const nonVegQty = mealItems.find((item) => item.item_id === nonVegId)?.qty || 0;
+
+    // Check if the current meal type has been redeemed
+    if ((currentMeals[`${mealType}_veg`] || 0) + vegQty > 0 || (currentMeals[`${mealType}_nonveg`] || 0) + nonVegQty > 0) {
+      redeemedMeals.push(mealType);
+    }
+
+    // Check if the daily limit is exceeded for this meal type
+    const totalQty = (currentMeals[`${mealType}_veg`] || 0) + (currentMeals[`${mealType}_nonveg`] || 0) + vegQty + nonVegQty;
+    if (totalQty > 1) {
+      canRedeemAll = false;
+    }
+  }
+
+  return { canRedeemAll, redeemedMeals };
+}
+
+// Function to update the meal details in the database
+async function updateMeals(booking_id: string, items: { item_id: string; qty: number }[], redemptionDate: Date) {
+  let meals: MealDetails = (await fetchMealsByBookingIdAndDateModel(booking_id, redemptionDate))[0];
+
+  if (!meals) {
+    meals = {
+      booking_id: booking_id,
+      date: redemptionDate,
+      breakfast_veg: 0,
+      breakfast_nonveg: 0,
+      lunch_veg: 0,
+      lunch_nonveg: 0,
+      dinner_veg: 0,
+      dinner_nonveg: 0,
+    };
+  }
+
+  items.forEach((item) => {
+    switch (item.item_id) {
+      case process.env.BREAKFAST_VEG_ID:
+        meals.breakfast_veg = (meals.breakfast_veg || 0) + item.qty;
+        break;
+      case process.env.BREAKFAST_NON_VEG_ID:
+        meals.breakfast_nonveg = (meals.breakfast_nonveg || 0) + item.qty;
+        break;
+      case process.env.LUNCH_VEG_ID:
+        meals.lunch_veg = (meals.lunch_veg || 0) + item.qty;
+        break;
+      case process.env.LUNCH_NON_VEG_ID:
+        meals.lunch_nonveg = (meals.lunch_nonveg || 0) + item.qty;
+        break;
+      case process.env.DINNER_VEG_ID:
+        meals.dinner_veg = (meals.dinner_veg || 0) + item.qty;
+        break;
+      case process.env.DINNER_NON_VEG_ID:
+        meals.dinner_nonveg = (meals.dinner_nonveg || 0) + item.qty;
+        break;
+      default:
+        break;
+    }
+  });
+
+  meals.date = new Date(meals.date); // Ensure the date field is correctly set
+
+  try {
+    await updateMealsModel([meals]);
+    console.log("Meals successfully updated.");
+  } catch (error) {
+    console.error("Failed to update meals: ", error);
+    throw new Error("Failed to update meals in the database.");
+  }
+}
+
 export async function addOrderService(order: orderType) {
   return new Promise((resolve, reject) => {
     order.created_at = new Date().getTime().toString();
@@ -225,57 +382,83 @@ export async function addOrderService(order: orderType) {
         const currentTime = new Date().getTime();
         if (currentTime < checkout && currentTime > checkin) {
           fetchAvailabilityOfItems(order.items.map((item) => item.item_id))
-            .then((availability) => {
+            .then(async (availability) => {
               let notAvailable: { item_id: string; name: string; available: boolean }[] = [];
               availability.map((item: { item_id: string; name: string; available: boolean }) => {
                 if (!item.available) notAvailable.push(item);
               });
+
               if (notAvailable.length === 0) {
-                if (order.coupon_id) {
-                  validateCouponService(order.coupon_id, order.email, order)
-                    .then((res) => {
-                      order.discount = res.discount;
-                      placeOrder(order, booking)
-                        .then((res) => {
-                          const coupon_usage_id = uuidv4();
-                          putCouponUsageModel(
-                            order.coupon_id,
-                            order.email,
-                            coupon_usage_id,
-                            res.details.order_id,
-                            new Date().toISOString(),
-                            true
-                          )
-                            .then(() => {
-                              console.log("Coupon usage inserted successfully!");
-                            })
-                            .catch((error) => {
-                              console.log("Error inserting coupon usage: ", error);
-                            })
-                            .finally(() => {
-                              resolve(res);
-                            });
-                        })
-                        .catch((error) => {
-                          reject(error);
-                        });
+                // const maxPreparationTime = Math.max(...order.items.map((item) => item.time_to_prepare));
+                const redemptionDate = new Date(
+                  parseInt(order.created_at) +
+                    order.time_to_prepare * 60 * 1000 + // Convert minutes to milliseconds
+                    order.delay * 60 * 1000
+                );
+
+                // Call the function to check meal redemption
+                const mealStatus = await checkMealsRedemption(order.booking_id, redemptionDate, order.items);
+
+                if (mealStatus.canRedeemAll) {
+                  updateMeals(order.booking_id, order.items, redemptionDate)
+                    .then(() => {
+                      if (order.coupon_id) {
+                        validateCouponService(order.coupon_id, order.email, order)
+                          .then((res) => {
+                            order.discount = res.discount;
+                            placeOrder(order, booking)
+                              .then((res) => {
+                                const coupon_usage_id = uuidv4();
+                                putCouponUsageModel(
+                                  order.coupon_id,
+                                  order.email,
+                                  coupon_usage_id,
+                                  res.details.order_id,
+                                  new Date().toISOString(),
+                                  true
+                                )
+                                  .then(() => {
+                                    console.log("Coupon usage inserted successfully!");
+                                  })
+                                  .catch((error) => {
+                                    console.log("Error inserting coupon usage: ", error);
+                                  })
+                                  .finally(() => {
+                                    resolve(res);
+                                  });
+                              })
+                              .catch((error) => {
+                                reject(error);
+                              });
+                          })
+                          .catch((error) => {
+                            if (error.message === "internal server error") {
+                              reject("Error validating coupon");
+                            } else {
+                              reject(error.message);
+                            }
+                          });
+                      } else {
+                        order.discount = 0;
+                        placeOrder(order, booking)
+                          .then((res) => {
+                            resolve(res);
+                          })
+                          .catch((error) => {
+                            reject(error);
+                          });
+                      }
                     })
                     .catch((error) => {
-                      if (error.message === "internal server error") {
-                        reject("Error validating coupon");
-                      } else {
-                        reject(error.message);
-                      }
+                      console.log("Error updating meals ", error);
+                      reject("Error updating meals");
                     });
                 } else {
-                  order.discount = 0;
-                  placeOrder(order, booking)
-                    .then((res) => {
-                      resolve(res);
-                    })
-                    .catch((error) => {
-                      reject(error);
-                    });
+                  console.log("Can't redeem these meals: ", mealStatus.redeemedMeals);
+                  const formattedMeals = mealStatus.redeemedMeals.join(", ");
+                  reject({
+                    mealsRedeemed: `The following meals have already been redeemed today: ${formattedMeals}`,
+                  });
                 }
               } else {
                 console.log("error adding order, following items not available now: ", notAvailable);
@@ -633,67 +816,56 @@ export async function updateOrderStatusService(orderid: string, status: string) 
           console.log("res: ", details[0]);
 
           if (status === "Delivered") {
+            // let meals: MealDetails = (await fetchMealsByBookingIdAndDateModel(details[0].booking_id, new Date()))[0];
 
-            const meals = (await fetchMealsByBookingIdAndDateModel(details[0].booking_id,new Date()));
-            console.log("meals: ", meals)
-
-            let breakfast_veg = 0,
-              lunch_veg = 0,
-              dinner_veg = 0;
-            let breakfast_nonveg = 0,
-              lunch_nonveg = 0,
-              dinner_nonveg = 0;
-
-              details[0].items.map((item) => {
-                switch (item.item_id) { // Use item_id instead of name
-                  case process.env.BREAKFAST_VEG_ID:
-                    breakfast_veg += item.qty; // Increment by item.qty if more than one
-                    break;
-                  case process.env.LUNCH_VEG_ID:
-                    lunch_veg += item.qty;
-                    break;
-                  case process.env.DINNER_VEG_ID:
-                    dinner_veg += item.qty;
-                    break;
-                  case process.env.BREAKFAST_NON_VEG_ID:
-                    breakfast_nonveg += item.qty;
-                    break;
-                  case process.env.LUNCH_NON_VEG_ID:
-                    lunch_nonveg += item.qty;
-                    break;
-                  case process.env.DINNER_NON_VEG_ID:
-                    dinner_nonveg += item.qty;
-                    break;
-                  default:
-                    break; // Handle items that don't match any meal type
-                }
-              });
-              
-              const mealDetails: MealDetails[] = [
-                {
-                  booking_id: details[0].booking_id,
-                  date: new Date(), // Format date as YYYY-MM-DD
-                  breakfast_veg,
-                  breakfast_nonveg,
-                  lunch_veg,
-                  lunch_nonveg,
-                  dinner_veg,
-                  dinner_nonveg,
-                },
-              ];
-              
-            console.log("meal details: ", mealDetails);
-
-            // if (breakfast_veg + lunch_veg + dinner_veg + breakfast_nonveg + lunch_nonveg + dinner_nonveg > 0) {
-              console.log("updating meals");
-
-              try {
-                await updateMealsModel(mealDetails);
-                console.log("meals updated...");
-              } catch (error) {
-                console.log("failed to update meals: ", error);
-              }
+            // if (!meals) {
+            //   meals = {
+            //     booking_id: details[0].booking_id,
+            //     date: new Date(),
+            //     breakfast_veg: 0,
+            //     breakfast_nonveg: 0,
+            //     lunch_veg: 0,
+            //     lunch_nonveg: 0,
+            //     dinner_veg: 0,
+            //     dinner_nonveg: 0,
+            //   };
             // }
+            // console.log("meals: ", meals);
+
+            // details[0].items.map((item) => {
+            //   switch (item.item_id) {
+            //     case process.env.BREAKFAST_VEG_ID:
+            //       meals.breakfast_veg = (meals.breakfast_veg || 0) + item.qty;
+            //       break;
+            //     case process.env.LUNCH_VEG_ID:
+            //       meals.lunch_veg = (meals.lunch_veg || 0) + item.qty;
+            //       break;
+            //     case process.env.DINNER_VEG_ID:
+            //       meals.dinner_veg = (meals.dinner_veg || 0) + item.qty;
+            //       break;
+            //     case process.env.BREAKFAST_NON_VEG_ID:
+            //       meals.breakfast_nonveg = (meals.breakfast_nonveg || 0) + item.qty;
+            //       break;
+            //     case process.env.LUNCH_NON_VEG_ID:
+            //       meals.lunch_nonveg = (meals.lunch_nonveg || 0) + item.qty;
+            //       break;
+            //     case process.env.DINNER_NON_VEG_ID:
+            //       meals.dinner_nonveg = (meals.dinner_nonveg || 0) + item.qty;
+            //       break;
+            //     default:
+            //       break; // Handle items that don't match any meal type
+            //   }
+            // });
+            // meals.date = new Date(meals.date);
+            // console.log("updating meals");
+
+            // try {
+            //   await updateMealsModel([meals]);
+            //   console.log("meals updated...");
+            // } catch (error) {
+            //   console.log("failed to update meals: ", error);
+            // }
+            // // }
 
             const mailOptions = {
               from: process.env.COS_EMAIL,
@@ -1361,10 +1533,10 @@ export async function updateCheckinGuestService(
   email: string,
   room: string,
   name: string,
-  document_url_back: string|null
+  document_url_back: string | null
 ) {
   return new Promise((resolve, reject) => {
-    updateCheckinGuestModel(booking_id, document_url, email, room,document_url_back)
+    updateCheckinGuestModel(booking_id, document_url, email, room, document_url_back)
       .then((results) => {
         const coupon: Coupon = results.coupon;
         couponPendingQueue.enqueue({
