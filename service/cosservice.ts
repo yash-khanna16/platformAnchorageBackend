@@ -54,6 +54,7 @@ import { couponPendingQueue } from "./priorityqueue";
 import {
   fetchMealsByBookingIdAnDateModel as fetchMealsByBookingIdAndDateModel,
   fetchMealsByBookingIdModel,
+  findGuest,
   updateMealsModel,
 } from "../models/guestmodel";
 import { fetchMealsByBookingId } from "../controllers/guestcontroller";
@@ -1546,23 +1547,23 @@ export async function updateCheckinGuestService(
 ) {
   return new Promise((resolve, reject) => {
     updateCheckinGuestModel(booking_id, document_url, email, room, document_url_back)
-      .then((results) => {
-        const coupon: Coupon = results.coupon;
-        couponPendingQueue.enqueue({
-          room: room,
-          coupon_code: coupon.code,
-          coupon_id: coupon.coupon_id,
-          description: coupon.description,
-          email: email,
-          date_created: new Date(),
-          name: name,
-        });
-        resolve({ message: results.message });
-      })
-      .catch((error) => {
-        console.log("error updating checkin ", error);
-        reject("Error updating checkin ");
+    .then((results) => {
+      const coupon: Coupon = results.coupon;
+      couponPendingQueue.enqueue({
+        room: room,
+        coupon_code: coupon.code,
+        coupon_id: coupon.coupon_id,
+        description: coupon.description,
+        email: email,
+        date_created: new Date(),
+        name: name,
       });
+      resolve({ message: results.message });
+    })
+    .catch((error) => {
+      console.log("error updating checkin ", error);
+      reject("Error updating checkin ");
+    });
   });
 }
 
@@ -1611,10 +1612,10 @@ export function updateCouponAdminService(couponData: adminCoupon): Promise<any> 
 function monitorCouponQueue() {
   setInterval(async () => {
     const coupon = couponPendingQueue.peek();
-
+    
     if (coupon) {
       const timeElapsed = Date.now() - coupon.date_created.getTime();
-
+      
       if (timeElapsed > COUPON_MAIL_INTERVAL) {
         console.log("Sending coupon pending mail to: ", coupon.email);
         const mailOptions = {
@@ -1622,71 +1623,71 @@ function monitorCouponQueue() {
           to: coupon.email,
           subject: "Your Exclusive Coupon Awaits - Don’t Miss Out!",
           html: `
- <!DOCTYPE html>
+          <!DOCTYPE html>
           <html lang="en">
           <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Coupon Reminder</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Coupon Reminder</title>
           </head>
           <body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0;">
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                      <td align="center" style="padding: 20px;">
-                          <table width="470" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
-                              <!-- Welcome Message -->
-                              <tr>
-                                  <td style="padding: 20px; text-align: center;">
-                                      <p style="color: #555; font-size: 16px; margin: 0;">Hi <span style="font-weight: 600; ">${coupon.name}</span>,</p>
-                                      <p style="font-size: 24px; font-weight: bold; color: #e3342f; text-transform: uppercase; margin: 10px 0;">Your Check-in is Complete!</p>
-                                      <p style="color: #555; font-size: 16px; margin: 0;">We’re excited to offer you a special coupon!</p>
-                                  </td>
-                              </tr>
-        
-                              <!-- Coupon Section -->
-                              <tr>
-                                  <td style="padding: 0 20px 10px;">
-                                      <div style="background: linear-gradient(to right, #fef2f2, #fff7ed); border-radius: 12px; padding: 20px;">
-                                          <p style="color: #64748b; font-size: 16px; font-weight: 500; text-align: center; margin: 0 0 15px;">${coupon.description}</p>
-                                          <div style="background-color: #ffffff; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0px 1px 4px rgba(0,0,0,0.1);">
-                                              <span style="font-size: 24px; font-weight: bold; color: #e3342f;">${coupon.coupon_code}</span>
-                                          </div>
-                                      </div>
-                                  </td>
-                              </tr>
-        
-                              <!-- Claim Button -->
-                              <tr>
-                                  <td style="padding: 0 20px 20px;">
-                                      <a href="https://orders.platformanchorage.com/home?room=${coupon.room}" style="display: block; background-color: #e3342f; color: #ffffff; font-size: 16px; font-weight: bold; text-align: center; text-decoration: none; padding: 12px; border-radius: 8px; transition: background-color 0.3s; margin-top: 15px;">
-                                          Tap here to claim your coupon and enjoy the perks!
-                                      </a>
-                                  </td>
-                              </tr>
-        
-                              <!-- Footer -->
-                              <tr>
-                                  
-                                  <td style="padding: 20px; text-align: center; background-color: #f4f4f4;color: #777; font-weight: 500">
-                                    <p style="margin: 0 0; color: #777; font-weight: 500">Thank you for choosing Anchorage. We look forward to serving you again!</p>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="padding: 0 20px 20px; text-align: center; background-color: #f4f4f4;">
-                                            <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
-                                        </td>
-                                     </p>
-                                  </td>
-                              </tr>
-                          </table>
-                      </td>
-                  </tr>
-              </table>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+          <td align="center" style="padding: 20px;">
+          <table width="470" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+          <!-- Welcome Message -->
+          <tr>
+          <td style="padding: 20px; text-align: center;">
+          <p style="color: #555; font-size: 16px; margin: 0;">Hi <span style="font-weight: 600; ">${coupon.name}</span>,</p>
+          <p style="font-size: 24px; font-weight: bold; color: #e3342f; text-transform: uppercase; margin: 10px 0;">Your Check-in is Complete!</p>
+          <p style="color: #555; font-size: 16px; margin: 0;">We’re excited to offer you a special coupon!</p>
+          </td>
+          </tr>
+          
+          <!-- Coupon Section -->
+          <tr>
+          <td style="padding: 0 20px 10px;">
+          <div style="background: linear-gradient(to right, #fef2f2, #fff7ed); border-radius: 12px; padding: 20px;">
+          <p style="color: #64748b; font-size: 16px; font-weight: 500; text-align: center; margin: 0 0 15px;">${coupon.description}</p>
+          <div style="background-color: #ffffff; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0px 1px 4px rgba(0,0,0,0.1);">
+          <span style="font-size: 24px; font-weight: bold; color: #e3342f;">${coupon.coupon_code}</span>
+          </div>
+          </div>
+          </td>
+          </tr>
+          
+          <!-- Claim Button -->
+          <tr>
+          <td style="padding: 0 20px 20px;">
+          <a href="https://orders.platformanchorage.com/home?room=${coupon.room}" style="display: block; background-color: #e3342f; color: #ffffff; font-size: 16px; font-weight: bold; text-align: center; text-decoration: none; padding: 12px; border-radius: 8px; transition: background-color 0.3s; margin-top: 15px;">
+          Tap here to claim your coupon and enjoy the perks!
+          </a>
+          </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+          
+          <td style="padding: 20px; text-align: center; background-color: #f4f4f4;color: #777; font-weight: 500">
+          <p style="margin: 0 0; color: #777; font-weight: 500">Thank you for choosing Anchorage. We look forward to serving you again!</p>
+          </td>
+          </tr>
+          <tr>
+          <td style="padding: 0 20px 20px; text-align: center; background-color: #f4f4f4;">
+          <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
+          </td>
+          </p>
+          </td>
+          </tr>
+          </table>
+          </td>
+          </tr>
+          </table>
           </body>
           </html>
           `,
         };
-
+        
         transporterCOS.sendMail(mailOptions, (error, info) => {
           if (error) {
             console.log("Error sending email:", error);
@@ -1694,7 +1695,7 @@ function monitorCouponQueue() {
             console.log("Coupon reminder email sent to: ", coupon.email, " response: ", info.response);
           }
         });
-
+        
         couponPendingQueue.dequeue(); // Remove the processed coupon
       }
     }
@@ -1702,3 +1703,16 @@ function monitorCouponQueue() {
 }
 
 monitorCouponQueue();
+
+export async function fetchGuestDataByEmailService(guestEmail: string) {
+  return new Promise((resolve, reject) => {
+    findGuest(guestEmail)
+      .then((results) => {
+        resolve(results.rows[0]);
+      })
+      .catch((error) => {
+        console.log("error fetching checkin by room", error);
+        reject("Error fetching checkin by room!");
+      });
+  });
+}

@@ -27,6 +27,7 @@ import {
   updateCouponAdminService,
   fetchCheckinByRoomService,
   updateCheckinGuestService,
+  fetchGuestDataByEmailService
 } from "../service/cosservice";
 import { adminCoupon, Coupon, FreeItem, itemDetailsType, OrderDetails, orderType } from "../types/cos";
 
@@ -335,6 +336,15 @@ export const updateCoupon = async (req: Request, res: Response) => {
   try {    
     const couponData:adminCoupon=req.body.couponData;
     const result = await updateCouponAdminService(couponData);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+export const fetchGuestDataByEmail = async (req: Request, res: Response) => {
+  try {    
+    const guestEmail=req.headers.guestemail as string;
+    const result = await fetchGuestDataByEmailService(guestEmail);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
