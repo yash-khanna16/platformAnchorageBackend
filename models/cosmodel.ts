@@ -56,7 +56,7 @@ import {
   deleteAppicableItem,
   deleteSelectedGuest,
   upsertRestrictionUserQuery,
-  addCouponAdminQuery
+  addCouponAdminQuery,
 } from "./cosqueries";
 
 import { v4 as uuidv4 } from "uuid";
@@ -582,7 +582,7 @@ export async function updateCheckinGuestModel(booking_id: string, document_url: 
     // await pool.query(upsertRestrictionUserQuery,[coupon_id_checkin,email,convertUTCToIST(new Date()),convertUTCToIST(new Date()),true]);
     const res2 = await pool.query(fetchCouponDetailsQuery,[coupon_id_checkin]);
     const coupon:Coupon = res2.rows[0];
-
+    
     await pool.query(updateCheckInGuestDetailsQuery, [email, old_email])
     return {message: "Check-In updated successfully!",coupon:coupon};
   } catch (error) {
@@ -624,7 +624,7 @@ export async function addCouponAdminModel(couponData: adminCoupon) {
   }
 }
 export async function deleteCouponAdminModel(coupon_id:string) {
-
+  
   try {
     await pool.query('BEGIN');
     await pool.query(deleteCouponAdminQuery, [coupon_id]);
