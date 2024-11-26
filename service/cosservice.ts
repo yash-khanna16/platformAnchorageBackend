@@ -56,6 +56,7 @@ import {
   fetchMealsByBookingIdModel,
   findGuest,
   updateMealsModel,
+  updateMealsModelCOS,
 } from "../models/guestmodel";
 import { fetchMealsByBookingId } from "../controllers/guestcontroller";
 
@@ -349,7 +350,7 @@ async function checkMealsRedemption(
     }
   }
 
-  if (currentMeals.tea > 1) {
+  if (currentMeals.tea > 2) {
     canRedeemAll = false;
     redeemedMeals.push("Tea")
   }
@@ -395,6 +396,9 @@ async function updateMeals(booking_id: string, items: { item_id: string; qty: nu
       case process.env.DINNER_NON_VEG_ID:
         meals.dinner_nonveg = (meals.dinner_nonveg || 0) + item.qty;
         break;
+        case process.env.TEA_ID:
+          meals.tea = (meals.tea || 0) + item.qty
+        break;
       default:
         break;
     }
@@ -403,7 +407,7 @@ async function updateMeals(booking_id: string, items: { item_id: string; qty: nu
   meals.date = new Date(meals.date); // Ensure the date field is correctly set
 
   try {
-    await updateMealsModel([meals]);
+    await updateMealsModelCOS([meals]);
     console.log("Meals successfully updated.");
   } catch (error) {
     console.error("Failed to update meals: ", error);
