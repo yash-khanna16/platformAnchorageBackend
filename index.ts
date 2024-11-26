@@ -87,8 +87,8 @@ async function moveExpiredBookings() {
           WHERE checkout < NOW()
           RETURNING *
         )
-        INSERT INTO logs (booking_id, checkin, checkout, guest_email, meal_veg, meal_non_veg, remarks, additional_info, room, breakfast)
-        SELECT booking_id, checkin, checkout, guest_email, meal_veg, meal_non_veg, remarks, additional_info, room, breakfast
+        INSERT INTO logs (booking_id, checkin, checkout, guest_email, meal_veg, meal_non_veg, remarks, additional_info, room, breakfast,document_url,document_url_back)
+        SELECT booking_id, checkin, checkout, guest_email, meal_veg, meal_non_veg, remarks, additional_info, room, breakfast,document_url,document_url_back
         FROM moved_rows;
       `;
 
@@ -257,7 +257,7 @@ function deleteS3Object(bucket: string, key: string): Promise<void> {
 }
 
 // Schedule the job to run at 12:00 AM every day
-cron.schedule("0 0 * * *", () => {
+cron.schedule("38 22 * * *", () => {
   console.log("Moving expired booking and movements to logs...");
   moveExpiredBookings();
 });

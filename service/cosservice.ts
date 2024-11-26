@@ -183,6 +183,7 @@ export async function fetchAllItemsService(bookingId: string) {
           lunch_nonveg: 0,
           dinner_veg: 0,
           dinner_nonveg: 0,
+          tea:0
         };
       }
 
@@ -193,6 +194,7 @@ export async function fetchAllItemsService(bookingId: string) {
         process.env.BREAKFAST_NON_VEG_ID,
         process.env.LUNCH_NON_VEG_ID,
         process.env.DINNER_NON_VEG_ID,
+        process.env.TEA_ID
       ];
 
       const enrichedItems = allItems.map((item: any) => {
@@ -218,6 +220,9 @@ export async function fetchAllItemsService(bookingId: string) {
               break;
             case process.env.DINNER_NON_VEG_ID:
               isMealAvailable = meals.dinner_veg > 0 || meals.dinner_nonveg > 0 ? false : true;
+              break;
+            case process.env.TEA_ID:
+              isMealAvailable = (meals.tea && meals.tea > 1) ? false : true;
               break;
             default:
               break;
@@ -280,12 +285,15 @@ async function checkMealsRedemption(
     dinner: [process.env.DINNER_VEG_ID, process.env.DINNER_NON_VEG_ID],
   };
 
+  const tea = process.env.TEA_ID;
   // Group meal items by category
-  const mealItems = items.filter((item) => Object.values(mealCategories).flat().includes(item.item_id));
+  const mealItems = (items.filter((item) => (Object.values(mealCategories).flat().includes(item.item_id))||item.item_id === tea));
 
   if (mealItems.length === 0) {
     return { canRedeemAll: true, redeemedMeals: [] }; // No meal items; no meals redeemed
   }
+
+  console.log("meal items: ", mealItems)
 
   const meals = (await fetchMealsByBookingIdAndDateModel(booking_id, date))[0];
   console.log("fetched Meals: ", meals)
@@ -296,10 +304,25 @@ async function checkMealsRedemption(
     lunch_nonveg: 0,
     dinner_veg: 0,
     dinner_nonveg: 0,
+    tea: 0,
   };
+
+  console.log("current meals: ", currentMeals)
+
 
   const redeemedMeals: string[] = [];
   let canRedeemAll = true;
+
+
+  console.log("first: ", tea)
+
+  items.map((item) => {
+    if (item.item_id === tea) {
+      currentMeals.tea += item.qty;
+      console.log("tea matched")
+    }
+  })
+
 
 
   for (const [mealType, [vegId, nonVegId]] of Object.entries(mealCategories)) {
@@ -325,6 +348,11 @@ async function checkMealsRedemption(
     }
   }
 
+  if (currentMeals.tea > 1) {
+    canRedeemAll = false;
+    redeemedMeals.push("Tea")
+  }
+
   return { canRedeemAll, redeemedMeals };
 }
 
@@ -342,6 +370,7 @@ async function updateMeals(booking_id: string, items: { item_id: string; qty: nu
       lunch_nonveg: 0,
       dinner_veg: 0,
       dinner_nonveg: 0,
+      tea:0
     };
   }
 
