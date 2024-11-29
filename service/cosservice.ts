@@ -625,14 +625,17 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
                                                     0
                                                   )}<br>
                                                               <strong>Discount:</strong> ₹${order.discount}<br>
-                                                              <strong>Platform Fee:</strong> ₹2<br>
+                                                              ${
+                                                                !isMealOrder(details[0].items) ?
+                                                                "<strong>Platform Fee:</strong> ₹2<br>":''
+                                                              }
                                                               <strong>Order Total:</strong> ₹${
                                                                 details[0].items.reduce(
                                                                   (total, item) => total + item.price * item.qty,
                                                                   0
                                                                 ) -
                                                                 order.discount +
-                                                                2
+                                                                (isMealOrder(details[0].items) ? 0 : 2)
                                                               }<br>
                                                 </td>
                                               </tr>
@@ -722,35 +725,35 @@ export async function deleteOrderService(orderId: string, reason: string, reject
           Number(orderDetails[0].delay) * 60 * 1000
       );
 
-      console.log("first ", redemptionDate)
-      
+      console.log("first ", redemptionDate);
+
       if (isMealOrder(orderDetails)) {
-        console.log("second")
+        console.log("second");
         const meals: MealDetails = (await fetchMealsByBookingIdAndDateModel(orderDetails[0].booking_id, redemptionDate))[0];
-        console.log("meals: ", meals)
+        console.log("meals: ", meals);
         if (meals) {
           orderDetails.map((item: any) => {
             switch (item.item_id) {
               case process.env.BREAKFAST_VEG_ID:
-                meals.breakfast_veg = Math.max((meals.breakfast_veg - item.qty),0);
+                meals.breakfast_veg = Math.max(meals.breakfast_veg - item.qty, 0);
                 break;
               case process.env.LUNCH_VEG_ID:
-                meals.lunch_veg = Math.max((meals.lunch_veg - item.qty),0);
+                meals.lunch_veg = Math.max(meals.lunch_veg - item.qty, 0);
                 break;
               case process.env.DINNER_VEG_ID:
-                meals.dinner_veg = Math.max((meals.dinner_veg - item.qty),0);
+                meals.dinner_veg = Math.max(meals.dinner_veg - item.qty, 0);
                 break;
               case process.env.BREAKFAST_NON_VEG_ID:
-                meals.breakfast_nonveg = Math.max((meals.breakfast_nonveg - item.qty),0);
+                meals.breakfast_nonveg = Math.max(meals.breakfast_nonveg - item.qty, 0);
                 break;
               case process.env.LUNCH_NON_VEG_ID:
-                meals.lunch_nonveg = Math.max((meals.lunch_nonveg - item.qty),0);
+                meals.lunch_nonveg = Math.max(meals.lunch_nonveg - item.qty, 0);
                 break;
               case process.env.DINNER_NON_VEG_ID:
-                meals.dinner_nonveg = Math.max((meals.dinner_nonveg - item.qty),0);
+                meals.dinner_nonveg = Math.max(meals.dinner_nonveg - item.qty, 0);
                 break;
               case process.env.TEA_ID:
-                meals.tea = Math.max(((meals?.tea || 0) - item.qty),0);
+                meals.tea = Math.max((meals?.tea || 0) - item.qty, 0);
                 break;
               default:
                 break; // Handle items that don't match any meal type
@@ -758,9 +761,9 @@ export async function deleteOrderService(orderId: string, reason: string, reject
           });
           meals.date = new Date(meals.date);
 
-          console.log("after Meals: ", meals)
+          console.log("after Meals: ", meals);
           await updateMealsModelCOS([meals]);
-          console.log("meals updated successfully!")
+          console.log("meals updated successfully!");
         }
       }
 
