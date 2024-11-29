@@ -185,7 +185,7 @@ export async function fetchAllItemsService(bookingId: string) {
           lunch_nonveg: 0,
           dinner_veg: 0,
           dinner_nonveg: 0,
-          tea:0
+          tea: 0,
         };
       }
 
@@ -196,7 +196,7 @@ export async function fetchAllItemsService(bookingId: string) {
         process.env.BREAKFAST_NON_VEG_ID,
         process.env.LUNCH_NON_VEG_ID,
         process.env.DINNER_NON_VEG_ID,
-        process.env.TEA_ID
+        process.env.TEA_ID,
       ];
 
       const enrichedItems = allItems.map((item: any) => {
@@ -224,7 +224,7 @@ export async function fetchAllItemsService(bookingId: string) {
               isMealAvailable = meals.dinner_veg > 0 || meals.dinner_nonveg > 0 ? false : true;
               break;
             case process.env.TEA_ID:
-              isMealAvailable = (meals.tea && meals.tea > 1) ? false : true;
+              isMealAvailable = meals.tea && meals.tea > 1 ? false : true;
               break;
             default:
               break;
@@ -276,6 +276,20 @@ export async function putItemService(itemDetails: itemDetailsType) {
   });
 }
 
+function isMealOrder(items: { item_id: string; qty: number }[]) {
+  const mealCategories = {
+    breakfast: [process.env.BREAKFAST_VEG_ID, process.env.BREAKFAST_NON_VEG_ID],
+    lunch: [process.env.LUNCH_VEG_ID, process.env.LUNCH_NON_VEG_ID],
+    dinner: [process.env.DINNER_VEG_ID, process.env.DINNER_NON_VEG_ID],
+  };
+
+  const tea = process.env.TEA_ID;
+  // Group meal items by category
+  const mealItems = items.filter((item) => Object.values(mealCategories).flat().includes(item.item_id) || item.item_id === tea);
+
+  return mealItems.length > 0;
+}
+
 async function checkMealsRedemption(
   booking_id: string,
   date: Date,
@@ -289,16 +303,16 @@ async function checkMealsRedemption(
 
   const tea = process.env.TEA_ID;
   // Group meal items by category
-  const mealItems = (items.filter((item) => (Object.values(mealCategories).flat().includes(item.item_id))||item.item_id === tea));
+  const mealItems = items.filter((item) => Object.values(mealCategories).flat().includes(item.item_id) || item.item_id === tea);
 
   if (mealItems.length === 0) {
     return { canRedeemAll: true, redeemedMeals: [] }; // No meal items; no meals redeemed
   }
 
-  console.log("meal items: ", mealItems)
+  console.log("meal items: ", mealItems);
 
   const meals = (await fetchMealsByBookingIdAndDateModel(booking_id, date))[0];
-  console.log("fetched Meals: ", meals)
+  console.log("fetched Meals: ", meals);
   const currentMeals = meals || {
     breakfast_veg: 0,
     breakfast_nonveg: 0,
@@ -309,32 +323,28 @@ async function checkMealsRedemption(
     tea: 0,
   };
 
-  console.log("current meals: ", currentMeals)
-
+  console.log("current meals: ", currentMeals);
 
   const redeemedMeals: string[] = [];
   let canRedeemAll = true;
 
-
-  console.log("first: ", tea)
+  console.log("first: ", tea);
 
   items.map((item) => {
     if (item.item_id === tea) {
       currentMeals.tea += item.qty;
-      console.log("tea matched")
+      console.log("tea matched");
     }
-  })
-
-
+  });
 
   for (const [mealType, [vegId, nonVegId]] of Object.entries(mealCategories)) {
     const vegQty = mealItems.find((item) => item.item_id === vegId)?.qty || 0;
     const nonVegQty = mealItems.find((item) => item.item_id === nonVegId)?.qty || 0;
 
-    console.log("mealType: ", mealType)
+    console.log("mealType: ", mealType);
 
-    console.log("veg qty: ", vegQty)
-    console.log("nonVeg qty: ", nonVegQty)
+    console.log("veg qty: ", vegQty);
+    console.log("nonVeg qty: ", nonVegQty);
 
     // Check if the current meal type has been redeemed
     if ((currentMeals[`${mealType}_veg`] || 0) + vegQty > 0 || (currentMeals[`${mealType}_nonveg`] || 0) + nonVegQty > 0) {
@@ -344,7 +354,7 @@ async function checkMealsRedemption(
     // Check if the daily limit is exceeded for this meal type
     const totalQty = (currentMeals[`${mealType}_veg`] || 0) + (currentMeals[`${mealType}_nonveg`] || 0) + vegQty + nonVegQty;
 
-    console.log("total Qty: ", totalQty)
+    console.log("total Qty: ", totalQty);
     if (totalQty > 1) {
       canRedeemAll = false;
     }
@@ -352,7 +362,7 @@ async function checkMealsRedemption(
 
   if (currentMeals.tea > 2) {
     canRedeemAll = false;
-    redeemedMeals.push("Tea")
+    redeemedMeals.push("Tea");
   }
 
   return { canRedeemAll, redeemedMeals };
@@ -372,7 +382,7 @@ async function updateMeals(booking_id: string, items: { item_id: string; qty: nu
       lunch_nonveg: 0,
       dinner_veg: 0,
       dinner_nonveg: 0,
-      tea:0
+      tea: 0,
     };
   }
 
@@ -396,8 +406,8 @@ async function updateMeals(booking_id: string, items: { item_id: string; qty: nu
       case process.env.DINNER_NON_VEG_ID:
         meals.dinner_nonveg = (meals.dinner_nonveg || 0) + item.qty;
         break;
-        case process.env.TEA_ID:
-          meals.tea = (meals.tea || 0) + item.qty
+      case process.env.TEA_ID:
+        meals.tea = (meals.tea || 0) + item.qty;
         break;
       default:
         break;
@@ -438,11 +448,17 @@ export async function addOrderService(order: orderType) {
                     order.time_to_prepare * 60 * 1000 + // Convert minutes to milliseconds
                     order.delay * 60 * 1000
                 );
+                let mealStatus;
+                if (isMealOrder(order.items)) {
+                  const booking = await fetchBookingByBookingIdModel(order.booking_id);
+                  if (booking.company === "PERSONAL" || booking.company === "MMT BOOKING" || booking.company === "MMT") {
+                    reject({ message: "Complimentary meals are not available for bookings from your company." });
+                    return;
+                  }
+                  mealStatus = await checkMealsRedemption(order.booking_id, redemptionDate, order.items);
+                }
 
-                // Call the function to check meal redemption
-                const mealStatus = await checkMealsRedemption(order.booking_id, redemptionDate, order.items);
-
-                if (mealStatus.canRedeemAll) {
+                if (mealStatus === undefined || mealStatus.canRedeemAll) {
                   updateMeals(order.booking_id, order.items, redemptionDate)
                     .then(() => {
                       if (order.coupon_id) {
@@ -692,6 +708,61 @@ export async function deleteOrderService(orderId: string, reason: string, reject
     try {
       const orderDetails = await fetchOrderDetailsByOrderId(orderId);
       await deleteOrderModel(orderId);
+
+      let time_to_prepare = 0;
+      orderDetails.map((item: any) => {
+        time_to_prepare = Math.max(time_to_prepare, Number(item.time_to_prepare));
+      });
+
+      console.log("order delete: ", orderDetails);
+
+      const redemptionDate = new Date(
+        new Date().getTime() +
+          time_to_prepare * 60 * 1000 + // Convert minutes to milliseconds
+          Number(orderDetails[0].delay) * 60 * 1000
+      );
+
+      console.log("first ", redemptionDate)
+      
+      if (isMealOrder(orderDetails)) {
+        console.log("second")
+        const meals: MealDetails = (await fetchMealsByBookingIdAndDateModel(orderDetails[0].booking_id, redemptionDate))[0];
+        console.log("meals: ", meals)
+        if (meals) {
+          orderDetails.map((item: any) => {
+            switch (item.item_id) {
+              case process.env.BREAKFAST_VEG_ID:
+                meals.breakfast_veg = Math.max((meals.breakfast_veg - item.qty),0);
+                break;
+              case process.env.LUNCH_VEG_ID:
+                meals.lunch_veg = Math.max((meals.lunch_veg - item.qty),0);
+                break;
+              case process.env.DINNER_VEG_ID:
+                meals.dinner_veg = Math.max((meals.dinner_veg - item.qty),0);
+                break;
+              case process.env.BREAKFAST_NON_VEG_ID:
+                meals.breakfast_nonveg = Math.max((meals.breakfast_nonveg - item.qty),0);
+                break;
+              case process.env.LUNCH_NON_VEG_ID:
+                meals.lunch_nonveg = Math.max((meals.lunch_nonveg - item.qty),0);
+                break;
+              case process.env.DINNER_NON_VEG_ID:
+                meals.dinner_nonveg = Math.max((meals.dinner_nonveg - item.qty),0);
+                break;
+              case process.env.TEA_ID:
+                meals.tea = Math.max(((meals?.tea || 0) - item.qty),0);
+                break;
+              default:
+                break; // Handle items that don't match any meal type
+            }
+          });
+          meals.date = new Date(meals.date);
+
+          console.log("after Meals: ", meals)
+          await updateMealsModelCOS([meals]);
+          console.log("meals updated successfully!")
+        }
+      }
 
       const io = getIO();
       let details = await fetchAllOrdersService();
@@ -1580,23 +1651,23 @@ export async function updateCheckinGuestService(
 ) {
   return new Promise((resolve, reject) => {
     updateCheckinGuestModel(booking_id, document_url, email, room, document_url_back)
-    .then((results) => {
-      const coupon: Coupon = results.coupon;
-      couponPendingQueue.enqueue({
-        room: room,
-        coupon_code: coupon.code,
-        coupon_id: coupon.coupon_id,
-        description: coupon.description,
-        email: email,
-        date_created: new Date(),
-        name: name,
+      .then((results) => {
+        const coupon: Coupon = results.coupon;
+        couponPendingQueue.enqueue({
+          room: room,
+          coupon_code: coupon.code,
+          coupon_id: coupon.coupon_id,
+          description: coupon.description,
+          email: email,
+          date_created: new Date(),
+          name: name,
+        });
+        resolve({ message: results.message });
+      })
+      .catch((error) => {
+        console.log("error updating checkin ", error);
+        reject("Error updating checkin ");
       });
-      resolve({ message: results.message });
-    })
-    .catch((error) => {
-      console.log("error updating checkin ", error);
-      reject("Error updating checkin ");
-    });
   });
 }
 
@@ -1645,10 +1716,10 @@ export function updateCouponAdminService(couponData: adminCoupon): Promise<any> 
 function monitorCouponQueue() {
   setInterval(async () => {
     const coupon = couponPendingQueue.peek();
-    
+
     if (coupon) {
       const timeElapsed = Date.now() - coupon.date_created.getTime();
-      
+
       if (timeElapsed > COUPON_MAIL_INTERVAL) {
         console.log("Sending coupon pending mail to: ", coupon.email);
         const mailOptions = {
@@ -1720,7 +1791,7 @@ function monitorCouponQueue() {
           </html>
           `,
         };
-        
+
         transporterCOS.sendMail(mailOptions, (error, info) => {
           if (error) {
             console.log("Error sending email:", error);
@@ -1728,7 +1799,7 @@ function monitorCouponQueue() {
             console.log("Coupon reminder email sent to: ", coupon.email, " response: ", info.response);
           }
         });
-        
+
         couponPendingQueue.dequeue(); // Remove the processed coupon
       }
     }
