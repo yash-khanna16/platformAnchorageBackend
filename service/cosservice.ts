@@ -1082,7 +1082,7 @@ export async function updateItemService(itemDetails: itemDetailsType) {
   return new Promise(async (resolve, reject) => {
     const categoryAvailable = await fetchCategory(itemDetails.category);
     const originalCategory = await fetchOriginalCategory(itemDetails.item_id);
-    if (originalCategory.length < 2) {
+    if (originalCategory.length < 1) {
       await deleteCategory(itemDetails.item_id);
     }
     if (categoryAvailable.length === 0) {
@@ -1114,7 +1114,7 @@ export async function updateItemService(itemDetails: itemDetailsType) {
 export async function deleteItemService(itemid: string) {
   return new Promise(async (resolve, reject) => {
     const originalCategory = await fetchOriginalCategory(itemid);
-    if (originalCategory.length < 2) {
+    if (originalCategory.length < 1) {
       await deleteCategory(itemid);
     }
     deleteItemModel(itemid)
