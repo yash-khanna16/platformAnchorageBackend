@@ -7,4 +7,5 @@ type MealDetails = {
     lunch_nonveg: number;
     dinner_veg: number;
     dinner_nonveg: number;
+    tea: number|undefined;
   }

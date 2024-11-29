@@ -27,6 +27,7 @@ import {
   updateCouponAdminService,
   fetchCheckinByRoomService,
   updateCheckinGuestService,
+  fetchGuestDataByEmailService
 } from "../service/cosservice";
 import { adminCoupon, Coupon, FreeItem, itemDetailsType, OrderDetails, orderType } from "../types/cos";
 
@@ -62,7 +63,8 @@ export const verifyOTP = async (req: Request, res: Response) => {
 
 export const fetchAllItems = async (req: Request, res: Response) => {
   try {
-    const result = await fetchAllItemsService();
+    const bookingId = req.headers.bookingid as string;
+    const result = await fetchAllItemsService(bookingId);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
@@ -87,12 +89,13 @@ export const addOrder = async (req: Request, res: Response) => {
 
     res.status(200).send(result);
   } catch (error: any) {
-    if (error.notAvailable) {
+    console.log("error placing order: ", error)
+    if (error.notAvailable || error.mealsRedeemed || error.message) {
       res.status(401).send(error);
     } else if (error.booking_expired) {
       res.status(415).send(error)
     } else {
-      res.status(500).send("Something went wrong!");
+      res.status(500).send({message:"Something went wrong!"});
     }
   }
 };
@@ -310,6 +313,7 @@ export const addCoupon = async (req: Request, res: Response) => {
 export const fetchCheckinByRoom = async (req: Request, res: Response) => {
   try {    
     const room = req.headers.room as string;
+    console.log(room);
     const result = await fetchCheckinByRoomService(room);
     res.status(200).send(result);
   } catch (error) {
@@ -332,6 +336,15 @@ export const updateCoupon = async (req: Request, res: Response) => {
   try {    
     const couponData:adminCoupon=req.body.couponData;
     const result = await updateCouponAdminService(couponData);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong, please try again!" });
+  }
+};
+export const fetchGuestDataByEmail = async (req: Request, res: Response) => {
+  try {    
+    const guestEmail=req.headers.guestemail as string;
+    const result = await fetchGuestDataByEmailService(guestEmail);
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, please try again!" });
