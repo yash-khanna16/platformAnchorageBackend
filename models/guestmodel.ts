@@ -39,6 +39,7 @@ import {
   fetchAllFeedbackQuery,
   fetchAllOrderFeedbackQuery,
   fetchAllOrders,
+  fetchMealsByBookingIdAnDateQuery as fetchMealsByBookingIdAndDateQuery,
 } from "./queries";
 import {fetchMovementQueryByMovementId} from "./movementqueries"
 
@@ -46,6 +47,7 @@ type Item = {
   name: string;
   qty: number;
   price: number;
+  item_id: string;
 };
 
 type OrderDataType = {
@@ -95,6 +97,7 @@ interface GuestData {
   room: string;
   breakfast: number;
   document_url: string;
+  document_url_back: string|null;
   orders: OrderDataType[];
 }
 
@@ -111,6 +114,7 @@ export async function fetchAllGuests(): Promise<GuestData[]> {
 
     // Create a map to aggregate orders by order_id
     const ordersMap: Record<string, OrderDataType> = {};
+
 
     orders.forEach((order:any) => {
       const orderId = order.order_id;
@@ -135,6 +139,7 @@ export async function fetchAllGuests(): Promise<GuestData[]> {
 
       // Add item details to the items array for the corresponding order
       ordersMap[orderId].items.push({
+        item_id: order.item_id,
         name: order.item_name,
         qty: order.qty,
         price: order.price,
@@ -241,6 +246,7 @@ export async function fetchRoomResv(roomNo: string): Promise<any[]> {
         name: order.item_name,
         qty: order.qty,
         price: order.price,
+        item_id: order.item_id
       });
     });
 
@@ -592,6 +598,53 @@ export async function updateMealsModel(mealDetailsList: MealDetails[]) {
     throw new Error("Error updating meals");
   }
 }
+export async function updateMealsModelCOS(mealDetailsList: MealDetails[]) {
+  try {
+    const values = mealDetailsList
+      .map((mealDetails, index) => {
+        return `(
+        $${index * 9 + 1}, $${index * 9 + 2}, $${index * 9 + 3}, $${index * 9 + 4}, 
+        $${index * 9 + 5}, $${index * 9 + 6}, $${index * 9 + 7}, $${index * 9 + 8}, $${index * 9 + 9}
+      )`;
+      })
+      .join(",");
+
+    const upsertQuery = `
+      INSERT INTO meals (
+        booking_id, date, breakfast_veg, breakfast_nonveg, lunch_veg, lunch_nonveg, dinner_veg, dinner_nonveg, tea
+      ) VALUES ${values}
+      ON CONFLICT (booking_id, date) DO UPDATE
+      SET
+        breakfast_veg = EXCLUDED.breakfast_veg,
+        breakfast_nonveg = EXCLUDED.breakfast_nonveg,
+        lunch_veg = EXCLUDED.lunch_veg,
+        lunch_nonveg = EXCLUDED.lunch_nonveg,
+        dinner_veg = EXCLUDED.dinner_veg,
+        dinner_nonveg = EXCLUDED.dinner_nonveg,
+        tea = EXCLUDED.tea;
+    `;
+
+    const params = mealDetailsList.flatMap((mealDetails) => [
+      mealDetails.booking_id,
+      mealDetails.date,
+      mealDetails.breakfast_veg,
+      mealDetails.breakfast_nonveg,
+      mealDetails.lunch_veg,
+      mealDetails.lunch_nonveg,
+      mealDetails.dinner_veg,
+      mealDetails.dinner_nonveg,
+      mealDetails.tea, // Include the new tea attribute
+    ]);
+
+    await pool.query(upsertQuery, params);
+
+    return { message: "Meals updated successfully!" };
+  } catch (error) {
+    console.error("Error updating meals:", error);
+    throw new Error("Error updating meals");
+  }
+}
+
 
 export async function fetchMealsByDateModel(date: string) {
   try {
@@ -606,6 +659,15 @@ export async function fetchMealsByBookingIdModel(bookingId: string) {
   try {
     const result = await pool.query(fetchMealsByBookingIdQuery, [bookingId]);
     return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function fetchMealsByBookingIdAnDateModel(bookingId: string, date: Date) {
+  try {
+    const result = await pool.query(fetchMealsByBookingIdAndDateQuery, [bookingId,date]);
+    return result.rows;
   } catch (error) {
     throw error;
   }

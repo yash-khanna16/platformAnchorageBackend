@@ -15,6 +15,7 @@ SELECT
     g.email,
     g.phone,
     i.name AS item_name,
+    i.item_id AS item_id,
     od.qty AS qty,
     i.price AS price
 FROM
@@ -172,6 +173,8 @@ export const fetchMealsByDateQuery = `
     WHERE b.checkin::date <= $1::date AND b.checkout::date >= $1::date;`;
 
 export const fetchMealsByBookingIdQuery = `SELECT * FROM meals where booking_id = $1 ORDER BY date`;
+
+export const fetchMealsByBookingIdAnDateQuery = `SELECT * FROM meals where booking_id = $1 AND date=$2::date`;
 
 export const fetchBookingLogsQuery = "SELECT * FROM logs JOIN guests ON guests.email=logs.guest_email";
 

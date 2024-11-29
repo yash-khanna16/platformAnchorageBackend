@@ -10,7 +10,7 @@ export const fetchOTPQuery = `SELECT otp, expiry, tries FROM guests where email=
 
 export const fetchAllItemsQuery = `SELECT * FROM items JOIN category ON items.category_id=category.category_id;`;
 
-export const addOrderQuery = `INSERT INTO orders (booking_id, room, remarks, created_at, status, discount) VALUES ($1,$2,$3,$4,$5,$6) RETURNING order_id;`;
+export const addOrderQuery = `INSERT INTO orders (booking_id, room, remarks, created_at, status, discount, delay) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING order_id;`;
 
 export const deleteOrderQuery = `DELETE FROM orders WHERE order_id = $1`;
 
@@ -258,8 +258,8 @@ WHERE c.is_active = true
   AND (
       (cur.is_allowed = true AND cur.user_email = $1)
       OR cur.is_allowed IS NULL
-  );
-
+  )
+  ORDER BY c.created_at;
 `;
 
 export const fetchCouponDetailsQuery = `
@@ -328,7 +328,7 @@ export const updateCheckInGuestQuery = `
         WHERE booking_id = $3
     )
     UPDATE bookings
-    SET document_url = $1, guest_email = $2, checkin = $4
+    SET document_url = $1, guest_email = $2, checkin = $4, document_url_back = $5
     WHERE booking_id = $3
     RETURNING (SELECT guest_email FROM old_data) AS old_email;
 `;

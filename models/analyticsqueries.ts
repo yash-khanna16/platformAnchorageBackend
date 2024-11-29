@@ -541,6 +541,7 @@ WITH date_series AS (
             '1 day'
         ) AS order_date
 ),
+
 order_profits AS (
     SELECT 
         orders.order_id,
@@ -661,3 +662,9 @@ GROUP BY
 ORDER BY 
     ds.order_date;
 `;
+
+
+
+
+
+

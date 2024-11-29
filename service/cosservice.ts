@@ -51,12 +51,20 @@ import { v4 as uuidv4 } from "uuid";
 import { getIO } from "../socket";
 import jwt from "jsonwebtoken";
 import { couponPendingQueue } from "./priorityqueue";
+import {
+  fetchMealsByBookingIdAnDateModel as fetchMealsByBookingIdAndDateModel,
+  fetchMealsByBookingIdModel,
+  findGuest,
+  updateMealsModel,
+  updateMealsModelCOS,
+} from "../models/guestmodel";
+import { fetchMealsByBookingId } from "../controllers/guestcontroller";
 
 dotenv.config();
 const { ROOM_CODE } = process.env;
 
 const maxTries = 10;
-const COUPON_MAIL_INTERVAL = 35*60*1000; // 35 minutes
+const COUPON_MAIL_INTERVAL = 35 * 60 * 1000; // 35 minutes
 const CHECK_INTERVAL = 10000; // 10 seconds
 
 const transporter = nodemailer.createTransport({
@@ -158,19 +166,74 @@ export async function verifyOTPService(email: string, otp: string) {
   }
 }
 
-export async function fetchAllItemsService() {
+export async function fetchAllItemsService(bookingId: string) {
   return new Promise(async (resolve, reject) => {
     try {
       const bestSelling = await fetchBestSeller();
       const bestSellingNames = bestSelling.map((item: any) => item.name);
 
       const allItems = await fetchAllItemsModel();
+      let meals: MealDetails = (await fetchMealsByBookingIdAndDateModel(bookingId, new Date()))[0];
+
+      if (!meals) {
+        meals = {
+          booking_id: bookingId,
+          date: new Date(), // Initialize with the current date
+          breakfast_veg: 0,
+          breakfast_nonveg: 0,
+          lunch_veg: 0,
+          lunch_nonveg: 0,
+          dinner_veg: 0,
+          dinner_nonveg: 0,
+          tea: 0,
+        };
+      }
+
+      const mealCategories = [
+        process.env.BREAKFAST_VEG_ID,
+        process.env.LUNCH_VEG_ID,
+        process.env.DINNER_VEG_ID,
+        process.env.BREAKFAST_NON_VEG_ID,
+        process.env.LUNCH_NON_VEG_ID,
+        process.env.DINNER_NON_VEG_ID,
+        process.env.TEA_ID,
+      ];
 
       const enrichedItems = allItems.map((item: any) => {
-        const isBestSeller = bestSellingNames.includes(item.name) ? true : false;
+        const isBestSeller = bestSellingNames.includes(item.name);
+        let isMealAvailable: boolean | undefined;
+
+        if (mealCategories.includes(item.item_id)) {
+          switch (item.item_id) {
+            case process.env.BREAKFAST_VEG_ID:
+              isMealAvailable = meals.breakfast_veg > 0 || meals.breakfast_nonveg > 0 ? false : true;
+              break;
+            case process.env.BREAKFAST_NON_VEG_ID:
+              isMealAvailable = meals.breakfast_veg > 0 || meals.breakfast_nonveg > 0 ? false : true;
+              break;
+            case process.env.LUNCH_VEG_ID:
+              isMealAvailable = meals.lunch_veg > 0 || meals.lunch_nonveg > 0 ? false : true;
+              break;
+            case process.env.LUNCH_NON_VEG_ID:
+              isMealAvailable = meals.lunch_veg > 0 || meals.lunch_nonveg > 0 ? false : true;
+              break;
+            case process.env.DINNER_VEG_ID:
+              isMealAvailable = meals.dinner_veg > 0 || meals.dinner_nonveg > 0 ? false : true;
+              break;
+            case process.env.DINNER_NON_VEG_ID:
+              isMealAvailable = meals.dinner_veg > 0 || meals.dinner_nonveg > 0 ? false : true;
+              break;
+            case process.env.TEA_ID:
+              isMealAvailable = meals.tea && meals.tea > 1 ? false : true;
+              break;
+            default:
+              break;
+          }
+        }
         return {
           ...item,
           bestSeller: isBestSeller,
+          ...(isMealAvailable !== undefined && { isMealAvailable }),
         };
       });
 
@@ -186,7 +249,6 @@ export async function putItemService(itemDetails: itemDetailsType) {
   return new Promise(async (resolve, reject) => {
     itemDetails.item_id = uuidv4();
     const categoryAvailable = await fetchCategory(itemDetails.category);
-    console.log(categoryAvailable);
     if (categoryAvailable.length === 0) {
       itemDetails.category_id = uuidv4();
       await addCategory(itemDetails);
@@ -199,8 +261,9 @@ export async function putItemService(itemDetails: itemDetailsType) {
           reject("Error inserting item");
         });
     } else {
-      itemDetails.sequence = categoryAvailable.sequence;
-      itemDetails.category_id = categoryAvailable.category_id;
+      itemDetails.sequence = categoryAvailable[0].sequence;
+      itemDetails.category_id = categoryAvailable[0].category_id;
+      console.log(itemDetails);
       putItemModel(itemDetails)
         .then((results) => {
           resolve(results);
@@ -213,6 +276,155 @@ export async function putItemService(itemDetails: itemDetailsType) {
   });
 }
 
+function isMealOrder(items: { item_id: string; qty: number }[]) {
+  const mealCategories = {
+    breakfast: [process.env.BREAKFAST_VEG_ID, process.env.BREAKFAST_NON_VEG_ID],
+    lunch: [process.env.LUNCH_VEG_ID, process.env.LUNCH_NON_VEG_ID],
+    dinner: [process.env.DINNER_VEG_ID, process.env.DINNER_NON_VEG_ID],
+  };
+
+  const tea = process.env.TEA_ID;
+  // Group meal items by category
+  const mealItems = items.filter((item) => Object.values(mealCategories).flat().includes(item.item_id) || item.item_id === tea);
+
+  return mealItems.length > 0;
+}
+
+async function checkMealsRedemption(
+  booking_id: string,
+  date: Date,
+  items: { item_id: string; qty: number }[]
+): Promise<{ canRedeemAll: boolean; redeemedMeals: string[] }> {
+  const mealCategories = {
+    breakfast: [process.env.BREAKFAST_VEG_ID, process.env.BREAKFAST_NON_VEG_ID],
+    lunch: [process.env.LUNCH_VEG_ID, process.env.LUNCH_NON_VEG_ID],
+    dinner: [process.env.DINNER_VEG_ID, process.env.DINNER_NON_VEG_ID],
+  };
+
+  const tea = process.env.TEA_ID;
+  // Group meal items by category
+  const mealItems = items.filter((item) => Object.values(mealCategories).flat().includes(item.item_id) || item.item_id === tea);
+
+  if (mealItems.length === 0) {
+    return { canRedeemAll: true, redeemedMeals: [] }; // No meal items; no meals redeemed
+  }
+
+  console.log("meal items: ", mealItems);
+
+  const meals = (await fetchMealsByBookingIdAndDateModel(booking_id, date))[0];
+  console.log("fetched Meals: ", meals);
+  const currentMeals = meals || {
+    breakfast_veg: 0,
+    breakfast_nonveg: 0,
+    lunch_veg: 0,
+    lunch_nonveg: 0,
+    dinner_veg: 0,
+    dinner_nonveg: 0,
+    tea: 0,
+  };
+
+  console.log("current meals: ", currentMeals);
+
+  const redeemedMeals: string[] = [];
+  let canRedeemAll = true;
+
+  console.log("first: ", tea);
+
+  items.map((item) => {
+    if (item.item_id === tea) {
+      currentMeals.tea += item.qty;
+      console.log("tea matched");
+    }
+  });
+
+  for (const [mealType, [vegId, nonVegId]] of Object.entries(mealCategories)) {
+    const vegQty = mealItems.find((item) => item.item_id === vegId)?.qty || 0;
+    const nonVegQty = mealItems.find((item) => item.item_id === nonVegId)?.qty || 0;
+
+    console.log("mealType: ", mealType);
+
+    console.log("veg qty: ", vegQty);
+    console.log("nonVeg qty: ", nonVegQty);
+
+    // Check if the current meal type has been redeemed
+    if ((currentMeals[`${mealType}_veg`] || 0) + vegQty > 0 || (currentMeals[`${mealType}_nonveg`] || 0) + nonVegQty > 0) {
+      redeemedMeals.push(mealType);
+    }
+
+    // Check if the daily limit is exceeded for this meal type
+    const totalQty = (currentMeals[`${mealType}_veg`] || 0) + (currentMeals[`${mealType}_nonveg`] || 0) + vegQty + nonVegQty;
+
+    console.log("total Qty: ", totalQty);
+    if (totalQty > 1) {
+      canRedeemAll = false;
+    }
+  }
+
+  if (currentMeals.tea > 2) {
+    canRedeemAll = false;
+    redeemedMeals.push("Tea");
+  }
+
+  return { canRedeemAll, redeemedMeals };
+}
+
+// Function to update the meal details in the database
+async function updateMeals(booking_id: string, items: { item_id: string; qty: number }[], redemptionDate: Date) {
+  let meals: MealDetails = (await fetchMealsByBookingIdAndDateModel(booking_id, redemptionDate))[0];
+
+  if (!meals) {
+    meals = {
+      booking_id: booking_id,
+      date: redemptionDate,
+      breakfast_veg: 0,
+      breakfast_nonveg: 0,
+      lunch_veg: 0,
+      lunch_nonveg: 0,
+      dinner_veg: 0,
+      dinner_nonveg: 0,
+      tea: 0,
+    };
+  }
+
+  items.forEach((item) => {
+    switch (item.item_id) {
+      case process.env.BREAKFAST_VEG_ID:
+        meals.breakfast_veg = (meals.breakfast_veg || 0) + item.qty;
+        break;
+      case process.env.BREAKFAST_NON_VEG_ID:
+        meals.breakfast_nonveg = (meals.breakfast_nonveg || 0) + item.qty;
+        break;
+      case process.env.LUNCH_VEG_ID:
+        meals.lunch_veg = (meals.lunch_veg || 0) + item.qty;
+        break;
+      case process.env.LUNCH_NON_VEG_ID:
+        meals.lunch_nonveg = (meals.lunch_nonveg || 0) + item.qty;
+        break;
+      case process.env.DINNER_VEG_ID:
+        meals.dinner_veg = (meals.dinner_veg || 0) + item.qty;
+        break;
+      case process.env.DINNER_NON_VEG_ID:
+        meals.dinner_nonveg = (meals.dinner_nonveg || 0) + item.qty;
+        break;
+      case process.env.TEA_ID:
+        meals.tea = (meals.tea || 0) + item.qty;
+        break;
+      default:
+        break;
+    }
+  });
+
+  meals.date = new Date(meals.date); // Ensure the date field is correctly set
+
+  try {
+    await updateMealsModelCOS([meals]);
+    console.log("Meals successfully updated.");
+  } catch (error) {
+    console.error("Failed to update meals: ", error);
+    throw new Error("Failed to update meals in the database.");
+  }
+}
+
 export async function addOrderService(order: orderType) {
   return new Promise((resolve, reject) => {
     order.created_at = new Date().getTime().toString();
@@ -223,57 +435,89 @@ export async function addOrderService(order: orderType) {
         const currentTime = new Date().getTime();
         if (currentTime < checkout && currentTime > checkin) {
           fetchAvailabilityOfItems(order.items.map((item) => item.item_id))
-            .then((availability) => {
+            .then(async (availability) => {
               let notAvailable: { item_id: string; name: string; available: boolean }[] = [];
               availability.map((item: { item_id: string; name: string; available: boolean }) => {
                 if (!item.available) notAvailable.push(item);
               });
+
               if (notAvailable.length === 0) {
-                if (order.coupon_id) {
-                  validateCouponService(order.coupon_id, order.email, order)
-                    .then((res) => {
-                      order.discount = res.discount;
-                      placeOrder(order, booking)
-                        .then((res) => {
-                          const coupon_usage_id = uuidv4();
-                          putCouponUsageModel(
-                            order.coupon_id,
-                            order.email,
-                            coupon_usage_id,
-                            res.details.order_id,
-                            new Date().toISOString(),
-                            true
-                          )
-                            .then(() => {
-                              console.log("Coupon usage inserted successfully!");
-                            })
-                            .catch((error) => {
-                              console.log("Error inserting coupon usage: ", error);
-                            })
-                            .finally(() => {
-                              resolve(res);
-                            });
-                        })
-                        .catch((error) => {
-                          reject(error);
-                        });
+                // const maxPreparationTime = Math.max(...order.items.map((item) => item.time_to_prepare));
+                const redemptionDate = new Date(
+                  new Date().getTime() +
+                    order.time_to_prepare * 60 * 1000 + // Convert minutes to milliseconds
+                    order.delay * 60 * 1000
+                );
+                let mealStatus;
+                if (isMealOrder(order.items)) {
+                  const booking = await fetchBookingByBookingIdModel(order.booking_id);
+                  if (booking.company === "PERSONAL" || booking.company === "MMT BOOKING" || booking.company === "MMT") {
+                    reject({ message: "Complimentary meals are not available for bookings from your company." });
+                    return;
+                  }
+                  mealStatus = await checkMealsRedemption(order.booking_id, redemptionDate, order.items);
+                }
+
+                if (mealStatus === undefined || mealStatus.canRedeemAll) {
+                  updateMeals(order.booking_id, order.items, redemptionDate)
+                    .then(() => {
+                      if (order.coupon_id) {
+                        validateCouponService(order.coupon_id, order.email, order)
+                          .then((res) => {
+                            order.discount = res.discount;
+                            placeOrder(order, booking)
+                              .then((res) => {
+                                const coupon_usage_id = uuidv4();
+                                putCouponUsageModel(
+                                  order.coupon_id,
+                                  order.email,
+                                  coupon_usage_id,
+                                  res.details.order_id,
+                                  new Date().toISOString(),
+                                  true
+                                )
+                                  .then(() => {
+                                    console.log("Coupon usage inserted successfully!");
+                                  })
+                                  .catch((error) => {
+                                    console.log("Error inserting coupon usage: ", error);
+                                  })
+                                  .finally(() => {
+                                    resolve(res);
+                                  });
+                              })
+                              .catch((error) => {
+                                reject(error);
+                              });
+                          })
+                          .catch((error) => {
+                            if (error.message === "internal server error") {
+                              reject("Error validating coupon");
+                            } else {
+                              reject(error.message);
+                            }
+                          });
+                      } else {
+                        order.discount = 0;
+                        placeOrder(order, booking)
+                          .then((res) => {
+                            resolve(res);
+                          })
+                          .catch((error) => {
+                            reject(error);
+                          });
+                      }
                     })
                     .catch((error) => {
-                      if (error.message === "internal server error") {
-                        reject("Error validating coupon");
-                      } else {
-                        reject(error.message);
-                      }
+                      console.log("Error updating meals ", error);
+                      reject("Error updating meals");
                     });
                 } else {
-                  order.discount = 0;
-                  placeOrder(order, booking)
-                    .then((res) => {
-                      resolve(res);
-                    })
-                    .catch((error) => {
-                      reject(error);
-                    });
+                  console.log("Can't redeem these meals: ", mealStatus.redeemedMeals);
+                  const formattedMeals = mealStatus.redeemedMeals.join(", ");
+                  reject({
+                    mealsRedeemed: `The following meals have already been redeemed today: ${formattedMeals}`,
+                  });
                 }
               } else {
                 console.log("error adding order, following items not available now: ", notAvailable);
@@ -465,6 +709,61 @@ export async function deleteOrderService(orderId: string, reason: string, reject
       const orderDetails = await fetchOrderDetailsByOrderId(orderId);
       await deleteOrderModel(orderId);
 
+      let time_to_prepare = 0;
+      orderDetails.map((item: any) => {
+        time_to_prepare = Math.max(time_to_prepare, Number(item.time_to_prepare));
+      });
+
+      console.log("order delete: ", orderDetails);
+
+      const redemptionDate = new Date(
+        new Date().getTime() +
+          time_to_prepare * 60 * 1000 + // Convert minutes to milliseconds
+          Number(orderDetails[0].delay) * 60 * 1000
+      );
+
+      console.log("first ", redemptionDate)
+      
+      if (isMealOrder(orderDetails)) {
+        console.log("second")
+        const meals: MealDetails = (await fetchMealsByBookingIdAndDateModel(orderDetails[0].booking_id, redemptionDate))[0];
+        console.log("meals: ", meals)
+        if (meals) {
+          orderDetails.map((item: any) => {
+            switch (item.item_id) {
+              case process.env.BREAKFAST_VEG_ID:
+                meals.breakfast_veg = Math.max((meals.breakfast_veg - item.qty),0);
+                break;
+              case process.env.LUNCH_VEG_ID:
+                meals.lunch_veg = Math.max((meals.lunch_veg - item.qty),0);
+                break;
+              case process.env.DINNER_VEG_ID:
+                meals.dinner_veg = Math.max((meals.dinner_veg - item.qty),0);
+                break;
+              case process.env.BREAKFAST_NON_VEG_ID:
+                meals.breakfast_nonveg = Math.max((meals.breakfast_nonveg - item.qty),0);
+                break;
+              case process.env.LUNCH_NON_VEG_ID:
+                meals.lunch_nonveg = Math.max((meals.lunch_nonveg - item.qty),0);
+                break;
+              case process.env.DINNER_NON_VEG_ID:
+                meals.dinner_nonveg = Math.max((meals.dinner_nonveg - item.qty),0);
+                break;
+              case process.env.TEA_ID:
+                meals.tea = Math.max(((meals?.tea || 0) - item.qty),0);
+                break;
+              default:
+                break; // Handle items that don't match any meal type
+            }
+          });
+          meals.date = new Date(meals.date);
+
+          console.log("after Meals: ", meals)
+          await updateMealsModelCOS([meals]);
+          console.log("meals updated successfully!")
+        }
+      }
+
       const io = getIO();
       let details = await fetchAllOrdersService();
       if (ROOM_CODE) {
@@ -612,6 +911,14 @@ export async function fetchAllOrdersService() {
   });
 }
 
+const getCurrentDateInYYYYMMDD = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export async function updateOrderStatusService(orderid: string, status: string) {
   return new Promise((resolve, reject) => {
     updateOrderStatusModel(orderid, status)
@@ -620,8 +927,60 @@ export async function updateOrderStatusService(orderid: string, status: string) 
           const res = await fetchOrderDetailsByOrderId(orderid);
           const transformedResults = convertOrders(res);
           const details: OrderDetails[] = Object.values(transformedResults);
+          console.log("res: ", details[0]);
 
           if (status === "Delivered") {
+            // let meals: MealDetails = (await fetchMealsByBookingIdAndDateModel(details[0].booking_id, new Date()))[0];
+
+            // if (!meals) {
+            //   meals = {
+            //     booking_id: details[0].booking_id,
+            //     date: new Date(),
+            //     breakfast_veg: 0,
+            //     breakfast_nonveg: 0,
+            //     lunch_veg: 0,
+            //     lunch_nonveg: 0,
+            //     dinner_veg: 0,
+            //     dinner_nonveg: 0,
+            //   };
+            // }
+            // console.log("meals: ", meals);
+
+            // details[0].items.map((item) => {
+            //   switch (item.item_id) {
+            //     case process.env.BREAKFAST_VEG_ID:
+            //       meals.breakfast_veg = (meals.breakfast_veg || 0) + item.qty;
+            //       break;
+            //     case process.env.LUNCH_VEG_ID:
+            //       meals.lunch_veg = (meals.lunch_veg || 0) + item.qty;
+            //       break;
+            //     case process.env.DINNER_VEG_ID:
+            //       meals.dinner_veg = (meals.dinner_veg || 0) + item.qty;
+            //       break;
+            //     case process.env.BREAKFAST_NON_VEG_ID:
+            //       meals.breakfast_nonveg = (meals.breakfast_nonveg || 0) + item.qty;
+            //       break;
+            //     case process.env.LUNCH_NON_VEG_ID:
+            //       meals.lunch_nonveg = (meals.lunch_nonveg || 0) + item.qty;
+            //       break;
+            //     case process.env.DINNER_NON_VEG_ID:
+            //       meals.dinner_nonveg = (meals.dinner_nonveg || 0) + item.qty;
+            //       break;
+            //     default:
+            //       break; // Handle items that don't match any meal type
+            //   }
+            // });
+            // meals.date = new Date(meals.date);
+            // console.log("updating meals");
+
+            // try {
+            //   await updateMealsModel([meals]);
+            //   console.log("meals updated...");
+            // } catch (error) {
+            //   console.log("failed to update meals: ", error);
+            // }
+            // // }
+
             const mailOptions = {
               from: process.env.COS_EMAIL,
               to: details[0].guest_email,
@@ -1287,10 +1646,11 @@ export async function updateCheckinGuestService(
   document_url: string,
   email: string,
   room: string,
-  name: string
+  name: string,
+  document_url_back: string | null
 ) {
   return new Promise((resolve, reject) => {
-    updateCheckinGuestModel(booking_id, document_url, email, room)
+    updateCheckinGuestModel(booking_id, document_url, email, room, document_url_back)
       .then((results) => {
         const coupon: Coupon = results.coupon;
         couponPendingQueue.enqueue({
@@ -1358,7 +1718,7 @@ function monitorCouponQueue() {
     const coupon = couponPendingQueue.peek();
 
     if (coupon) {
-      const timeElapsed = (Date.now() - coupon.date_created.getTime()); 
+      const timeElapsed = Date.now() - coupon.date_created.getTime();
 
       if (timeElapsed > COUPON_MAIL_INTERVAL) {
         console.log("Sending coupon pending mail to: ", coupon.email);
@@ -1367,71 +1727,71 @@ function monitorCouponQueue() {
           to: coupon.email,
           subject: "Your Exclusive Coupon Awaits - Don’t Miss Out!",
           html: `
- <!DOCTYPE html>
+          <!DOCTYPE html>
           <html lang="en">
           <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Coupon Reminder</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Coupon Reminder</title>
           </head>
           <body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0;">
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                      <td align="center" style="padding: 20px;">
-                          <table width="470" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
-                              <!-- Welcome Message -->
-                              <tr>
-                                  <td style="padding: 20px; text-align: center;">
-                                      <p style="color: #555; font-size: 16px; margin: 0;">Hi <span style="font-weight: 600; ">${coupon.name}</span>,</p>
-                                      <p style="font-size: 24px; font-weight: bold; color: #e3342f; text-transform: uppercase; margin: 10px 0;">Your Check-in is Complete!</p>
-                                      <p style="color: #555; font-size: 16px; margin: 0;">We’re excited to offer you a special coupon!</p>
-                                  </td>
-                              </tr>
-        
-                              <!-- Coupon Section -->
-                              <tr>
-                                  <td style="padding: 0 20px 10px;">
-                                      <div style="background: linear-gradient(to right, #fef2f2, #fff7ed); border-radius: 12px; padding: 20px;">
-                                          <p style="color: #64748b; font-size: 16px; font-weight: 500; text-align: center; margin: 0 0 15px;">${coupon.description}</p>
-                                          <div style="background-color: #ffffff; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0px 1px 4px rgba(0,0,0,0.1);">
-                                              <span style="font-size: 24px; font-weight: bold; color: #e3342f;">${coupon.coupon_code}</span>
-                                          </div>
-                                      </div>
-                                  </td>
-                              </tr>
-        
-                              <!-- Claim Button -->
-                              <tr>
-                                  <td style="padding: 0 20px 20px;">
-                                      <a href="https://orders.platformanchorage.com/home?room=${coupon.room}" style="display: block; background-color: #e3342f; color: #ffffff; font-size: 16px; font-weight: bold; text-align: center; text-decoration: none; padding: 12px; border-radius: 8px; transition: background-color 0.3s; margin-top: 15px;">
-                                          Tap here to claim your coupon and enjoy the perks!
-                                      </a>
-                                  </td>
-                              </tr>
-        
-                              <!-- Footer -->
-                              <tr>
-                                  
-                                  <td style="padding: 20px; text-align: center; background-color: #f4f4f4;color: #777; font-weight: 500">
-                                    <p style="margin: 0 0; color: #777; font-weight: 500">Thank you for choosing Anchorage. We look forward to serving you again!</p>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="padding: 0 20px 20px; text-align: center; background-color: #f4f4f4;">
-                                            <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
-                                        </td>
-                                     </p>
-                                  </td>
-                              </tr>
-                          </table>
-                      </td>
-                  </tr>
-              </table>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+          <td align="center" style="padding: 20px;">
+          <table width="470" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+          <!-- Welcome Message -->
+          <tr>
+          <td style="padding: 20px; text-align: center;">
+          <p style="color: #555; font-size: 16px; margin: 0;">Hi <span style="font-weight: 600; ">${coupon.name}</span>,</p>
+          <p style="font-size: 24px; font-weight: bold; color: #e3342f; text-transform: uppercase; margin: 10px 0;">Your Check-in is Complete!</p>
+          <p style="color: #555; font-size: 16px; margin: 0;">We’re excited to offer you a special coupon!</p>
+          </td>
+          </tr>
+          
+          <!-- Coupon Section -->
+          <tr>
+          <td style="padding: 0 20px 10px;">
+          <div style="background: linear-gradient(to right, #fef2f2, #fff7ed); border-radius: 12px; padding: 20px;">
+          <p style="color: #64748b; font-size: 16px; font-weight: 500; text-align: center; margin: 0 0 15px;">${coupon.description}</p>
+          <div style="background-color: #ffffff; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0px 1px 4px rgba(0,0,0,0.1);">
+          <span style="font-size: 24px; font-weight: bold; color: #e3342f;">${coupon.coupon_code}</span>
+          </div>
+          </div>
+          </td>
+          </tr>
+          
+          <!-- Claim Button -->
+          <tr>
+          <td style="padding: 0 20px 20px;">
+          <a href="https://orders.platformanchorage.com/home?room=${coupon.room}" style="display: block; background-color: #e3342f; color: #ffffff; font-size: 16px; font-weight: bold; text-align: center; text-decoration: none; padding: 12px; border-radius: 8px; transition: background-color 0.3s; margin-top: 15px;">
+          Tap here to claim your coupon and enjoy the perks!
+          </a>
+          </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+          
+          <td style="padding: 20px; text-align: center; background-color: #f4f4f4;color: #777; font-weight: 500">
+          <p style="margin: 0 0; color: #777; font-weight: 500">Thank you for choosing Anchorage. We look forward to serving you again!</p>
+          </td>
+          </tr>
+          <tr>
+          <td style="padding: 0 20px 20px; text-align: center; background-color: #f4f4f4;">
+          <p style="margin: 0; color: #777;">Anchorage | <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
+          </td>
+          </p>
+          </td>
+          </tr>
+          </table>
+          </td>
+          </tr>
+          </table>
           </body>
           </html>
           `,
         };
-        
+
         transporterCOS.sendMail(mailOptions, (error, info) => {
           if (error) {
             console.log("Error sending email:", error);
@@ -1447,3 +1807,16 @@ function monitorCouponQueue() {
 }
 
 monitorCouponQueue();
+
+export async function fetchGuestDataByEmailService(guestEmail: string) {
+  return new Promise((resolve, reject) => {
+    findGuest(guestEmail)
+      .then((results) => {
+        resolve(results.rows[0]);
+      })
+      .catch((error) => {
+        console.log("error fetching checkin by room", error);
+        reject("Error fetching checkin by room!");
+      });
+  });
+}
