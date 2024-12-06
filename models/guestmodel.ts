@@ -41,7 +41,7 @@ import {
   fetchAllOrders,
   fetchMealsByBookingIdAnDateQuery as fetchMealsByBookingIdAndDateQuery,
 } from "./queries";
-import {fetchMovementQueryByMovementId} from "./movementqueries"
+import { fetchMovementQueryByMovementId } from "./movementqueries"
 
 type Item = {
   name: string;
@@ -96,7 +96,7 @@ interface GuestData {
   room: string;
   breakfast: number;
   document_url: string;
-  document_url_back: string|null;
+  document_url_back: string | null;
   orders: OrderDataType[];
 }
 
@@ -114,7 +114,7 @@ export async function fetchAllGuests(): Promise<GuestData[]> {
     // Create a map to aggregate orders by order_id
     const ordersMap: Record<string, OrderDataType> = {};
 
-    orders.forEach((order:any) => {
+    orders.forEach((order: any) => {
       const orderId = order.order_id;
 
       // Check if the order already exists in the ordersMap
@@ -292,7 +292,7 @@ export async function addBooking(bookingData: {
   }
 }
 
-export async function editBooking(bookingData: {
+export async function editGuestData(bookingData: {
   bookingId: string;
   checkin: Date;
   checkout: Date;
@@ -301,11 +301,19 @@ export async function editBooking(bookingData: {
   meal_non_veg: number;
   remarks: string;
   additional: string;
-  breakfast: number;
   room: string;
-}): Promise<QueryResult<any>> {
+  name: string;
+  phone: number;
+  company: string;
+  vessel: string;
+  rank: string;
+  breakfast: number;
+  originalEmail: string;
+  guestId: string;
+}, originalRoom: string) {
   try {
-    const result = await pool.query(editBookingDetails, [
+    await pool.query("Begin");
+    await pool.query(editBookingDetails, [
       bookingData.bookingId,
       bookingData.checkin,
       bookingData.checkout,
@@ -314,11 +322,20 @@ export async function editBooking(bookingData: {
       bookingData.meal_non_veg,
       bookingData.remarks,
       bookingData.additional,
+      originalRoom,
       bookingData.breakfast,
-      bookingData.room,
     ]);
-    return result;
+    if(bookingData.originalEmail.includes("@chotahaathi.com")){
+      await pool.query(deleteGuestDetails,[bookingData.originalEmail])
+      await pool.query(addGuestQuery,[bookingData.email,bookingData.name,bookingData.phone,bookingData.company,bookingData.vessel,bookingData.rank,bookingData.guestId]);
+    }
+    else{
+      await pool.query(editGuestEmail,[bookingData.email,bookingData.name,bookingData.phone,bookingData.company,bookingData.vessel,bookingData.rank,bookingData.guestId,bookingData.originalEmail])
+    }
+    await pool.query("Commit");
+
   } catch (error) {
+    await pool.query("ROLLBACK");
     throw error;
   }
 }
@@ -349,7 +366,7 @@ export async function fetchThisRooms(checkData: {
   checkout: Date;
   room: string;
 }): Promise<QueryResult<any>> {
-  
+
   try {
     const result = await pool.query(fetchThisRoom, [
       checkData.checkin,
@@ -379,10 +396,10 @@ export async function deleteGuest(email: string): Promise<QueryResult<any>> {
   }
 }
 
-export async function fetchAllRooms(): Promise<QueryResult<any>> {
+export async function fetchAllRooms() {
   try {
     const result = await pool.query(fetchRooms);
-    return result;
+    return result.rows;
   } catch (error) {
     throw error;
   }
@@ -448,7 +465,7 @@ export async function updateGuestEmail(guestData: {
   guestOrgEmail: string;
 }): Promise<QueryResult<any>> {
   try {
-    
+
     const result = await pool.query(editGuestEmail, [
       guestData.guestEmail,
       guestData.guestName,
@@ -583,7 +600,7 @@ export async function updateMealsModel(mealDetailsList: MealDetails[]) {
       mealDetails.dinner_nonveg,
     ]);
 
-    
+
 
     await pool.query(upsertQuery, params);
 
@@ -662,7 +679,7 @@ export async function fetchMealsByBookingIdModel(bookingId: string) {
 
 export async function fetchMealsByBookingIdAnDateModel(bookingId: string, date: Date) {
   try {
-    const result = await pool.query(fetchMealsByBookingIdAndDateQuery, [bookingId,date]);
+    const result = await pool.query(fetchMealsByBookingIdAndDateQuery, [bookingId, date]);
     return result.rows;
   } catch (error) {
     throw error;
@@ -677,17 +694,17 @@ export async function fetchBookingLogsModel() {
     throw error;
   }
 }
-export async function addAuditLogsModal(newAuditData:{user:string,endpoint:string,time:Date,auditId:string,name:string,phone:string}) {
+export async function addAuditLogsModal(newAuditData: { user: string, endpoint: string, time: Date, auditId: string, name: string, phone: string }) {
   try {
-    const result = await pool.query(addToAuditLogs,[newAuditData.auditId,newAuditData.time,newAuditData.user,newAuditData.endpoint,newAuditData.name,newAuditData.phone]);
+    const result = await pool.query(addToAuditLogs, [newAuditData.auditId, newAuditData.time, newAuditData.user, newAuditData.endpoint, newAuditData.name, newAuditData.phone]);
     return result;
   } catch (error) {
     throw error;
   }
 }
-export async function fetchAdminByPassword(password:string) {
+export async function fetchAdminByPassword(password: string) {
   try {
-    const result = await pool.query(fetchAdminByPass,[password]);
+    const result = await pool.query(fetchAdminByPass, [password]);
     return result.rows;
   } catch (error) {
     throw error;
@@ -701,33 +718,33 @@ export async function getAuditLogsServiceModel() {
     throw error;
   }
 }
-export async function fetchBookingDetails(bookingId:string) {
+export async function fetchBookingDetails(bookingId: string) {
   try {
-    const result = await pool.query(fetchBookingDetailsQuery,[bookingId]);
+    const result = await pool.query(fetchBookingDetailsQuery, [bookingId]);
     return result.rows;
   } catch (error) {
     throw error;
   }
 }
-export async function fetchPassengerDetails(passengerId:string) {
+export async function fetchPassengerDetails(passengerId: string) {
   try {
-    const result = await pool.query(fetchPassengerDetailsQuery,[passengerId]);
+    const result = await pool.query(fetchPassengerDetailsQuery, [passengerId]);
     return result.rows;
   } catch (error) {
     throw error;
   }
 }
-export async function fetchExternalPassengerDetails(passengerId:string) {
+export async function fetchExternalPassengerDetails(passengerId: string) {
   try {
-    const result = await pool.query(fetchExternalPassengerDetailsQuery,[passengerId]);
+    const result = await pool.query(fetchExternalPassengerDetailsQuery, [passengerId]);
     return result.rows;
   } catch (error) {
     throw error;
   }
 }
-export async function fetchMovementDetails(movementId:string) {
+export async function fetchMovementDetails(movementId: string) {
   try {
-    const result = await pool.query(fetchMovementQueryByMovementId,[movementId]);
+    const result = await pool.query(fetchMovementQueryByMovementId, [movementId]);
     return result.rows;
   } catch (error) {
     throw error;
@@ -740,7 +757,7 @@ export async function fetchAllFeedbackModel() {
 
     console.log("result feedbacK: ", resultFeedback.rows);
     console.log("order feedback: ", resultsOrderFeedback.rows);
-    
+
     // Combine both results
     const combinedResults = [
       ...resultFeedback.rows,
