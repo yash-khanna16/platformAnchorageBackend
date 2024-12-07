@@ -4,7 +4,6 @@ import {
   addGuestData,
   fetchRoomResv,
   addBooking,
-  editBooking,
   fetchAvailRooms,
   fetchThisRooms,
   findGuest,
@@ -19,8 +18,7 @@ import {
   hideRoom,
   editEmailTemplate,
   getEmailTemplate,
-  updateGuestEmail,
-  deleteGuest,
+  editGuestData,
   fetchUpcoming,
   fetchBookingByBookingId,
   updateMealsModel,
@@ -80,10 +78,10 @@ type BookingData = {
 export function getGuests(): Promise<any> {
   return new Promise((resolve, reject) => {
     fetchGuests()
-      .then((results:any) => {
+      .then((results: any) => {
         resolve(results);
       })
-      .catch((error:any) => {
+      .catch((error: any) => {
         console.log(error);
 
         reject("internal server error");
@@ -94,15 +92,15 @@ export function getGuests(): Promise<any> {
 export function searchGuests(): Promise<any> {
   return new Promise((resolve, reject) => {
     fetchAllGuests()
-      .then((results:any) => {
+      .then((results: any) => {
         if (results.length === 0) {
           reject("No such guest present");
         } else {
-          const sortedResults = results.sort((a:any, b:any) => new Date(a.checkin).getTime() - new Date(b.checkin).getTime());
+          const sortedResults = results.sort((a: any, b: any) => new Date(a.checkin).getTime() - new Date(b.checkin).getTime());
           resolve(sortedResults);
         }
       })
-      .catch((error:any) => {
+      .catch((error: any) => {
         console.log(error);
         reject("Internal server error");
       });
@@ -167,12 +165,12 @@ export function addGuests(guestData: {
           reject("internal server error");
         });
     } else {
-      try{
-        const results=await editGuest(guestData);
+      try {
+        const results = await editGuest(guestData);
         resolve(results.rows)
       }
-      catch(error){
-        console.log("Error updating guest data:",error);
+      catch (error) {
+        console.log("Error updating guest data:", error);
       }
     }
   });
@@ -308,154 +306,202 @@ export function editBookingData(bookingData: {
   breakfast: number;
   originalEmail: string;
   guestId: string;
-}): Promise<any> {
+}) {
   return new Promise(async (resolve, reject) => {
-    console.log("edit");
-    bookingData.checkin = new Date(bookingData.checkin);
-    bookingData.checkout = new Date(bookingData.checkout);
-    const checkData = {
-      room: bookingData.room,
-      checkin: bookingData.checkin,
-      checkout: bookingData.checkout,
-    };
-    const conflicts: BookingData[] = await findConflictEntries(checkData);
-    const originalCheckin = await fetchBookingByBookingId(bookingData.bookingId);
-    const newBookingData = { ...originalCheckin.rows[0], booking_id: bookingData.bookingId }
-    conflicts.forEach((conflict) => {
-      conflict.checkin = convertUTCToIST(conflict.checkin);
-      conflict.checkout = convertUTCToIST(conflict.checkout);
-    });
-
-    newBookingData.checkin = convertUTCToIST(bookingData.checkin);
-    newBookingData.checkout = convertUTCToIST(bookingData.checkout);
-
-
-    const timeline = generateTimeline(newBookingData, conflicts);
-    let overBooking = 0;
-    timeline.forEach((entry) => {
-      if (
-        entry.occupancy !== '0-PLE OCCUPANCY' &&
-        entry.occupancy !== 'SINGLE OCCUPANCY' &&
-        entry.occupancy !== 'DOUBLE OCCUPANCY' &&
-        entry.occupancy !== 'TRIPLE OCCUPANCY' &&
-        entry.occupancy !== 'QUADRUPLE OCCUPANCY'
-      ) {
-        overBooking++;
+    try {
+      bookingData.checkin = new Date(bookingData.checkin);
+      bookingData.checkout = new Date(bookingData.checkout);
+      const guestData = await fetchBookingByBookingId(bookingData.bookingId);
+      if (bookingData.room !== guestData.rows[0].room) {
+        const currentTime = new Date();
+        if (currentTime < bookingData.checkin) {
+          await editGuestData(bookingData, bookingData.room);
+        }
+        else {
+          await editGuestData({ ...bookingData, checkout: currentTime }, guestData.rows[0].room);
+          await addBooking({ booking_id: uuidv4(), checkin: currentTime, checkout: bookingData.checkout, email: bookingData.email, meal_veg: bookingData.meal_veg, meal_non_veg: bookingData.meal_non_veg, remarks: bookingData.remarks, additional: bookingData.additional, room: bookingData.room, breakfast: bookingData.breakfast })
+        }
+        resolve("Details Updated");
+        return;
       }
-    });
-    console.log(overBooking);
-    if (overBooking === 0) {
-
-      editBooking(bookingData)
-        .then(async (results) => {
-          try {
-            if (bookingData.originalEmail === bookingData.email) {
-              const guestData = {
-                guestEmail: bookingData.email,
-                guestName: bookingData.name,
-                guestPhone: bookingData.phone,
-                guestCompany: bookingData.company,
-                guestVessel: bookingData.vessel,
-                guestRank: bookingData.rank,
-                guestId: bookingData.guestId,
-              };
-              await editGuest(guestData);
-              const newOriginalCheckin = new Date(originalCheckin.rows[0].checkin);
-
-              if (newOriginalCheckin.toISOString() !== bookingData.checkin.toISOString()) {
-                const queueBooking = {
-                  checkin: bookingData.checkin,
-                  checkout: bookingData.checkout,
-                  email: bookingData.email,
-                  meal_veg: bookingData.meal_veg,
-                  meal_non_veg: bookingData.meal_non_veg,
-                  remarks: bookingData.remarks,
-                  additional: bookingData.additional,
-                  room: bookingData.room,
-                  name: bookingData.name,
-                  phone: bookingData.phone,
-                  company: bookingData.company,
-                  vessel: bookingData.vessel,
-                  rank: bookingData.rank,
-                  breakfast: bookingData.breakfast,
-                  booking_id: bookingData.bookingId,
-                };
-                priorityQueue.removeById(bookingData.bookingId);
-                priorityQueue.enqueue(queueBooking);
-                priorityQueue.getAllEntries();
-              }
-              resolve("successfully editted");
-            } else {
-              const isGuest = await findGuest(bookingData.email);
-              if (isGuest.rows.length === 0) {
-                try {
-                  const guestData = {
-                    guestEmail: bookingData.email,
-                    guestName: bookingData.name,
-                    guestPhone: bookingData.phone,
-                    guestCompany: bookingData.company,
-                    guestVessel: bookingData.vessel,
-                    guestRank: bookingData.rank,
-                    guestOrgEmail: bookingData.originalEmail,
-                  };
-                  await updateGuestEmail(guestData);
-                  resolve("successfully editted");
-                } catch (error) {
-                  console.log(error);
-                  reject("internal server error");
-                }
-              } else {
-                const guestData = {
-                  guestEmail: bookingData.email,
-                  guestName: bookingData.name,
-                  guestPhone: bookingData.phone,
-                  guestCompany: bookingData.company,
-                  guestVessel: bookingData.vessel,
-                  guestRank: bookingData.rank,
-                  guestId: bookingData.guestId,
-                };
-                await editGuest(guestData);
-                await deleteGuest(bookingData.originalEmail);
-              }
-              const queueBooking = {
-                checkin: bookingData.checkin,
-                checkout: bookingData.checkout,
-                email: bookingData.email,
-                meal_veg: bookingData.meal_veg,
-                meal_non_veg: bookingData.meal_non_veg,
-                remarks: bookingData.remarks,
-                additional: bookingData.additional,
-                room: bookingData.room,
-                name: bookingData.name,
-                phone: bookingData.phone,
-                company: bookingData.company,
-                vessel: bookingData.vessel,
-                rank: bookingData.rank,
-                breakfast: bookingData.breakfast,
-                booking_id: bookingData.bookingId,
-              };
-              try {
-                priorityQueue.removeById(bookingData.bookingId);
-                priorityQueue.enqueue(queueBooking);
-                resolve("Edit booking successfull");
-              } catch {
-                priorityQueue.enqueue(queueBooking);
-                resolve("Edit booking successfull");
-              }
-              resolve("editted successfully");
-            }
-          } catch {
-            reject("Error changing the guest details");
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-          reject("internal server error");
+      else {
+        const conflicts: BookingData[] = await findConflictEntries({
+          room: bookingData.room,
+          checkin: bookingData.checkin,
+          checkout: bookingData.checkout,
         });
-    } else {
-      reject("room is booked for the given range cant change the checkout date");
+        const newBookingData = { booking_id: bookingData.bookingId, checkin: bookingData.checkin, checkout: bookingData.checkout, email: bookingData.email, meal_veg: bookingData.meal_veg, meal_non_veg: bookingData.meal_non_veg, remarks: bookingData.remarks, additional: bookingData.additional, room: bookingData.room, breakfast: bookingData.breakfast, name: bookingData.name, company: bookingData.company, phone: bookingData.phone, vessel: bookingData.vessel, rank: bookingData.rank }
+        conflicts.forEach((conflict) => {
+          conflict.checkin = convertUTCToIST(conflict.checkin);
+          conflict.checkout = convertUTCToIST(conflict.checkout);
+        });
+        newBookingData.checkin = convertUTCToIST(bookingData.checkin);
+        newBookingData.checkout = convertUTCToIST(bookingData.checkout);
+        const timeline = generateTimeline(newBookingData, conflicts);
+        let overBooking = 0;
+        timeline.forEach((entry) => {
+          if (
+            entry.occupancy !== '0-PLE OCCUPANCY' &&
+            entry.occupancy !== 'SINGLE OCCUPANCY' &&
+            entry.occupancy !== 'DOUBLE OCCUPANCY' &&
+            entry.occupancy !== 'TRIPLE OCCUPANCY' &&
+            entry.occupancy !== 'QUADRUPLE OCCUPANCY'
+          ) {
+            overBooking++;
+          }
+        });
+        if (overBooking === 0) {
+          await editGuestData(bookingData, bookingData.room);
+          const queueBooking = {
+            checkin: bookingData.checkin,
+            checkout: bookingData.checkout,
+            email: bookingData.email,
+            meal_veg: bookingData.meal_veg,
+            meal_non_veg: bookingData.meal_non_veg,
+            remarks: bookingData.remarks,
+            additional: bookingData.additional,
+            room: bookingData.room,
+            name: bookingData.name,
+            phone: bookingData.phone,
+            company: bookingData.company,
+            vessel: bookingData.vessel,
+            rank: bookingData.rank,
+            breakfast: bookingData.breakfast,
+            booking_id: bookingData.bookingId,
+          };
+          priorityQueue.removeById(bookingData.bookingId);
+          priorityQueue.enqueue(queueBooking);
+          resolve("Details Updated");
+          return;
+        }
+        else {
+          reject("room is booked for the given range can't change the checkout date");
+          return;
+        }
+      }
+    }
+    catch (error) {
+      reject("error editing guest data");
       return;
     }
+
+
+
+    // console.log(overBooking);
+    // if (overBooking === 0) {
+
+    //   editBooking(bookingData)
+    //     .then(async (results) => {
+    //       try {
+    //         if (bookingData.originalEmail === bookingData.email) {
+    //           const guestData = {
+    //             guestEmail: bookingData.email,
+    //             guestName: bookingData.name,
+    //             guestPhone: bookingData.phone,
+    //             guestCompany: bookingData.company,
+    //             guestVessel: bookingData.vessel,
+    //             guestRank: bookingData.rank,
+    //             guestId: bookingData.guestId,
+    //           };
+    //           await editGuest(guestData);
+    //           const newOriginalCheckin = new Date(originalCheckin.rows[0].checkin);
+
+    //           if (newOriginalCheckin.toISOString() !== bookingData.checkin.toISOString()) {
+    //             const queueBooking = {
+    //               checkin: bookingData.checkin,
+    //               checkout: bookingData.checkout,
+    //               email: bookingData.email,
+    //               meal_veg: bookingData.meal_veg,
+    //               meal_non_veg: bookingData.meal_non_veg,
+    //               remarks: bookingData.remarks,
+    //               additional: bookingData.additional,
+    //               room: bookingData.room,
+    //               name: bookingData.name,
+    //               phone: bookingData.phone,
+    //               company: bookingData.company,
+    //               vessel: bookingData.vessel,
+    //               rank: bookingData.rank,
+    //               breakfast: bookingData.breakfast,
+    //               booking_id: bookingData.bookingId,
+    //             };
+    //             priorityQueue.removeById(bookingData.bookingId);
+    //             priorityQueue.enqueue(queueBooking);
+    //             priorityQueue.getAllEntries();
+    //           }
+    //           resolve("successfully editted");
+    //         } else {
+    //           const isGuest = await findGuest(bookingData.email);
+    //           if (isGuest.rows.length === 0) {
+    //             try {
+    //               const guestData = {
+    //                 guestEmail: bookingData.email,
+    //                 guestName: bookingData.name,
+    //                 guestPhone: bookingData.phone,
+    //                 guestCompany: bookingData.company,
+    //                 guestVessel: bookingData.vessel,
+    //                 guestRank: bookingData.rank,
+    //                 guestOrgEmail: bookingData.originalEmail,
+    //               };
+    //               await updateGuestEmail(guestData);
+    //               resolve("successfully editted");
+    //             } catch (error) {
+    //               console.log(error);
+    //               reject("internal server error");
+    //             }
+    //           } else {
+    //             const guestData = {
+    //               guestEmail: bookingData.email,
+    //               guestName: bookingData.name,
+    //               guestPhone: bookingData.phone,
+    //               guestCompany: bookingData.company,
+    //               guestVessel: bookingData.vessel,
+    //               guestRank: bookingData.rank,
+    //               guestId: bookingData.guestId,
+    //             };
+    //             await editGuest(guestData);
+    //             await deleteGuest(bookingData.originalEmail);
+    //           }
+    //           const queueBooking = {
+    //             checkin: bookingData.checkin,
+    //             checkout: bookingData.checkout,
+    //             email: bookingData.email,
+    //             meal_veg: bookingData.meal_veg,
+    //             meal_non_veg: bookingData.meal_non_veg,
+    //             remarks: bookingData.remarks,
+    //             additional: bookingData.additional,
+    //             room: bookingData.room,
+    //             name: bookingData.name,
+    //             phone: bookingData.phone,
+    //             company: bookingData.company,
+    //             vessel: bookingData.vessel,
+    //             rank: bookingData.rank,
+    //             breakfast: bookingData.breakfast,
+    //             booking_id: bookingData.bookingId,
+    //           };
+    //           try {
+    //             priorityQueue.removeById(bookingData.bookingId);
+    //             priorityQueue.enqueue(queueBooking);
+    //             resolve("Edit booking successfull");
+    //           } catch {
+    //             priorityQueue.enqueue(queueBooking);
+    //             resolve("Edit booking successfull");
+    //           }
+    //           resolve("editted successfully");
+    //         }
+    //       } catch {
+    //         reject("Error changing the guest details");
+    //       }
+    //     })
+    //     .catch((error) => {
+    //       console.log(error);
+    //       reject("internal server error");
+    //     });
+    // } else {
+    //   reject("room is booked for the given range cant change the checkout date");
+    //   return;
+    // }
+    // }
+
   });
 }
 
@@ -478,7 +524,7 @@ export async function fetchAvailableRooms(checkData: {
         room.condition_met,
       ])
     );
-    const availableRooms = allRooms.rows.filter(
+    const availableRooms = allRooms.filter(
       (room: { room: string }) => conditionMap.get(room.room) !== "false"
     );
 
@@ -488,6 +534,72 @@ export async function fetchAvailableRooms(checkData: {
     throw new Error("internal server error");
   }
 }
+export async function fetchMigrationRooms(
+  formData: {
+    checkin: Date;
+    checkout: Date;
+    email: string;
+    meal_veg: number;
+    meal_non_veg: number;
+    remarks: string;
+    additional: string;
+    room: string;
+    name: string;
+    phone: number;
+    company: string;
+    vessel: string;
+    rank: string;
+    breakfast: number;
+    booking_id: string;
+  }
+): Promise<any> {
+  try {
+    formData.checkin = new Date(formData.checkin);
+    formData.checkout = new Date(formData.checkout);
+    const currentTime = new Date();
+    const allRooms: { room: string; active: boolean }[] = await fetchAllRooms();
+
+    // Use Promise.all directly without separate promise creation
+    const roomConflictArray = (
+      await Promise.all(
+        allRooms.map(async (currentRoom) => {
+          const conflicts = await findConflictEntries({
+            checkin: formData.checkin,
+            checkout: formData.checkout,
+            room: currentRoom.room,
+          });
+
+          // Calculate occupancy for the room
+          const occupancy = conflicts.reduce((count:any, conflict:any) => {
+            if (conflict.checkin < currentTime && conflict.checkout > currentTime) {
+              return count + 1;
+            }
+            return count;
+          }, 0);
+
+          const status = `${occupancy}/4`;
+
+          // Exclude fully occupied rooms
+          if (status === "4/4") {
+            return null;
+          }
+
+          return {
+            room: currentRoom.room,
+            max_people: status,
+            conflicts,
+          };
+        })
+      )
+    ).filter((conflict) => conflict !== null);
+
+    return roomConflictArray;
+  } catch (error) {
+    console.error(error);
+    throw new Error("internal server error");
+  }
+}
+
 
 export async function getThisRoom(checkData: {
   checkin: Date;
@@ -593,8 +705,6 @@ export function getInstantRoom(): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
       const newDate = new Date();
-
-      const bookingData = { checkin: newDate, checkout: newDate };
 
       const result = await findInstantRoom(newDate);
 
