@@ -15,6 +15,7 @@ SELECT
     g.email,
     g.phone,
     i.name AS item_name,
+    i.item_id AS item_id,
     od.qty AS qty,
     i.price AS price
 FROM

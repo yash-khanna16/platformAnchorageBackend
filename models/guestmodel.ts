@@ -47,6 +47,7 @@ type Item = {
   name: string;
   qty: number;
   price: number;
+  item_id: string;
 };
 
 type OrderDataType = {
@@ -114,6 +115,7 @@ export async function fetchAllGuests(): Promise<GuestData[]> {
     // Create a map to aggregate orders by order_id
     const ordersMap: Record<string, OrderDataType> = {};
 
+
     orders.forEach((order: any) => {
       const orderId = order.order_id;
 
@@ -137,6 +139,7 @@ export async function fetchAllGuests(): Promise<GuestData[]> {
 
       // Add item details to the items array for the corresponding order
       ordersMap[orderId].items.push({
+        item_id: order.item_id,
         name: order.item_name,
         qty: order.qty,
         price: order.price,
@@ -243,6 +246,7 @@ export async function fetchRoomResv(roomNo: string): Promise<any[]> {
         name: order.item_name,
         qty: order.qty,
         price: order.price,
+        item_id: order.item_id
       });
     });
 
