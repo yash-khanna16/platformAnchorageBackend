@@ -80,6 +80,8 @@ const transporter = nodemailer.createTransport({
 const transporterCOS = nodemailer.createTransport({
   // service: "gmail", // You can use any email service
   // remember to change before pushing code
+  // host: "smtp.mailgun.org",
+  // port: 465,
   host: "us3.smtp.mailhostbox.com",
   port: 587,
   auth: {
@@ -639,7 +641,7 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
                                                               }<br>
                                                 </td>
                                               </tr>
-                                              <tr>
+                                              ${!isMealOrder(details[0].items) ? `<tr>
                                                   <td style="padding: 20px 20px 20px 20px;">
                                                       <h3 style="color: #333; margin-top: 0;">Expected Waiting Time</h3>
                                                       <p style="margin-top: 0;">
@@ -661,13 +663,39 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
                                                           ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                                       </p>
                                                   </td>
-                                              </tr>
+                                              </tr>`:`<tr>
+                                                  <td style="padding: 20px 20px 20px 20px;">
+                                                      <h3 style="color: #333; margin-top: 0;">Expected Delivery Time</h3>
+                                                      <p style="margin-top: 0;">
+                                                          <strong>Your Order is Scheduled for: &nbsp;</strong>${new Date(
+                                                            parseInt(details[0].created_at) +
+                                                              details[0].items.reduce(
+                                                                (max, item) =>
+                                                                  item.time_to_prepare > max ? item.time_to_prepare : max,
+                                                                0
+                                                              ) *
+                                                                60000 + order.delay * 60 * 1000 +  5 * 60 * 60 * 1000 +
+                                                              30 * 60 * 1000
+                                                          ).toDateString()}  ${new Date(
+                                                            parseInt(details[0].created_at) +
+                                                              details[0].items.reduce(
+                                                                (max, item) =>
+                                                                  item.time_to_prepare > max ? item.time_to_prepare : max,
+                                                                0
+                                                              ) *
+                                                                60000 + order.delay * 60 * 1000 +  5 * 60 * 60 * 1000 +
+                                                              30 * 60 * 1000
+                                                          ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                                      </p>
+                                                  </td>
+                                              </tr>`}
+
                                               <tr>
                                                   <td style="padding: 20px;">
-                                                      <p style="margin: 10px 0; color: #555;">We are currently processing your order, and you can expect it to be ready in approximately <strong>${details[0].items.reduce(
+                                                  ${!isMealOrder(details[0].items) ? `<p style="margin: 10px 0; color: #555;">We are currently processing your order, and you can expect it to be ready in approximately <strong>${details[0].items.reduce(
                                                         (max, item) => (item.time_to_prepare > max ? item.time_to_prepare : max),
                                                         0
-                                                      )} minutes</strong>.</p>
+                                                      )} minutes</strong>.</p>`: ""}
                                                       <p style="margin: 10px 0; color: #555;">If you have any questions or need to make changes to your order, please feel free to contact us  <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
                                                       <p style="margin: 10px 0; color: #555;">For any complaints or queries, you can reach our front desk at: <a href="tel:+91 8287340468" style="color: #0073e6;">+91 8287340468</a></p>
                                                   </td>

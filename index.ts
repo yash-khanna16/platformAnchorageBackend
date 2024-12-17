@@ -208,7 +208,11 @@ async function deleteExpiredBookingDocuments() {
       `
           SELECT booking_id, document_url
           FROM public.bookings
-          WHERE checkout < $1
+          WHERE checkout < $1 AND document_url IS NOT NULL
+          UNION
+          SELECT booking_id, document_url
+          FROM public.logs
+          WHERE checkout < $1 AND document_url IS NOT NULL;
       `,
       [fifteenDaysAgo]
     );
