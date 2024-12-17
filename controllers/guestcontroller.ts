@@ -22,7 +22,8 @@ import {
   fetchOccupancyByBookingService,
   fetchBookingLogsService,
   getAuditLogsService,
-  fetchAllFeedbackService
+  fetchAllFeedbackService,
+  fetchMigrationRooms,
 } from "../service/guestservice";
 
 export const getAllGuests = (req: Request, res: Response): void => {
@@ -87,7 +88,7 @@ export const addNewGuests = (req: Request, res: Response): void => {
   try {
     addGuests(guestData)
       .then((results) => {
-          res.status(200).send({ message: "Guest Added Successfully!" });
+        res.status(200).send({ message: "Guest Added Successfully!" });
       })
       .catch((error) => {
         if (error === "Email already present") {
@@ -143,7 +144,7 @@ export const addBooking = (req: Request, res: Response): void => {
 
 export const editBooking = (req: Request, res: Response): void => {
   const { bookingData } = req.body;
- 
+
   try {
     editBookingData(bookingData)
       .then((results) => {
@@ -165,8 +166,9 @@ export const editBooking = (req: Request, res: Response): void => {
 };
 
 export const getAvailableRooms = (req: Request, res: Response): void => {
-  
+
   const { checkData } = req.body;
+  
   try {
     fetchAvailableRooms(checkData)
       .then((results) => {
@@ -231,7 +233,6 @@ export const instantAvailableRooms = (req: Request, res: Response): void => {
   try {
     getInstantRoom()
       .then((results) => {
-        
         res.status(200).send(results);
       })
       .catch((error) => {
@@ -312,7 +313,7 @@ export const getEmailTemplate = async (req: Request, res: Response) => {
 export const updateMeals = async (req: Request, res: Response) => {
   try {
     const mealDetails: MealDetails[] = req.body;
-    
+
     updateMealsService(mealDetails)
       .then((result) => {
         res.status(200).send(result);
@@ -357,7 +358,7 @@ export const fetchMealsByBookingId = async (req: Request, res: Response) => {
 export const fetchOccupancyByBookingId = async (req: Request, res: Response) => {
   try {
     const bookingId: string = req.headers.bookingid as string;
-    
+
     fetchOccupancyByBookingService(bookingId)
       .then((result) => {
         res.status(200).send(result);
@@ -408,5 +409,21 @@ export const fetchAllFeedback = async (req: Request, res: Response) => {
       });
   } catch (error) {
     res.status(500).send({ message: "Something went wrong, Please try again!" });
+  }
+};
+
+export const getMigrationRooms = (req: Request, res: Response): void => {
+  const formData  = req.body.formData;
+  try {
+    fetchMigrationRooms(formData)
+      .then((results) => {
+        res.status(200).send(results);
+      })
+      .catch((error) => {
+        res.status(500).send({ message: "internal server error" });
+      });
+  } catch (error) {
+    res.status(400).send({ message: "There is some error encountered!" });
+    console.log("error: ", error);
   }
 };

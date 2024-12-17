@@ -24,5 +24,6 @@ router.get("/fetchOccupancyByBooking", controller.fetchOccupancyByBookingId);
 router.get("/fetchBookingLogs",controller.getBookingLogs)
 router.get("/fetchAuditLog",controller.getAuditLogs)
 router.get("/fetchAllFeedback",controller.fetchAllFeedback)
+router.post("/getMigrationRooms",controller.getMigrationRooms)
 
 export default router;
