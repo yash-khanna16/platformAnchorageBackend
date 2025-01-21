@@ -259,7 +259,7 @@ WHERE c.is_active = true
       (cur.is_allowed = true AND cur.user_email = $1)
       OR cur.is_allowed IS NULL
   )
-  ORDER BY c.created_at;
+  ORDER BY c.start_date;
 `;
 
 export const fetchCouponDetailsQuery = `
