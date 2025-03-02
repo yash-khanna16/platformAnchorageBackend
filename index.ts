@@ -17,6 +17,7 @@ import dotenv from "dotenv";
 import { initializeSocket } from "./socket";
 import AWS from "aws-sdk";
 import dayjs from "dayjs";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 const { ROOM_CODE } = process.env;
@@ -192,6 +193,16 @@ const s3 = new AWS.S3({
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
 
+const transporter = nodemailer.createTransport({
+  // service: "gmail", // You can use any email service
+  host: "smtp.mailgun.org",
+  port: 465,
+  auth: {
+    user: process.env.NODE_MAIL_USER,
+    pass: process.env.NODEMAILER_PASSWORD,
+  },
+});
+
 const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
 
 async function deleteExpiredBookingDocuments() {
@@ -201,10 +212,52 @@ async function deleteExpiredBookingDocuments() {
 
     // Calculate the date 15 days ago from today
     const fifteenDaysAgo = dayjs().subtract(15, "day").toDate();
+    console.log("fifteenDaysAgo: ", fifteenDaysAgo);
 
     // SQL query to get expired bookings older than 15 days
     console.log("Deleting expired documents...");
     const res = await pool.query(
+      `
+          SELECT booking_id, document_url_back
+          FROM public.bookings
+          WHERE checkout < $1 AND document_url_back IS NOT NULL
+          UNION
+          SELECT booking_id, document_url_back
+          FROM public.logs
+          WHERE checkout < $1 AND document_url_back IS NOT NULL;
+      `,
+      [fifteenDaysAgo]
+    );
+
+    console.log("res: ", res.rows);
+
+    let count = 0;
+    for (const row of res.rows) {
+      const { booking_id, document_url_back } = row;
+      count++;
+
+      if (document_url_back) {
+        // Construct the S3 key from booking_id and document_url
+        const s3Key = document_url_back.replace('https://platformanchoragectp.s3.amazonaws.com/', '');
+
+        try {
+          if (BUCKET_NAME) {
+            console.log("S3 key: ", s3Key)
+            await deleteS3Object(BUCKET_NAME, s3Key);
+            console.log(`Successfully deleted document: ${s3Key} for booking ID: ${booking_id}`);
+          }
+        } catch (s3Error) {
+          console.error(`Failed to delete document for booking ID: ${booking_id} -`, s3Error);
+        }
+      } else {
+        console.log(`No document found for booking ID: ${booking_id}`);
+      }
+    }
+    console.log(`Successfully deleted ${count} documents`);
+
+    // SQL query to get expired bookings older than 15 days
+    console.log("Deleting expired documents...");
+    const res2 = await pool.query(
       `
           SELECT booking_id, document_url
           FROM public.bookings
@@ -217,10 +270,10 @@ async function deleteExpiredBookingDocuments() {
       [fifteenDaysAgo]
     );
 
-    console.log("res: ", res.rows);
+    console.log("res: ", res2.rows);
 
-    let count = 0;
-    for (const row of res.rows) {
+    count = 0;
+    for (const row of res2.rows) {
       const { booking_id, document_url } = row;
       count++;
 
@@ -230,6 +283,7 @@ async function deleteExpiredBookingDocuments() {
 
         try {
           if (BUCKET_NAME) {
+            console.log("S3 key: ", s3Key)
             await deleteS3Object(BUCKET_NAME, s3Key);
             console.log(`Successfully deleted document: ${s3Key} for booking ID: ${booking_id}`);
           }
@@ -243,10 +297,55 @@ async function deleteExpiredBookingDocuments() {
     console.log(`Successfully deleted ${count} documents`);
   } catch (dbError) {
     console.error("Database query failed:", dbError);
+    try {
+      const mailOptions = {
+        from: process.env.NODE_MAIL_FROM_EMAIL,
+        to: 'deepanshupal2003@gmail.com',
+        subject: 'ERROR',
+        text: 'Error deleting expired booking documents: ' + dbError,
+      };
+      console.log(
+        `Sending Error Email`,
+      );
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.log("Error sending email:", error);
+        } else {
+          console.log("Email sent!", "response: ", info.response);
+        }
+      });
+    } catch(error) {
+      console.log("Error sending email:", error);
+    }
   }
+
 }
 
-cron.schedule("0 0 * * *", deleteExpiredBookingDocuments);
+try {
+  cron.schedule("0 12 * * *", deleteExpiredBookingDocuments);
+} catch (err) {
+  console.error("Error scheduling cron job:", err);
+  try {
+    const mailOptions = {
+      from: process.env.NODE_MAIL_FROM_EMAIL,
+      to: 'deepanshupal2003@gmail.com',
+      subject: 'ERROR',
+      text: 'Error deleting expired booking documents: ' + err,
+    };
+    console.log(
+      `Sending Error Email`,
+    );
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending email:", error);
+      } else {
+        console.log("Email sent!", "response: ", info.response);
+      }
+    });
+  } catch(error) {
+    console.log("Error sending email:", error);
+  }
+}
 
 function deleteS3Object(bucket: string, key: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -261,7 +360,7 @@ function deleteS3Object(bucket: string, key: string): Promise<void> {
 }
 
 // Schedule the job to run at 12:00 AM every day
-cron.schedule("38 22 * * *", () => {
+cron.schedule("0 0 * * *", () => {
   console.log("Moving expired booking and movements to logs...");
   moveExpiredBookings();
 });
