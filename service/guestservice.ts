@@ -50,7 +50,7 @@ dotenv.config();
 const transporter = nodemailer.createTransport({
   // service: "gmail", // You can use any email service
   host: "smtp.mailgun.org",
-  port: 465,
+  port: 587,
   auth: {
     user: process.env.NODE_MAIL_USER,
     pass: process.env.NODEMAILER_PASSWORD,
