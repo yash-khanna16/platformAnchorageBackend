@@ -14,6 +14,7 @@ export type passengerType = {
   phone?: string;
   remark?: string;
   name?: string;
+  rank?:string;
 };
 
 export type editMovementDetailsType = {
@@ -34,4 +35,5 @@ export type editPassengerType = {
   phone?: string|null;
   remark?: string|null;
   name?: string|null;
+  rank?:string;
 };

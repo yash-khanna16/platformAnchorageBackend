@@ -33,7 +33,8 @@ export async function fetchMovementService() {
             company: row.company,
             remark: row.remark,
             external_booking: row.external_booking,
-            booking_id: row.booking_id
+            booking_id: row.booking_id,
+            rank:row.passenger_rank
           };
 
           movements[movement_id].passengers.push(passenger);

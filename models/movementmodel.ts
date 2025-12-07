@@ -40,7 +40,7 @@ export async function addMovementModel(details: movementDetailsType) {
 
   const movement_id = uuidv4();
 
- 
+
 
   try {
     // First query: Insert into movement table
@@ -70,6 +70,7 @@ export async function addMovementModel(details: movementDetailsType) {
       const phone = booking_id ? null : passenger.phone || null;
       const remark = passenger.remark;
       const name = booking_id ? null : passenger.name || null;
+      const rank = passenger.rank;
 
       const queryPassengerMovement = `
               INSERT INTO passengers
@@ -84,11 +85,11 @@ export async function addMovementModel(details: movementDetailsType) {
       if (!booking_id) {
         const queryPassenger = `
                 INSERT INTO external_passenger
-                (passenger_id, company, phone, name, movement_id)
+                (passenger_id, company, phone, name, movement_id,rank)
                 VALUES
-                ($1, $2, $3, $4, $5)
+                ($1, $2, $3, $4, $5,$6)
             `;
-        const paramsPassenger = [passenger_id, company, phone, name, movement_id];
+        const paramsPassenger = [passenger_id, company, phone, name, movement_id, rank];
         await pool.query(queryPassenger, paramsPassenger);
       }
     }
@@ -106,7 +107,7 @@ export async function checkConflict(
   return_time: string
 ) {
   try {
-    
+
     const result = await pool.query(checkConflictQuery, [driver, car, pickup_time, return_time]);
     return result;
   } catch (error) {
@@ -152,7 +153,9 @@ export async function editMovementModel(details: editMovementDetailsType) {
 
     // Upsert each passenger and update passenger_movement
     for (const passenger of passengers) {
-      let { passenger_id, booking_id, company, phone, remark, name } = passenger;
+      let { passenger_id, booking_id, company, phone, remark, name, rank } = passenger;
+
+
 
       if (!passenger_id) {
         passenger_id = uuidv4();
@@ -163,17 +166,20 @@ export async function editMovementModel(details: editMovementDetailsType) {
       // Upsert passenger
       if (!booking_id) {
         const upsertPassengerQuery = `
-          INSERT INTO external_passenger (passenger_id, company, phone, name, movement_id)
-          VALUES ($1, $2, $3, $4, $5)
+          INSERT INTO external_passenger (passenger_id, company, phone, name, movement_id,rank)
+          VALUES ($1, $2, $3, $4, $5, $6)
           ON CONFLICT (passenger_id) DO UPDATE
           SET 
             company = EXCLUDED.company,
             phone = EXCLUDED.phone,
             name = EXCLUDED.name,
-            movement_id = EXCLUDED.movement_id;
+            movement_id = EXCLUDED.movement_id,
+            rank = EXCLUDED.rank;
         `;
-        await pool.query(upsertPassengerQuery, [passenger_id, company, phone, name, movement_id]);
+        await pool.query(upsertPassengerQuery, [passenger_id, company, phone, name, movement_id, rank]);
       }
+
+      console.log(passenger)
 
       const upsertPassengerMovementQuery = `
         INSERT INTO passengers (passenger_id, booking_id, movement_id, remark)
@@ -200,7 +206,7 @@ export async function editMovementModel(details: editMovementDetailsType) {
 
 export async function fetchAvailableCarsModel(pickup_time: string, return_time: string) {
   try {
-    
+
     const result = await pool.query(fetchAvailableCarsQuery, [pickup_time, return_time]);
     return result;
   } catch (error) {
@@ -209,7 +215,7 @@ export async function fetchAvailableCarsModel(pickup_time: string, return_time: 
 }
 export async function fetchAvailableDriversModel(pickup_time: string, return_time: string) {
   try {
-    
+
     const result = await pool.query(fetchAvailableDriversQuery, [pickup_time, return_time]);
     return result;
   } catch (error) {
@@ -256,7 +262,7 @@ export async function deletePassengerFromMovementModel(movementId: string, passe
     // await client.query('BEGIN');
 
     // Fetch booking_id and check passenger count in the same query
-    
+
     // const result = await pool.query(`
     //     WITH passenger_info AS (
     //         SELECT
@@ -368,7 +374,7 @@ export async function fetchMovementByBookingIdModel(bookingId: string) {
 export async function deleteMovementByBookingIdModel(bookingId: string) {
   try {
     const data = await pool.query(fetchMovementByBookingIdQuery, [bookingId]);
-    
+
     // Ensure data.rows is an array before proceeding
     if (!Array.isArray(data.rows)) {
       throw new Error("Expected data.rows to be an array");
@@ -377,12 +383,12 @@ export async function deleteMovementByBookingIdModel(bookingId: string) {
     await pool.query(deleteMovementByBookingIdQueryFromPassengers, [bookingId]);
     await pool.query(deleteMovementByBookingIdQueryFromPassengersLog, [bookingId]);
 
-    
+
 
     for (const movement of data.rows) {
       const movementId = movement.movement_id;
       const content = await pool.query(fetchMovementQueryByMovementId, [movementId]);
-      
+
       if (content.rows.length === 0) {
         const deleteMovementQuery = `DELETE FROM movement WHERE movement_id = $1`;
         await pool.query(deleteMovementQuery, [movementId]);

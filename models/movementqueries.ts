@@ -16,6 +16,11 @@ export const fetchMovementQuery = `SELECT
         WHEN l.booking_id IS NOT NULL THEN g.name
         ELSE ep.name
     END AS passenger_name,
+    CASE
+        WHEN b.booking_id IS NOT NULL THEN g.rank
+        WHEN l.booking_id IS NOT NULL THEN g.rank
+        ELSE ep.rank
+    END AS passenger_rank,
     p.passenger_id AS passenger_id,
     CASE
         WHEN b.booking_id IS NOT NULL THEN g.phone
@@ -178,7 +183,7 @@ WHERE booking_id = $1;
   `;
 
 
-  export const fetchMovementQueryByMovementId = `SELECT 
+export const fetchMovementQueryByMovementId = `SELECT 
     m.movement_id,
     m.pickup_location,
     m.pickup_time,
