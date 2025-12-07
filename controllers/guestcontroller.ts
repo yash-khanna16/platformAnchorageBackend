@@ -24,6 +24,7 @@ import {
   getAuditLogsService,
   fetchAllFeedbackService,
   fetchMigrationRooms,
+  fetchAllRoomsService,
 } from "../service/guestservice";
 
 export const getAllGuests = (req: Request, res: Response): void => {
@@ -416,6 +417,20 @@ export const getMigrationRooms = (req: Request, res: Response): void => {
   const formData  = req.body.formData;
   try {
     fetchMigrationRooms(formData)
+      .then((results) => {
+        res.status(200).send(results);
+      })
+      .catch((error) => {
+        res.status(500).send({ message: "internal server error" });
+      });
+  } catch (error) {
+    res.status(400).send({ message: "There is some error encountered!" });
+    console.log("error: ", error);
+  }
+};
+export const getAllRooms = (req: Request, res: Response): void => {
+  try {
+    fetchAllRoomsService()
       .then((results) => {
         res.status(200).send(results);
       })

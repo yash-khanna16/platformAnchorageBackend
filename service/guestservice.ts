@@ -1096,3 +1096,15 @@ export function fetchAllFeedbackService(): Promise<any> {
       });
   });
 }
+export function fetchAllRoomsService(): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    fetchAllRooms()
+      .then((results) => {
+        resolve(results);
+      })
+      .catch((error) => {
+        console.log(error);
+        reject("internal server error");
+      });
+  });
+}
