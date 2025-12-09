@@ -227,3 +227,16 @@ export const fetchAllOrderFeedbackQuery = `
   WHERE o.rating != -1
 `;
 
+export const fetchBookingDataForRoomQuery=`
+SELECT 
+    bookings.booking_id,
+    guests.name,
+    guests.rank,
+    guests.company,
+    guests.email
+FROM bookings
+JOIN guests 
+    ON bookings.guest_email = guests.email
+WHERE bookings.room = $1
+  AND CURRENT_TIMESTAMP BETWEEN bookings.checkin AND bookings.checkout;
+`;

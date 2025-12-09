@@ -52,6 +52,7 @@ import { getIO } from "../socket";
 import jwt from "jsonwebtoken";
 import { couponPendingQueue } from "./priorityqueue";
 import {
+  fetchBookingDataForRoomModal,
   fetchMealsByBookingIdAnDateModel as fetchMealsByBookingIdAndDateModel,
   fetchMealsByBookingIdModel,
   findGuest,
@@ -372,6 +373,7 @@ async function checkMealsRedemption(
 
 // Function to update the meal details in the database
 async function updateMeals(booking_id: string, items: { item_id: string; qty: number }[], redemptionDate: Date) {
+  
   let meals: MealDetails = (await fetchMealsByBookingIdAndDateModel(booking_id, redemptionDate))[0];
 
   if (!meals) {
@@ -417,7 +419,6 @@ async function updateMeals(booking_id: string, items: { item_id: string; qty: nu
   });
 
   meals.date = new Date(meals.date); // Ensure the date field is correctly set
-
   try {
     await updateMealsModelCOS([meals]);
     console.log("Meals successfully updated.");
@@ -430,6 +431,10 @@ async function updateMeals(booking_id: string, items: { item_id: string; qty: nu
 export async function addOrderService(order: orderType) {
   return new Promise((resolve, reject) => {
     order.created_at = new Date().getTime().toString();
+
+    console.log(order)
+
+    
     fetchBookingByBookingIdModel(order.booking_id)
       .then((booking) => {
         const checkin = new Date(booking.checkin).getTime();
@@ -1844,6 +1849,20 @@ export async function fetchGuestDataByEmailService(guestEmail: string) {
     findGuest(guestEmail)
       .then((results) => {
         resolve(results.rows[0]);
+      })
+      .catch((error) => {
+        console.log("error fetching checkin by room", error);
+        reject("Error fetching checkin by room!");
+      });
+  });
+}
+
+
+export async function fetchBookingDataForRoomService(room: string) {
+  return new Promise((resolve, reject) => {
+    fetchBookingDataForRoomModal(room)
+      .then((results) => {
+        resolve(results.rows);
       })
       .catch((error) => {
         console.log("error fetching checkin by room", error);

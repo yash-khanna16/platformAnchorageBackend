@@ -40,6 +40,7 @@ import {
   fetchAllOrderFeedbackQuery,
   fetchAllOrders,
   fetchMealsByBookingIdAnDateQuery as fetchMealsByBookingIdAndDateQuery,
+  fetchBookingDataForRoomQuery,
 } from "./queries";
 import { fetchMovementQueryByMovementId } from "./movementqueries"
 
@@ -769,6 +770,14 @@ export async function fetchAllFeedbackModel() {
     ];
 
     return combinedResults;
+  } catch (error) {
+    throw error;
+  }
+}
+export async function fetchBookingDataForRoomModal(room:string) {
+  try {
+    const result = await pool.query(fetchBookingDataForRoomQuery,[room]);
+    return result;
   } catch (error) {
     throw error;
   }
