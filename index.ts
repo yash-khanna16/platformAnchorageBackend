@@ -207,9 +207,6 @@ const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
 
 async function deleteExpiredBookingDocuments() {
   try {
-    // Connect to the PostgreSQL database
-    await pool.connect();
-
     // Calculate the date 15 days ago from today
     const fifteenDaysAgo = dayjs().subtract(15, "day").toDate();
     console.log("fifteenDaysAgo: ", fifteenDaysAgo);
@@ -245,6 +242,8 @@ async function deleteExpiredBookingDocuments() {
             console.log("S3 key: ", s3Key)
             await deleteS3Object(BUCKET_NAME, s3Key);
             console.log(`Successfully deleted document: ${s3Key} for booking ID: ${booking_id}`);
+            await pool.query(`UPDATE public.bookings SET document_url_back = NULL WHERE booking_id = $1`, [booking_id]);
+            await pool.query(`UPDATE public.logs SET document_url_back = NULL WHERE booking_id = $1`, [booking_id]);
           }
         } catch (s3Error) {
           console.error(`Failed to delete document for booking ID: ${booking_id} -`, s3Error);
@@ -286,6 +285,8 @@ async function deleteExpiredBookingDocuments() {
             console.log("S3 key: ", s3Key)
             await deleteS3Object(BUCKET_NAME, s3Key);
             console.log(`Successfully deleted document: ${s3Key} for booking ID: ${booking_id}`);
+            await pool.query(`UPDATE public.bookings SET document_url = NULL WHERE booking_id = $1`, [booking_id]);
+            await pool.query(`UPDATE public.logs SET document_url = NULL WHERE booking_id = $1`, [booking_id]);
           }
         } catch (s3Error) {
           console.error(`Failed to delete document for booking ID: ${booking_id} -`, s3Error);
