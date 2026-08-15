@@ -34,6 +34,7 @@ export async function verifyAdmin(req: Request, res: Response, next: NextFunctio
       "/fetchEachPassenger",
       "/fetchMovementByBookingId",
       "/fetchEachPassenger",
+      "/getSignedDocumentUrl",
     ];
     const skipAuditLogUrls = [
       "/deleteBooking",

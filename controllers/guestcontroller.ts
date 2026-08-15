@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import AWS from "aws-sdk";
 import {
   getGuests,
   searchGuests,
@@ -440,5 +441,31 @@ export const getAllRooms = (req: Request, res: Response): void => {
   } catch (error) {
     res.status(400).send({ message: "There is some error encountered!" });
     console.log("error: ", error);
+  }
+};
+
+const s3 = new AWS.S3({
+  region: process.env.AWS_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+});
+
+export const getSignedDocumentUrl = (req: Request, res: Response): void => {
+  const url = req.query.url as string;
+  if (!url) {
+    res.status(400).send({ message: "url query param is required" });
+    return;
+  }
+  try {
+    const key = url.replace("https://platformanchoragectp.s3.amazonaws.com/", "");
+    const signedUrl = s3.getSignedUrl("getObject", {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: key,
+      Expires: 300, // 5 minutes
+    });
+    res.status(200).send({ signedUrl });
+  } catch (error) {
+    console.error("Error generating signed document url:", error);
+    res.status(500).send({ message: "internal server error" });
   }
 };

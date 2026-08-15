@@ -26,6 +26,7 @@ router.get("/fetchAuditLog",controller.getAuditLogs)
 router.get("/fetchAllFeedback",controller.fetchAllFeedback)
 router.post("/getMigrationRooms",controller.getMigrationRooms)
 router.get("/getAllRooms", controller.getAllRooms);
+router.get("/getSignedDocumentUrl", controller.getSignedDocumentUrl);
 
 
 export default router;
