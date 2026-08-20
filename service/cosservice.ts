@@ -892,6 +892,10 @@ function convertOrders(results: any) {
       time_to_prepare,
       delay,
       guest_email,
+      discount,
+      platform_fee,
+      gst,
+      platform_fee_gst,
     } = curr;
 
     const item = { item_id, name, description, price, qty, type, category, available, time_to_prepare };
@@ -907,6 +911,12 @@ function convertOrders(results: any) {
         guest_name,
         guest_email,
         delay,
+        discount: Number(discount) || 0,
+        // pg returns NUMERIC columns as strings - cast so downstream "+"
+        // does addition instead of string concatenation.
+        platform_fee: Number(platform_fee) || 0,
+        gst: Number(gst) || 0,
+        platform_fee_gst: Number(platform_fee_gst) || 0,
         items: [],
       };
     }
