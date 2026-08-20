@@ -19,3 +19,8 @@ export function getMealItemIds(): string[] {
     process.env.TEA_ID,
   ].filter((id): id is string => Boolean(id));
 }
+
+export function isMealOrder(items: { item_id: string; qty: number }[]): boolean {
+  const mealIds = getMealItemIds();
+  return items.some((item) => mealIds.includes(item.item_id));
+}

@@ -25,6 +25,9 @@ export type orderType = {
   coupon_id: string;
   email: string;
   discount: number;
+  platform_fee?: number;
+  gst?: number;
+  platform_fee_gst?: number;
 };
 
 

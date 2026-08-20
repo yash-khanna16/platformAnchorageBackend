@@ -1,4 +1,4 @@
-import { GST_RATE, PLATFORM_FEE } from "../constants";
+import { isMealOrder } from "../constants";
 import {
   addOrderModel,
   deleteItemModel,
@@ -280,20 +280,6 @@ export async function putItemService(itemDetails: itemDetailsType) {
   });
 }
 
-function isMealOrder(items: { item_id: string; qty: number }[]) {
-  const mealCategories = {
-    breakfast: [process.env.BREAKFAST_VEG_ID, process.env.BREAKFAST_NON_VEG_ID],
-    lunch: [process.env.LUNCH_VEG_ID, process.env.LUNCH_NON_VEG_ID],
-    dinner: [process.env.DINNER_VEG_ID, process.env.DINNER_NON_VEG_ID],
-  };
-
-  const tea = process.env.TEA_ID;
-  // Group meal items by category
-  const mealItems = items.filter((item) => Object.values(mealCategories).flat().includes(item.item_id) || item.item_id === tea);
-
-  return mealItems.length > 0;
-}
-
 async function checkMealsRedemption(
   booking_id: string,
   date: Date,
@@ -559,10 +545,14 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
             io.to(ROOM_CODE).emit("order_received", details);
           }
 
+          // Use the amounts persisted by addOrderModel (the values actually
+          // charged on this order), not a live recomputation - so this stays
+          // correct even if the fee/rate changes after this order was placed.
           const orderSubtotal = details[0].items.reduce((total, item) => total + item.price * item.qty, 0);
-          const orderPlatformFee = isMealOrder(details[0].items) ? 0 : PLATFORM_FEE;
-          const orderGst = Math.round((orderSubtotal - order.discount) * GST_RATE);
-          const orderTotal = orderSubtotal - order.discount + orderGst + orderPlatformFee;
+          const orderPlatformFee = order.platform_fee ?? 0;
+          const orderGst = order.gst ?? 0;
+          const orderPlatformFeeGst = order.platform_fee_gst ?? 0;
+          const orderTotal = orderSubtotal - order.discount + orderGst + orderPlatformFeeGst + orderPlatformFee;
 
           const mailOptions = {
             from: process.env.COS_EMAIL,
@@ -635,11 +625,13 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
                                                 <td style="padding: 20px 20px 20px 20px;">
                                                   <strong>Order SubTotal:</strong> ₹${orderSubtotal}<br>
                                                               <strong>Discount:</strong> ₹${order.discount}<br>
+                                                              <strong>Taxes and Other Charges:</strong> ₹${orderGst + orderPlatformFeeGst + orderPlatformFee}<br>
+                                                              &nbsp;&nbsp;&nbsp;&nbsp;GST on food (5%): ₹${orderGst}<br>
                                                               ${
-                                                                !isMealOrder(details[0].items) ?
-                                                                `<strong>Platform Fee:</strong> ₹${orderPlatformFee}<br>`:''
+                                                                orderPlatformFee > 0 ?
+                                                                `&nbsp;&nbsp;&nbsp;&nbsp;Platform Fee: ₹${orderPlatformFee}<br>
+                                                              &nbsp;&nbsp;&nbsp;&nbsp;GST on Platform Fee (5%): ₹${orderPlatformFeeGst}<br>`:''
                                                               }
-                                                              <strong>GST (5%):</strong> ₹${orderGst}<br>
                                                               <strong>Order Total:</strong> ₹${orderTotal}<br>
                                                 </td>
                                               </tr>

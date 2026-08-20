@@ -1,4 +1,5 @@
 import pool from "../db";
+import { GST_RATE, PLATFORM_FEE, isMealOrder } from "../constants";
 import { convertUTCToIST } from "../service/guestservice";
 import { adminCoupon, Coupon, FreeItem, itemDetailsType, orderType } from "../types/cos";
 import {
@@ -126,6 +127,28 @@ export async function putItemModel(itemDetails: itemDetailsType) {
 
 export async function addOrderModel(orderDetails: orderType) {
   try {
+    const itemIds = orderDetails.items.map(item => item.item_id);
+
+    const itemsResult = await fetchItemsModel(itemIds);
+    const items: itemDetailsType[] = itemsResult;
+
+    // Compute the platform fee and GST charged on this order at the time it's
+    // placed, and persist them on the order row (rather than recomputing them
+    // live wherever the order is displayed later). That way, if the fee or
+    // rate changes in the future, historical orders keep showing what was
+    // actually charged instead of being silently reinterpreted at today's rate.
+    const subtotal = orderDetails.items.reduce((sum, item) => {
+      const itemDetails = items.find(i => i.item_id === item.item_id);
+      return sum + (itemDetails?.price || 0) * item.qty;
+    }, 0);
+    const platformFee = isMealOrder(orderDetails.items) ? 0 : PLATFORM_FEE;
+    const gst = Math.round((subtotal - (orderDetails.discount || 0)) * GST_RATE);
+    const platformFeeGst = Math.round(platformFee * GST_RATE);
+
+    orderDetails.platform_fee = platformFee;
+    orderDetails.gst = gst;
+    orderDetails.platform_fee_gst = platformFeeGst;
+
     // Insert order into the orders table
     const result = await pool.query(addOrderQuery, [
       orderDetails.booking_id,
@@ -134,21 +157,14 @@ export async function addOrderModel(orderDetails: orderType) {
       orderDetails.created_at,
       orderDetails.status,
       orderDetails.discount,
-      orderDetails.delay
+      orderDetails.delay,
+      platformFee,
+      gst,
+      platformFeeGst,
     ]);
 
     const order_id = result.rows[0].order_id;
     orderDetails.order_id = order_id;
-
-    const fetchItemsQuery = `
-      SELECT * FROM public.items
-      WHERE item_id = ANY($1::varchar[]);
-    `;
-
-    const itemIds = orderDetails.items.map(item => item.item_id);
-
-    const itemsResult = await fetchItemsModel(itemIds);
-    const items: itemDetailsType[] = itemsResult;
 
     const addOrderDetailsQuery = `
       INSERT INTO public.order_details (order_id, item_id, qty, name, description, price, type, category, available, time_to_prepare, base_price)

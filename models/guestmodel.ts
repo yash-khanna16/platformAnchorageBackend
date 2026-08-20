@@ -63,6 +63,9 @@ type OrderDataType = {
   email: string;
   phone: string;
   discount: number;
+  platform_fee?: number;
+  gst?: number;
+  platform_fee_gst?: number;
 };
 
 interface OrderData {
@@ -134,7 +137,10 @@ export async function fetchAllGuests(): Promise<GuestData[]> {
           name: order.name,
           email: order.email,
           phone: order.phone,
-          discount: order.discount
+          discount: order.discount,
+          platform_fee: order.platform_fee,
+          gst: order.gst,
+          platform_fee_gst: order.platform_fee_gst,
         };
       }
 
@@ -239,6 +245,9 @@ export async function fetchRoomResv(roomNo: string): Promise<any[]> {
           email: order.email,
           phone: order.phone,
           discount: order.discount,
+          platform_fee: order.platform_fee,
+          gst: order.gst,
+          platform_fee_gst: order.platform_fee_gst,
         };
       }
 
