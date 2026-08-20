@@ -235,8 +235,8 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
     const orders: { [key: string]: any } = {};
 
 
-    result.rows.forEach((row: { order_id: Number, booking_id: string, item_id: string, name: string, description: string, qty: Number, created_at: Number, price: Number, type: string, status: string, rating: Number, feedback: string, category: string, discount: number }) => {
-      const { order_id, booking_id, item_id, name, description, qty, created_at, price, type, status, rating, feedback, category, discount } = row;
+    result.rows.forEach((row: { order_id: Number, booking_id: string, item_id: string, name: string, description: string, qty: Number, created_at: Number, price: Number, type: string, status: string, rating: Number, feedback: string, category: string, discount: number, platform_fee: any, gst: any, platform_fee_gst: any }) => {
+      const { order_id, booking_id, item_id, name, description, qty, created_at, price, type, status, rating, feedback, category, discount, platform_fee, gst, platform_fee_gst } = row;
 
       const orderIdKey = order_id.toString();
       if (!orders[orderIdKey]) {
@@ -248,6 +248,11 @@ export async function fetchOrderByBookingIdModel(bookingId: string) {
           rating: rating,
           feedback: feedback,
           discount: discount,
+          // pg returns NUMERIC columns as strings - cast so downstream "+"
+          // does addition instead of string concatenation.
+          platformFee: Number(platform_fee) || 0,
+          gst: Number(gst) || 0,
+          platformFeeGst: Number(platform_fee_gst) || 0,
           items: [],
         };
       }

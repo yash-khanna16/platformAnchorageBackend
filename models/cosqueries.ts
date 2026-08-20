@@ -31,9 +31,12 @@ export const fetchOrderByBookingIdQuery = `
     orders.rating,
     orders.feedback,
     order_details.category,
-    orders.discount
-  FROM 
-    orders 
+    orders.discount,
+    orders.platform_fee,
+    orders.gst,
+    orders.platform_fee_gst
+  FROM
+    orders
     JOIN order_details ON orders.order_id = order_details.order_id 
   WHERE 
     orders.booking_id = $1
