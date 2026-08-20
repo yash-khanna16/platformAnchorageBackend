@@ -138,9 +138,12 @@ export async function fetchAllGuests(): Promise<GuestData[]> {
           email: order.email,
           phone: order.phone,
           discount: order.discount,
-          platform_fee: order.platform_fee,
-          gst: order.gst,
-          platform_fee_gst: order.platform_fee_gst,
+          // pg returns NUMERIC columns as strings (to avoid precision loss),
+          // so these need an explicit Number() cast or "+" downstream turns
+          // into string concatenation instead of addition.
+          platform_fee: Number(order.platform_fee) || 0,
+          gst: Number(order.gst) || 0,
+          platform_fee_gst: Number(order.platform_fee_gst) || 0,
         };
       }
 
@@ -245,9 +248,12 @@ export async function fetchRoomResv(roomNo: string): Promise<any[]> {
           email: order.email,
           phone: order.phone,
           discount: order.discount,
-          platform_fee: order.platform_fee,
-          gst: order.gst,
-          platform_fee_gst: order.platform_fee_gst,
+          // pg returns NUMERIC columns as strings (to avoid precision loss),
+          // so these need an explicit Number() cast or "+" downstream turns
+          // into string concatenation instead of addition.
+          platform_fee: Number(order.platform_fee) || 0,
+          gst: Number(order.gst) || 0,
+          platform_fee_gst: Number(order.platform_fee_gst) || 0,
         };
       }
 
