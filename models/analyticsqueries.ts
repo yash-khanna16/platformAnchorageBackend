@@ -661,17 +661,18 @@ order_profits AS (
         COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0)
             - COALESCE(orders.discount, 0)
             -- Platform fee is pure margin (no cost of goods), so it counts as
-            -- profit too - except on meal-plan orders, which are exempt from it.
-            + CASE WHEN COALESCE(bool_or(order_details.item_id = ANY($2::text[])), false)
-                   THEN 0
-                   ELSE $3::numeric
-              END AS total_profit
+            -- profit too. Read from the amount actually charged on the order
+            -- (frozen at order time) rather than today's rate, so historical
+            -- profit doesn't get silently reinterpreted after a fee change.
+            -- GST is a pass-through tax, not profit, so it's deliberately
+            -- excluded here.
+            + COALESCE(orders.platform_fee, 0) AS total_profit
     FROM
         orders
     LEFT JOIN
         order_details ON orders.order_id = order_details.order_id
     GROUP BY
-        orders.order_id, order_date
+        orders.order_id, order_date, orders.platform_fee
 )
 SELECT 
     ds.order_date,
