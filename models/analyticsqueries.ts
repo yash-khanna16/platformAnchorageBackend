@@ -543,15 +543,22 @@ WITH date_series AS (
 ),
 
 order_profits AS (
-    SELECT 
+    SELECT
         orders.order_id,
         DATE(to_timestamp(orders.created_at::bigint / 1000))::date AS order_date,
-        COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0) - COALESCE(orders.discount, 0) AS total_profit
-    FROM 
+        COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0)
+            - COALESCE(orders.discount, 0)
+            -- Platform fee is pure margin (no cost of goods), so it counts as
+            -- profit too - except on meal-plan orders, which are exempt from it.
+            + CASE WHEN COALESCE(bool_or(order_details.item_id = ANY($3::text[])), false)
+                   THEN 0
+                   ELSE $4::numeric
+              END AS total_profit
+    FROM
         orders
-    LEFT JOIN 
+    LEFT JOIN
         order_details ON orders.order_id = order_details.order_id
-    GROUP BY 
+    GROUP BY
         orders.order_id, order_date
 )
 SELECT 
@@ -596,15 +603,22 @@ WITH date_series AS (
         ) AS order_date
 ),
 order_profits AS (
-    SELECT 
+    SELECT
         orders.order_id,
         DATE(to_timestamp(orders.created_at::bigint / 1000))::date AS order_date,
-        COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0) - COALESCE(orders.discount, 0) AS total_profit
-    FROM 
+        COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0)
+            - COALESCE(orders.discount, 0)
+            -- Platform fee is pure margin (no cost of goods), so it counts as
+            -- profit too - except on meal-plan orders, which are exempt from it.
+            + CASE WHEN COALESCE(bool_or(order_details.item_id = ANY($3::text[])), false)
+                   THEN 0
+                   ELSE $4::numeric
+              END AS total_profit
+    FROM
         orders
-    LEFT JOIN 
+    LEFT JOIN
         order_details ON orders.order_id = order_details.order_id
-    GROUP BY 
+    GROUP BY
         orders.order_id, order_date
 )
 SELECT 
@@ -639,15 +653,22 @@ WITH date_series AS (
         ) AS order_date
 ),
 order_profits AS (
-    SELECT 
+    SELECT
         orders.order_id,
         DATE(to_timestamp(orders.created_at::bigint / 1000))::date AS order_date,
-        COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0) - COALESCE(orders.discount, 0) AS total_profit
-    FROM 
+        COALESCE(SUM((order_details.price - order_details.base_price) * order_details.qty), 0)
+            - COALESCE(orders.discount, 0)
+            -- Platform fee is pure margin (no cost of goods), so it counts as
+            -- profit too - except on meal-plan orders, which are exempt from it.
+            + CASE WHEN COALESCE(bool_or(order_details.item_id = ANY($2::text[])), false)
+                   THEN 0
+                   ELSE $3::numeric
+              END AS total_profit
+    FROM
         orders
-    LEFT JOIN 
+    LEFT JOIN
         order_details ON orders.order_id = order_details.order_id
-    GROUP BY 
+    GROUP BY
         orders.order_id, order_date
 )
 SELECT 

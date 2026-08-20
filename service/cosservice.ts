@@ -1,3 +1,4 @@
+import { GST_RATE, PLATFORM_FEE } from "../constants";
 import {
   addOrderModel,
   deleteItemModel,
@@ -558,6 +559,11 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
             io.to(ROOM_CODE).emit("order_received", details);
           }
 
+          const orderSubtotal = details[0].items.reduce((total, item) => total + item.price * item.qty, 0);
+          const orderPlatformFee = isMealOrder(details[0].items) ? 0 : PLATFORM_FEE;
+          const orderGst = Math.round((orderSubtotal - order.discount) * GST_RATE);
+          const orderTotal = orderSubtotal - order.discount + orderGst + orderPlatformFee;
+
           const mailOptions = {
             from: process.env.COS_EMAIL,
             to: booking.email,
@@ -627,23 +633,14 @@ function placeOrder(order: orderType, booking: any): Promise<any> {
                                               </tr>
                                               <tr>
                                                 <td style="padding: 20px 20px 20px 20px;">
-                                                  <strong>Order SubTotal:</strong> ₹${details[0].items.reduce(
-                                                    (total, item) => total + item.price * item.qty,
-                                                    0
-                                                  )}<br>
+                                                  <strong>Order SubTotal:</strong> ₹${orderSubtotal}<br>
                                                               <strong>Discount:</strong> ₹${order.discount}<br>
                                                               ${
                                                                 !isMealOrder(details[0].items) ?
-                                                                "<strong>Platform Fee:</strong> ₹2<br>":''
+                                                                `<strong>Platform Fee:</strong> ₹${orderPlatformFee}<br>`:''
                                                               }
-                                                              <strong>Order Total:</strong> ₹${
-                                                                details[0].items.reduce(
-                                                                  (total, item) => total + item.price * item.qty,
-                                                                  0
-                                                                ) -
-                                                                order.discount +
-                                                                (isMealOrder(details[0].items) ? 0 : 2)
-                                                              }<br>
+                                                              <strong>GST (5%):</strong> ₹${orderGst}<br>
+                                                              <strong>Order Total:</strong> ₹${orderTotal}<br>
                                                 </td>
                                               </tr>
                                               ${!isMealOrder(details[0].items) ? `<tr>

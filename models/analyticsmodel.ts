@@ -1,4 +1,5 @@
 import pool from "../db";
+import { PLATFORM_FEE, getMealItemIds } from "../constants";
 import { AverageBreakfastBoughtPerDay, AverageBreakfastBoughtPerQuarter, AverageBreakfastBoughtPerYear, averageCompanyBookingForMonthandYear, averageCompanyBookingForQuarterandYear, averageCompanyBookingForYear, AverageMealsBoughtPerDay, AverageMealsBoughtPerQuarter, AverageMealsBoughtPerYear, RoomsBookedPerDay, RoomsBookedPerQuarter, RoomsBookedPerYear,fetchTotalProfitPerDayQuery,fetchTotalProfitPerDayQueryForQuarter,fetchTotalProfitPerDayQueryForYear} from "./analyticsqueries";
 
 export async function getRoomsBookedPerDay(year:number,month:number) {
@@ -106,7 +107,7 @@ export async function getAverageBreakfastBoughtPerDayYear(year:string) {
 }
 export async function fetchTotalProfitPerDayModel(year:number, month:number) {
   try {
-    const result = await pool.query(fetchTotalProfitPerDayQuery,[year, month]);
+    const result = await pool.query(fetchTotalProfitPerDayQuery,[year, month, getMealItemIds(), PLATFORM_FEE]);
     return result;
   } catch (error) {
     throw error;
@@ -114,7 +115,7 @@ export async function fetchTotalProfitPerDayModel(year:number, month:number) {
 }
 export async function fetchTotalProfitPerQuarterModel(year:number, quarter:number) {
   try {
-    const result = await pool.query(fetchTotalProfitPerDayQueryForQuarter,[year, quarter]);
+    const result = await pool.query(fetchTotalProfitPerDayQueryForQuarter,[year, quarter, getMealItemIds(), PLATFORM_FEE]);
     return result;
   } catch (error) {
     throw error;
@@ -122,7 +123,7 @@ export async function fetchTotalProfitPerQuarterModel(year:number, quarter:numbe
 }
 export async function fetchTotalProfitPerYearModel(year:number) {
   try {
-    const result = await pool.query(fetchTotalProfitPerDayQueryForYear,[year]);
+    const result = await pool.query(fetchTotalProfitPerDayQueryForYear,[year, getMealItemIds(), PLATFORM_FEE]);
     return result;
   } catch (error) {
     throw error;
