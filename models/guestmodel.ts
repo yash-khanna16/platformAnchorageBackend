@@ -1,5 +1,5 @@
 import { QueryResult } from "pg";
-import pool from "../db";
+import pool, { withTransaction } from "../db";
 import {
   getAllGuests,
   getNamedGuests,
@@ -41,6 +41,7 @@ import {
   fetchAllOrders,
   fetchMealsByBookingIdAnDateQuery as fetchMealsByBookingIdAndDateQuery,
   fetchBookingDataForRoomQuery,
+  upsertGuestQuery,
 } from "./queries";
 import { fetchMovementQueryByMovementId } from "./movementqueries"
 
@@ -281,7 +282,41 @@ export async function fetchRoomResv(roomNo: string): Promise<any[]> {
   }
 }
 
-export async function addBooking(bookingData: {
+// The guest details a booking stores on itself. Missing values are saved as ""
+// (not NULL) so a booking never falls back to another stay's details on the
+// shared guests row.
+export type BookingGuestDetails = {
+  name?: string | null;
+  phone?: string | number | null;
+  company?: string | null;
+  vessel?: string | null;
+  rank?: string | null;
+  guestId?: string | null;
+};
+
+function guestDetailParams(details: BookingGuestDetails) {
+  const text = (value: string | number | null | undefined) =>
+    value === null || value === undefined ? "" : String(value);
+  return [
+    text(details.name),
+    text(details.phone),
+    text(details.company),
+    text(details.vessel),
+    text(details.rank),
+    text(details.guestId),
+  ];
+}
+
+// Creates the shared guests row for this email if it does not exist yet, or
+// refreshes it with the latest details. Never renames or deletes it.
+export async function upsertGuest(
+  details: BookingGuestDetails & { email: string },
+  client: { query: (text: string, params?: any[]) => Promise<QueryResult<any>> } = pool
+): Promise<QueryResult<any>> {
+  return client.query(upsertGuestQuery, [details.email, ...guestDetailParams(details)]);
+}
+
+export async function addBooking(bookingData: BookingGuestDetails & {
   booking_id: string;
   checkin: Date;
   checkout: Date;
@@ -305,6 +340,7 @@ export async function addBooking(bookingData: {
       bookingData.additional,
       bookingData.room,
       bookingData.breakfast,
+      ...guestDetailParams(bookingData),
     ]);
     return result;
   } catch (error) {
@@ -331,9 +367,12 @@ export async function editGuestData(bookingData: {
   originalEmail: string;
   guestId: string;
 }, originalRoom: string) {
-  try {
-    await pool.query("Begin");
-    await pool.query(editBookingDetails, [
+  // The edited details are saved on this booking only. The guests row for the
+  // email is created/refreshed, and the old email's row is left alone: renaming
+  // or deleting it is what used to change other bookings' names and leave
+  // "ghost" bookings that the room list could not show.
+  await withTransaction(async (client) => {
+    await client.query(editBookingDetails, [
       bookingData.bookingId,
       bookingData.checkin,
       bookingData.checkout,
@@ -344,20 +383,10 @@ export async function editGuestData(bookingData: {
       bookingData.additional,
       originalRoom,
       bookingData.breakfast,
+      ...guestDetailParams(bookingData),
     ]);
-    if(bookingData.originalEmail.includes("@chotahaathi.com")){
-      await pool.query(deleteGuestDetails,[bookingData.originalEmail])
-      await pool.query(addGuestQuery,[bookingData.email,bookingData.name,bookingData.phone,bookingData.company,bookingData.vessel,bookingData.rank,bookingData.guestId]);
-    }
-    else{
-      await pool.query(editGuestEmail,[bookingData.email,bookingData.name,bookingData.phone,bookingData.company,bookingData.vessel,bookingData.rank,bookingData.guestId,bookingData.originalEmail])
-    }
-    await pool.query("Commit");
-
-  } catch (error) {
-    await pool.query("ROLLBACK");
-    throw error;
-  }
+    await upsertGuest(bookingData, client);
+  });
 }
 
 export async function getServerTime(): Promise<QueryResult<any>> {

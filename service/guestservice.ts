@@ -34,6 +34,7 @@ import {
   fetchMovementDetails,
   fetchAllFeedbackModel,
   fetchGuests,
+  upsertGuest,
 } from "../models/guestmodel";
 import { deleteMovementByBookingIdService } from "./movementservice";
 import bcrypt from "bcrypt";
@@ -247,26 +248,15 @@ export function addBookingData(bookingData: {
       }
     });
     if (overBooking === 0) {
-      const isGuest = await findGuest(bookingData.email);
-      const guestData = {
-        guestEmail: bookingData.email,
-        guestName: bookingData.name,
-        guestPhone: bookingData.phone,
-        guestCompany: bookingData.company,
-        guestVessel: bookingData.vessel,
-        guestRank: bookingData.rank,
-        guestId: bookingData.guestId,
-      };
-      if (isGuest.rows.length === 0) {
-        try {
-          await addGuestData(guestData);
-        } catch (error) {
-          console.log(error);
-          reject("internal server error");
-          return;
-        }
-      } else {
-        const updateGuest = editGuest(guestData);
+      // The guest's details are saved on the booking itself (see addBooking),
+      // so reusing an email never changes another booking's name/vessel/etc.
+      // The shared guests row for the email is only created or refreshed.
+      try {
+        await upsertGuest(bookingData);
+      } catch (error) {
+        console.log(error);
+        reject("internal server error");
+        return;
       }
       const bookingDataWithId = { ...bookingData, booking_id };
 
@@ -319,7 +309,7 @@ export function editBookingData(bookingData: {
         }
         else {
           await editGuestData({ ...bookingData, checkout: currentTime }, guestData.rows[0].room);
-          await addBooking({ booking_id: uuidv4(), checkin: currentTime, checkout: bookingData.checkout, email: bookingData.email, meal_veg: bookingData.meal_veg, meal_non_veg: bookingData.meal_non_veg, remarks: bookingData.remarks, additional: bookingData.additional, room: bookingData.room, breakfast: bookingData.breakfast })
+          await addBooking({ booking_id: uuidv4(), checkin: currentTime, checkout: bookingData.checkout, email: bookingData.email, meal_veg: bookingData.meal_veg, meal_non_veg: bookingData.meal_non_veg, remarks: bookingData.remarks, additional: bookingData.additional, room: bookingData.room, breakfast: bookingData.breakfast, name: bookingData.name, phone: bookingData.phone, company: bookingData.company, vessel: bookingData.vessel, rank: bookingData.rank, guestId: bookingData.guestId })
         }
         resolve("Details Updated");
         return;

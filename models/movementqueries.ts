@@ -1,3 +1,5 @@
+import { guestCompany, guestName, guestPhone, guestRank } from "./guestDetailsSql";
+
 export const fetchMovementQuery = `SELECT 
     m.movement_id,
     m.pickup_location,
@@ -12,25 +14,25 @@ export const fetchMovementQuery = `SELECT
         ELSE TRUE
     END AS external_booking,
     CASE
-        WHEN b.booking_id IS NOT NULL THEN g.name
-        WHEN l.booking_id IS NOT NULL THEN g.name
+        WHEN b.booking_id IS NOT NULL THEN ${guestName("b", "g")}
+        WHEN l.booking_id IS NOT NULL THEN ${guestName("l", "g")}
         ELSE ep.name
     END AS passenger_name,
     CASE
-        WHEN b.booking_id IS NOT NULL THEN g.rank
-        WHEN l.booking_id IS NOT NULL THEN g.rank
+        WHEN b.booking_id IS NOT NULL THEN ${guestRank("b", "g")}
+        WHEN l.booking_id IS NOT NULL THEN ${guestRank("l", "g")}
         ELSE ep.rank
     END AS passenger_rank,
     p.passenger_id AS passenger_id,
     CASE
-        WHEN b.booking_id IS NOT NULL THEN g.phone
-        WHEN l.booking_id IS NOT NULL THEN g.phone
+        WHEN b.booking_id IS NOT NULL THEN ${guestPhone("b", "g")}
+        WHEN l.booking_id IS NOT NULL THEN ${guestPhone("l", "g")}
         ELSE ep.phone
     END AS phone,
     m.drop_location AS drop_location,
     CASE
-        WHEN b.booking_id IS NOT NULL THEN g.company
-        WHEN l.booking_id IS NOT NULL THEN g.company
+        WHEN b.booking_id IS NOT NULL THEN ${guestCompany("b", "g")}
+        WHEN l.booking_id IS NOT NULL THEN ${guestCompany("l", "g")}
         ELSE ep.company
     END AS company,
     p.remark
@@ -197,17 +199,17 @@ export const fetchMovementQueryByMovementId = `SELECT
         ELSE TRUE
     END AS external_booking,
     CASE
-        WHEN b.booking_id IS NOT NULL THEN g.name
+        WHEN b.booking_id IS NOT NULL THEN ${guestName("b", "g")}
         ELSE ep.name
     END AS passenger_name,
     p.passenger_id AS passenger_id,
     CASE
-        WHEN b.booking_id IS NOT NULL THEN g.phone
+        WHEN b.booking_id IS NOT NULL THEN ${guestPhone("b", "g")}
         ELSE ep.phone
     END AS phone,
     m.drop_location AS drop_location,
     CASE
-        WHEN b.booking_id IS NOT NULL THEN g.company
+        WHEN b.booking_id IS NOT NULL THEN ${guestCompany("b", "g")}
         ELSE ep.company
     END AS company,
     p.remark

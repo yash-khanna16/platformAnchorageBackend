@@ -1,3 +1,5 @@
+import { guestCompany, guestDetailColumns, guestIdNumber, guestName, guestPhone, guestRank, guestVessel } from "./guestDetailsSql";
+
 export const fetchBookingFromRoomQuery = `SELECT *
 FROM bookings
 WHERE room = $1
@@ -47,7 +49,7 @@ export const fetchAllOrdersQuery = `
   SELECT 
     orders.*,
     order_details.*,
-    guests.name AS guest_name,
+    ${guestName("all_bookings", "guests")} AS guest_name,
     guests.email AS guest_email
   FROM orders 
   JOIN order_details ON orders.order_id = order_details.order_id 
@@ -70,7 +72,7 @@ SELECT
     orders.*,
     order_details.*,
     items.*,
-    guests.name AS guest_name,
+    ${guestName("all_bookings", "guests")} AS guest_name,
     guests.email AS guest_email
   FROM orders 
   JOIN order_details ON orders.order_id = order_details.order_id 
@@ -83,9 +85,9 @@ SELECT
   JOIN guests ON all_bookings.guest_email = guests.email
   WHERE orders.order_id = $1;`;
 
-export const fetchBookingByEmailIdQuery = `SELECT * FROM guests JOIN bookings ON bookings.guest_email = guests.email where guests.email=$1`;
+export const fetchBookingByEmailIdQuery = `SELECT *, ${guestDetailColumns("bookings", "guests")} FROM guests JOIN bookings ON bookings.guest_email = guests.email where guests.email=$1`;
 
-export const fetchBookingByBookingIdQuery = `SELECT * FROM guests JOIN bookings ON bookings.guest_email = guests.email where bookings.booking_id=$1`;
+export const fetchBookingByBookingIdQuery = `SELECT *, ${guestDetailColumns("bookings", "guests")} FROM guests JOIN bookings ON bookings.guest_email = guests.email where bookings.booking_id=$1`;
 
 export const fetchAvailabilityOfItemsQuery = "SELECT item_id,name, available FROM items WHERE item_id = ANY($1::text[])";
 
@@ -313,7 +315,7 @@ export const fetchBestSellerQuery = `WITH RankedItems AS (
   ORDER BY category, occurrence_count DESC;`;
 
   export const fetchCheckinByRoomQuery = `
-  SELECT *
+  SELECT *, ${guestDetailColumns("b", "g")}
   FROM bookings AS b
   JOIN guests AS g ON g.email = b.guest_email
   WHERE b.document_url IS NULL
@@ -336,9 +338,31 @@ export const updateCheckInGuestQuery = `
     RETURNING (SELECT guest_email FROM old_data) AS old_email;
 `;
 
-export const updateCheckInGuestDetailsQuery = `UPDATE guests
-    SET email = $1
-    WHERE email=$2;
+// Check-in may change the booking's email. Make sure a guests row exists for
+// the new email and holds this stay's details (the guest app reads company
+// from it to decide whether to show meals), but never rename or delete the old
+// row: other bookings may still use the old email, and renaming it is what
+// used to leave them as invisible "ghost" bookings. The booking keeps its own
+// copy of the details, so this cannot change what any booking shows.
+export const upsertGuestForCheckInQuery = `
+  INSERT INTO guests (email, name, phone, company, vessel, rank, id)
+  SELECT $1,
+    COALESCE(${guestName("b", "g")}, ''),
+    COALESCE(${guestPhone("b", "g")}, ''),
+    COALESCE(${guestCompany("b", "g")}, ''),
+    COALESCE(${guestVessel("b", "g")}, ''),
+    COALESCE(${guestRank("b", "g")}, ''),
+    COALESCE(${guestIdNumber("b", "g")}, '')
+  FROM bookings b
+  LEFT JOIN guests g ON g.email = $2
+  WHERE b.booking_id = $3
+  ON CONFLICT (email) DO UPDATE
+  SET name = EXCLUDED.name,
+      phone = EXCLUDED.phone,
+      company = EXCLUDED.company,
+      vessel = EXCLUDED.vessel,
+      rank = EXCLUDED.rank,
+      id = EXCLUDED.id;
 `;
 
 export const addCouponAdminQuery = `

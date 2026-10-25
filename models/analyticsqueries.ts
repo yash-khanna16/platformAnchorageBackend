@@ -1,3 +1,5 @@
+import { guestCompany } from "./guestDetailsSql";
+
 export const RoomsBookedPerDay = `
   WITH daily_series AS (
     SELECT 
@@ -80,7 +82,7 @@ export const averageCompanyBookingForMonthandYear = `
 WITH daily_bookings AS (
   SELECT 
     dr.booking_date, 
-    g.company, 
+    ${guestCompany("b", "g")} AS company, 
     COUNT(b.room) AS rooms_booked
   FROM 
     generate_series(
@@ -97,7 +99,7 @@ WITH daily_bookings AS (
   LEFT JOIN 
     guests g ON b.guest_email = g.email
   GROUP BY 
-    dr.booking_date, g.company
+    dr.booking_date, ${guestCompany("b", "g")}
 )
 SELECT 
   company, 
@@ -264,7 +266,7 @@ export const averageCompanyBookingForQuarterandYear = `
 WITH quarterly_bookings AS (
   SELECT 
     dr.booking_date, 
-    g.company, 
+    ${guestCompany("b", "g")} AS company, 
     COUNT(b.room) AS rooms_booked
   FROM 
     generate_series(
@@ -281,7 +283,7 @@ WITH quarterly_bookings AS (
   LEFT JOIN 
     guests g ON b.guest_email = g.email
   GROUP BY 
-    dr.booking_date, g.company
+    dr.booking_date, ${guestCompany("b", "g")}
 )
 SELECT 
   company, 
@@ -439,7 +441,7 @@ export const averageCompanyBookingForYear = `
 WITH yearly_bookings AS (
   SELECT 
     dr.booking_date, 
-    g.company, 
+    ${guestCompany("b", "g")} AS company, 
     COUNT(b.room) AS rooms_booked
   FROM 
     generate_series(
@@ -456,7 +458,7 @@ WITH yearly_bookings AS (
   LEFT JOIN 
     guests g ON b.guest_email = g.email
   GROUP BY 
-    dr.booking_date, g.company
+    dr.booking_date, ${guestCompany("b", "g")}
 )
 SELECT 
   company, 

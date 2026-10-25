@@ -88,8 +88,8 @@ async function moveExpiredBookings() {
           WHERE checkout < NOW()
           RETURNING *
         )
-        INSERT INTO logs (booking_id, checkin, checkout, guest_email, meal_veg, meal_non_veg, remarks, additional_info, room, breakfast,document_url,document_url_back)
-        SELECT booking_id, checkin, checkout, guest_email, meal_veg, meal_non_veg, remarks, additional_info, room, breakfast,document_url,document_url_back
+        INSERT INTO logs (booking_id, checkin, checkout, guest_email, meal_veg, meal_non_veg, remarks, additional_info, room, breakfast,document_url,document_url_back,guest_name,guest_phone,guest_company,guest_vessel,guest_rank,guest_id_number)
+        SELECT booking_id, checkin, checkout, guest_email, meal_veg, meal_non_veg, remarks, additional_info, room, breakfast,document_url,document_url_back,guest_name,guest_phone,guest_company,guest_vessel,guest_rank,guest_id_number
         FROM moved_rows;
       `;
 

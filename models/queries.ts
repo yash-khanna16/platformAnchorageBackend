@@ -1,6 +1,12 @@
+import { guestCompany, guestDetailColumns, guestName, guestPhone, guestRank } from "./guestDetailsSql";
+
 export const getAllGuests = "SELECT * FROM guests";
 
-export const getNamedGuests = `SELECT * FROM guests JOIN bookings ON bookings.guest_email = guests.email`;
+// LEFT JOIN so a booking is never hidden just because its email has no guests row.
+export const getNamedGuests = `
+SELECT guests.*, bookings.*, bookings.guest_email AS email, ${guestDetailColumns("bookings", "guests")}
+FROM bookings
+LEFT JOIN guests ON bookings.guest_email = guests.email`;
 
 export const fetchAllOrders = `
 SELECT
@@ -14,9 +20,9 @@ SELECT
     o.platform_fee,
     o.gst,
     o.platform_fee_gst,
-    g.name,
-    g.email,
-    g.phone,
+    ${guestName("b", "g")} AS name,
+    b.guest_email AS email,
+    ${guestPhone("b", "g")} AS phone,
     i.name AS item_name,
     i.item_id AS item_id,
     od.qty AS qty,
@@ -25,7 +31,7 @@ FROM
     orders o
 JOIN
     bookings b ON o.booking_id = b.booking_id
-JOIN
+LEFT JOIN
     guests g ON b.guest_email = g.email
 JOIN
     order_details od ON o.order_id = od.order_id
@@ -37,13 +43,18 @@ export const getAdmin = "Select * FROM admin where email=$1";
 
 export const addGuestQuery = "INSERT INTO guests (email,name,phone,company,vessel,rank, id)values($1,$2,$3,$4,$5,$6,$7)";
 
-export const fetchResv = "SELECT * FROM bookings JOIN guests ON guests.email=bookings.guest_email where room=$1";
+// LEFT JOIN so every booking that counts towards the room's occupancy is listed.
+export const fetchResv = `
+SELECT bookings.*, guests.*, bookings.guest_email AS email, ${guestDetailColumns("bookings", "guests")}
+FROM bookings
+LEFT JOIN guests ON guests.email = bookings.guest_email
+WHERE bookings.room = $1`;
 
 export const addBookingDetails =
-  "insert into bookings(booking_id,checkin,checkout,guest_email,meal_veg,meal_non_veg,remarks,additional_info,room,breakfast)values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)";
+  "insert into bookings(booking_id,checkin,checkout,guest_email,meal_veg,meal_non_veg,remarks,additional_info,room,breakfast,guest_name,guest_phone,guest_company,guest_vessel,guest_rank,guest_id_number)values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)";
 
 export const editBookingDetails =
-  "update bookings SET checkin=$2,checkout = $3,guest_email = $4,meal_veg = $5,meal_non_veg = $6,remarks = $7,additional_info = $8, breakfast=$10,room=$9 where booking_id=$1";
+  "update bookings SET checkin=$2,checkout = $3,guest_email = $4,meal_veg = $5,meal_non_veg = $6,remarks = $7,additional_info = $8, breakfast=$10,room=$9,guest_name=$11,guest_phone=$12,guest_company=$13,guest_vessel=$14,guest_rank=$15,guest_id_number=$16 where booking_id=$1";
 
 export const serverTime = "SELECT current_timestamp AT TIME ZONE 'Asia/Kolkata' AS server_time";
 
@@ -96,19 +107,17 @@ export const deleteBooking = "DELETE from bookings where booking_id=$1";
 
 export const deleteGuestDetails = "DELETE from guests where email=$1";
 
+// LEFT JOIN so the overlap/over-booking check sees every booking in the room,
+// matching the occupancy counter on the Manage Rooms page.
 export const findRoomConflict = `SELECT 
   b.*,
-  g.name,
-  g.phone,
-  g.company,
-  g.vessel,
-  g.rank
+  ${guestDetailColumns("b", "g")}
 FROM (
   SELECT * FROM bookings
   UNION ALL
   SELECT * FROM logs
 ) b
-JOIN guests g ON b.guest_email = g.email
+LEFT JOIN guests g ON b.guest_email = g.email
 WHERE b.room = $3
   AND (
     (b.checkin <= $1 AND b.checkout >= $2)
@@ -118,6 +127,20 @@ WHERE b.room = $3
   );
 
 `;
+
+// Keeps the shared guests row (one per email) in existence and up to date with
+// the latest details entered for that email. It never renames or deletes a
+// guests row, so other bookings using the email are never orphaned.
+export const upsertGuestQuery = `
+INSERT INTO guests (email, name, phone, company, vessel, rank, id)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (email) DO UPDATE
+SET name = EXCLUDED.name,
+    phone = EXCLUDED.phone,
+    company = EXCLUDED.company,
+    vessel = EXCLUDED.vessel,
+    rank = EXCLUDED.rank,
+    id = EXCLUDED.id`;
 
 export const editGuestQuery = "Update guests set name=$2,phone=$3,company=$4,vessel=$5,rank=$6,id=$7 where email=$1";
 
@@ -168,8 +191,8 @@ export const fetchMealsByDateQuery = `
         b.checkin,
         b.checkout,
         b.room,
-        g.name AS name,
-        g.company AS company
+        ${guestName("b", "g")} AS name,
+        ${guestCompany("b", "g")} AS company
     FROM bookings AS b
     LEFT JOIN meals AS m ON b.booking_id = m.booking_id AND m.date = $1
     LEFT JOIN guests AS g ON b.guest_email = g.email
@@ -179,7 +202,10 @@ export const fetchMealsByBookingIdQuery = `SELECT * FROM meals where booking_id 
 
 export const fetchMealsByBookingIdAnDateQuery = `SELECT * FROM meals where booking_id = $1 AND date=$2::date`;
 
-export const fetchBookingLogsQuery = "SELECT * FROM logs JOIN guests ON guests.email=logs.guest_email";
+export const fetchBookingLogsQuery = `
+SELECT logs.*, guests.*, ${guestDetailColumns("logs", "guests")}
+FROM logs
+JOIN guests ON guests.email = logs.guest_email`;
 
 export const addToAuditLogs = "insert into audit_logs(audit_id,time,author,api_call,name,phone)values($1,$2,$3,$4,$5,$6)";
 
@@ -187,7 +213,12 @@ export const fetchAdminByPass = "select * from admin where delete_password=$1";
 
 export const getAuditLogsServiceQuery = "select * from audit_logs ";
 
-export const fetchBookingDetailsQuery = "SELECT * FROM bookings JOIN guests ON guests.email=bookings.guest_email where bookings.booking_id=$1";
+// LEFT JOIN so the booking is found even if its email has no guests row.
+export const fetchBookingDetailsQuery = `
+SELECT bookings.*, guests.*, bookings.guest_email AS email, ${guestDetailColumns("bookings", "guests")}
+FROM bookings
+LEFT JOIN guests ON guests.email = bookings.guest_email
+WHERE bookings.booking_id = $1`;
 
 export const fetchPassengerDetailsQuery = "SELECT * FROM passengers where passenger_id=$1";
 
@@ -196,7 +227,7 @@ export const fetchExternalPassengerDetailsQuery = "SELECT * FROM external_passen
 export const fetchAllFeedbackQuery = `
   SELECT 
     f.type, 
-    g.name, 
+    ${guestName("b", "g")} AS name, 
     b.room, 
     f.rating, 
     f.comment, 
@@ -214,7 +245,7 @@ export const fetchAllFeedbackQuery = `
 export const fetchAllOrderFeedbackQuery = `
   SELECT 
     'order' AS type, 
-    g.name, 
+    ${guestName("b", "g")} AS name, 
     o.room, 
     o.order_id, 
     o.rating, 
@@ -233,9 +264,9 @@ export const fetchAllOrderFeedbackQuery = `
 export const fetchBookingDataForRoomQuery=`
 SELECT 
     bookings.booking_id,
-    guests.name,
-    guests.rank,
-    guests.company,
+    ${guestName("bookings", "guests")} AS name,
+    ${guestRank("bookings", "guests")} AS rank,
+    ${guestCompany("bookings", "guests")} AS company,
     guests.email
 FROM bookings
 JOIN guests 
